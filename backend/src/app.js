@@ -3,6 +3,10 @@ const cors = require("cors");
 const helmet = require("helmet");
 const morgan = require("morgan");
 
+const authRoutes = require("./modules/auth/authRoutes");
+
+const errorMiddleware = require("./middleware/errorMiddleware");
+
 const app = express();
 
 app.use(helmet());
@@ -16,5 +20,8 @@ app.get("/api/v1/health", (req, res) => {
     message: "Vertex LMS AI API is running",
   });
 });
+
+app.use("/api/v1/auth", authRoutes);
+app.use(errorMiddleware);
 
 module.exports = app;
