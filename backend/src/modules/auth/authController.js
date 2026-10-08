@@ -62,7 +62,28 @@ const login = async (req, res, next) => {
   }
 };
 
+const getMe = async (req, res, next) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      data: {
+        user: {
+          id: req.user._id,
+          fullName: req.user.fullName,
+          email: req.user.email,
+          role: req.user.role,
+          avatarUrl: req.user.avatarUrl,
+          isActive: req.user.isActive,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
+  getMe,
 };
