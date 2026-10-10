@@ -4,6 +4,7 @@ const helmet = require("helmet");
 const morgan = require("morgan");
 
 const authRoutes = require("./modules/auth/authRoutes");
+const courseRoutes = require("./modules/courses/courseRoutes");
 
 const errorMiddleware = require("./middleware/errorMiddleware");
 
@@ -22,6 +23,7 @@ app.get("/api/v1/health", (req, res) => {
 });
 
 app.use("/api/v1/auth", authRoutes);
+app.use("/api/v1/courses", courseRoutes);
 app.use(errorMiddleware);
 
 module.exports = app;
