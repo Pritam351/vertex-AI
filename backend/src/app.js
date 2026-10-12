@@ -7,6 +7,7 @@ const authRoutes = require("./modules/auth/authRoutes");
 const courseRoutes = require("./modules/courses/courseRoutes");
 const contentRoutes = require("./modules/courses/contentRoutes");
 const adminRoutes = require("./modules/admin/adminRoutes");
+const enrollmentRoutes = require("./modules/enrollments/enrollmentRoutes");
 
 const errorMiddleware = require("./middleware/errorMiddleware");
 
@@ -28,6 +29,7 @@ app.use("/api/v1/auth", authRoutes);
 app.use("/api/v1/courses", courseRoutes);
 app.use("/api/v1", contentRoutes);
 app.use("/api/v1/admin", adminRoutes);
+app.use("/api/v1", enrollmentRoutes);
 
 app.use(errorMiddleware);
 
