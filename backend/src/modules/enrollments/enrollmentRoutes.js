@@ -11,11 +11,12 @@ const {
 
 const router = express.Router();
 
-// All endpoints require an authenticated student.
-router.use(authMiddleware, requireRole("student"));
+// Student-only middleware is applied PER ROUTE (not router.use), because this router
+// is mounted at "/api/v1" and router.use would run for EVERY /api/v1/* request.
+const studentOnly = [authMiddleware, requireRole("student")];
 
-router.post("/courses/:id/enroll", enroll);
-router.get("/enrollments/me", getMyEnrollments);
-router.post("/lectures/:id/progress", updateProgress);
+router.post("/courses/:id/enroll",...studentOnly, enroll);
+router.get("/enrollments/me",...studentOnly, getMyEnrollments);
+router.post("/lectures/:id/progress",...studentOnly, updateProgress);
 
 module.exports = router;
