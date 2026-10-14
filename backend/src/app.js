@@ -11,6 +11,7 @@ const enrollmentRoutes = require("./modules/enrollments/enrollmentRoutes");
 const learningRoutes = require("./modules/enrollments/learningRoutes");
 const assignmentRoutes = require("./modules/assignments/assignmentRoutes");
 const quizRoutes = require("./modules/quizzes/quizRoutes");
+const certificateRoutes = require("./modules/certificates/certificateRoutes");
 
 const errorMiddleware = require("./middleware/errorMiddleware");
 
@@ -36,6 +37,7 @@ app.use("/api/v1", enrollmentRoutes);
 app.use("/api/v1", learningRoutes);
 app.use("/api/v1", assignmentRoutes);
 app.use("/api/v1", quizRoutes);
+app.use("/api/v1", certificateRoutes);
 
 app.use(errorMiddleware);
 
