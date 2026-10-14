@@ -7,6 +7,8 @@ const Course = require("../courses/courseModel");
 const CourseModule = require("../courses/moduleModel");
 const Lecture = require("../courses/lectureModel");
 const LectureProgress = require("../enrollments/lectureProgressModel");
+const Assignment = require("../assignments/assignmentModel");
+const Submission = require("../assignments/submissionModel");
 
 const fail = (statusCode, message) => {
   const error = new Error(message);
@@ -37,12 +39,14 @@ const issueCertificate = async (courseId, user) => {
     fail(403, "You must enroll in this course first");
   }
 
+  // Get all course modules.
   const modules = await CourseModule.find({
     courseId: course._id,
   }).select("_id");
 
   const moduleIds = modules.map((module) => module._id);
 
+  // Get all lectures in the course.
   const lectures = moduleIds.length
     ? await Lecture.find({
         moduleId: { $in: moduleIds },
@@ -53,6 +57,7 @@ const issueCertificate = async (courseId, user) => {
     fail(400, "This course has no lectures yet");
   }
 
+  // Check lecture completion.
   const lectureIds = lectures.map((lecture) => lecture._id);
 
   const completedCount = await LectureProgress.countDocuments({
@@ -62,9 +67,37 @@ const issueCertificate = async (courseId, user) => {
   });
 
   if (completedCount < lectureIds.length) {
-    fail(400, "Complete all course lectures before requesting a certificate");
+    fail(
+      400,
+      "Complete all course lectures before requesting a certificate"
+    );
   }
 
+  // If assignments exist, require submission of every assignment.
+  // If no assignments exist, this requirement is skipped.
+  const assignments = await Assignment.find({
+    courseId: course._id,
+  }).select("_id");
+
+  if (assignments.length > 0) {
+    const assignmentIds = assignments.map(
+      (assignment) => assignment._id
+    );
+
+    const submittedCount = await Submission.countDocuments({
+      userId: user._id,
+      assignmentId: { $in: assignmentIds },
+    });
+
+    if (submittedCount < assignmentIds.length) {
+      fail(
+        400,
+        "Submit all course assignments before requesting a certificate"
+      );
+    }
+  }
+
+  // Return the existing certificate if already issued.
   const existing = await Certificate.findOne({
     userId: user._id,
     courseId: course._id,
