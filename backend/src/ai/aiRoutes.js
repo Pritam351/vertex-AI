@@ -8,6 +8,7 @@ const {
   testGemini,
   ingestLectureTranscript,
   embedLectureTranscript,
+  retrieveCourseContext,
 } = require("./aiController");
 
 const router = express.Router();
@@ -29,6 +30,13 @@ router.post(
   authMiddleware,
   requireRole("instructor", "admin"),
   embedLectureTranscript
+);
+
+router.post(
+  "/courses/:courseId/retrieve",
+  authMiddleware,
+  requireRole("student"),
+  retrieveCourseContext
 );
 
 module.exports = router;
