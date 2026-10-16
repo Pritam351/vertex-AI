@@ -27,6 +27,27 @@ async function generateEmbedding(text) {
   return values;
 }
 
+
+async function generateQueryEmbedding(text) {
+  const response = await ai.models.embedContent({
+    model: "gemini-embedding-001",
+    contents: text,
+    config: {
+      taskType: "RETRIEVAL_QUERY",
+      outputDimensionality: 768,
+    },
+  });
+
+  const values = response.embeddings?.[0]?.values;
+
+  if (!values || values.length !== 768) {
+    throw new Error("Failed to generate a valid query embedding");
+  }
+
+  return values;
+}
+
+
 async function embedLectureChunks(lectureId, courseId) {
   const chunks = await TranscriptChunk.find({
     lectureId,
@@ -68,5 +89,6 @@ async function embedLectureChunks(lectureId, courseId) {
 
 module.exports = {
   generateEmbedding,
+  generateQueryEmbedding,
   embedLectureChunks,
 };

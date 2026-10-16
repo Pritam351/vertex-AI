@@ -1,7 +1,7 @@
 
 const mongoose = require("mongoose");
 const TranscriptChunk = require("./transcriptChunkModel");
-const { generateEmbedding } = require("./embeddingService");
+const { generateQueryEmbedding } = require("./embeddingService");
 
 async function searchCourseTranscript(courseId, question) {
   if (!mongoose.isValidObjectId(courseId)) {
@@ -16,7 +16,7 @@ async function searchCourseTranscript(courseId, question) {
     throw error;
   }
 
-  const queryEmbedding = await generateEmbedding(question.trim());
+  const queryEmbedding = await generateQueryEmbedding(question.trim());
 
   return TranscriptChunk.aggregate([
     {

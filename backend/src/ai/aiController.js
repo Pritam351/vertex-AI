@@ -5,9 +5,9 @@ const Enrollment = require("../modules/enrollments/enrollmentModel");
 const CourseModule = require("../modules/courses/moduleModel");
 const Lecture = require("../modules/courses/lectureModel");
 
+const { generateResponse } = require("./geminiService");
 const { searchCourseTranscript } = require("./vectorSearchService");
 
-const { generateResponse } = require("./geminiService");
 const { ingestLecture } = require("./transcriptService");
 const { embedLectureChunks } = require("./embeddingService");
 
@@ -147,12 +147,59 @@ async function retrieveCourseContext(req, res, next) {
         score: chunk.score,
       }));
 
+
+    const relevantSources = sources.filter(
+      (source) => source.score >= 0.60
+    );
+
+    if (relevantSources.length === 0) {
+      return res.status(200).json({
+        success: true,
+        courseId: course._id,
+        answer:
+          "I couldn't find sufficiently relevant information in this course's lecture materials. Please try rephrasing your question.",
+        resultCount: 0,
+        sources: [],
+      });
+    }
+
+    const context = relevantSources
+      .map(
+        (source, index) =>
+          `[Source ${index + 1}: ${source.lectureTitle}, chunk ${source.chunkIndex}]\n${source.text}`
+      )
+      .join("\n\n");
+
+    const prompt = `
+        You are the AI tutor for this course.
+        Answer the student's question using only the provided course material.
+        Explain clearly and simply. Do not invent facts.
+        If the material is insufficient, say so.
+        Cite sources using labels such as [Source 1].
+
+      COURSE MATERIAL:
+      ${context}
+
+      STUDENT QUESTION:
+      ${question}
+      `;
+
+    const answer = await generateResponse(prompt);
+
     return res.status(200).json({
       success: true,
       courseId: course._id,
-      resultCount: sources.length,
-      sources,
+      answer,
+      resultCount: relevantSources.length,
+      sources: relevantSources.map((source, index) => ({
+        sourceNumber: index + 1,
+        lectureId: source.lectureId,
+        lectureTitle: source.lectureTitle,
+        chunkIndex: source.chunkIndex,
+        score: source.score,
+      })),
     });
+
   } catch (error) {
     next(error);
   }
