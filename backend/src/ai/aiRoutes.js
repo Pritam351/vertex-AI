@@ -78,11 +78,13 @@ router.post(
   summarizeLecture
 );
 
+
 router.post(
   "/lectures/:lectureId/generate-quiz",
   authMiddleware,
-  requireRole("student", "admin"),
+  requireRole("student", "instructor", "admin"),
   generateLectureQuiz
 );
+
 
 module.exports = router;

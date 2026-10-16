@@ -1,6 +1,7 @@
 const mongoose = require("mongoose");
 
 const TranscriptChunk = require("./transcriptChunkModel");
+const { createQuiz } = require("../modules/quizzes/quizService");
 
 const Course = require("../modules/courses/courseModel");
 const Enrollment = require("../modules/enrollments/enrollmentModel");
@@ -388,10 +389,18 @@ async function generateLectureQuiz(req, res, next) {
       courseId: course._id,
     });
 
-    if (!enrollment && req.user.role !== "admin") {
+    const isCourseInstructor =
+      req.user.role === "instructor" &&
+      course.instructorId.toString() === req.user._id.toString();
+
+    if (
+      !enrollment &&
+      req.user.role !== "admin" &&
+      !isCourseInstructor
+    ) {
       return res.status(403).json({
         success: false,
-        message: "Enroll in this course to generate a practice quiz",
+        message: "You do not have access to generate a quiz for this course",
       });
     }
 
@@ -416,7 +425,7 @@ async function generateLectureQuiz(req, res, next) {
     }
 
 
-const prompt = `
+    const prompt = `
 Generate exactly ${requestedCount} multiple-choice questions based ONLY on the lecture transcript.
 
 Return one valid JSON object matching this exact structure:
@@ -516,6 +525,44 @@ ${transcript}
       });
     }
 
+
+    if (
+      req.user.role === "instructor" ||
+      req.user.role === "admin"
+    ) {
+      const savedQuiz = await createQuiz(
+        {
+          courseId: course._id,
+          title: `AI Quiz: ${lecture.title}`.slice(0, 200),
+          instructions:
+            "AI-generated quiz. Review the questions before publishing.",
+          questions: questions.map((question, index) => ({
+            text: question.text,
+            type: "mcq",
+            options: question.options.map((option) => ({
+              text: option.text,
+              isCorrect: option.isCorrect,
+            })),
+            points: 1,
+            orderIndex: index,
+          })),
+          passingScore: 50,
+          timeLimitMinutes: 10,
+        },
+        req.user
+      );
+
+      return res.status(201).json({
+        success: true,
+        message: "AI quiz generated and saved as a draft",
+        quizId: savedQuiz._id,
+        title: savedQuiz.title,
+        questionCount: savedQuiz.questions.length,
+        isPublished: savedQuiz.isPublished,
+      });
+    }
+
+    // Students receive practice questions without saving a quiz.
     return res.status(200).json({
       success: true,
       lectureId: lecture._id,
@@ -535,4 +582,4 @@ ${transcript}
 
 
 
-module.exports = { testGemini, ingestLectureTranscript, embedLectureTranscript, retrieveCourseContext, summarizeLecture,generateLectureQuiz, };
+module.exports = { testGemini, ingestLectureTranscript, embedLectureTranscript, retrieveCourseContext, summarizeLecture, generateLectureQuiz, };
