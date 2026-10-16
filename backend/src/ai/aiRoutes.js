@@ -10,6 +10,7 @@ const {
   embedLectureTranscript,
   retrieveCourseContext,
   summarizeLecture,
+  generateLectureQuiz,
 } = require("./aiController");
 
 const {
@@ -75,6 +76,13 @@ router.post(
   authMiddleware,
   requireRole("student", "admin"),
   summarizeLecture
+);
+
+router.post(
+  "/lectures/:lectureId/generate-quiz",
+  authMiddleware,
+  requireRole("student", "admin"),
+  generateLectureQuiz
 );
 
 module.exports = router;

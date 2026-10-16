@@ -328,6 +328,211 @@ ${transcript}
 }
 
 
+async function generateLectureQuiz(req, res, next) {
+  try {
+    const { lectureId } = req.params;
+    const requestedCount = req.body?.questionCount ?? 5;
+
+    if (!mongoose.isValidObjectId(lectureId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid lecture ID",
+      });
+    }
+
+    if (
+      !Number.isInteger(requestedCount) ||
+      requestedCount < 1 ||
+      requestedCount > 10
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "questionCount must be an integer from 1 to 10",
+      });
+    }
+
+    const lecture = await Lecture.findById(lectureId).lean();
+
+    if (!lecture) {
+      return res.status(404).json({
+        success: false,
+        message: "Lecture not found",
+      });
+    }
+
+    const courseModule = await CourseModule.findById(
+      lecture.moduleId
+    ).lean();
+
+    if (!courseModule) {
+      return res.status(404).json({
+        success: false,
+        message: "Lecture module not found",
+      });
+    }
+
+    const course = await Course.findOne({
+      _id: courseModule.courseId,
+      status: "approved",
+    }).lean();
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Approved course not found",
+      });
+    }
+
+    const enrollment = await Enrollment.exists({
+      userId: req.user._id,
+      courseId: course._id,
+    });
+
+    if (!enrollment && req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Enroll in this course to generate a practice quiz",
+      });
+    }
+
+    const chunks = await TranscriptChunk.find({
+      lectureId: lecture._id,
+      courseId: course._id,
+    })
+      .select("chunkIndex text")
+      .sort({ chunkIndex: 1 })
+      .lean();
+
+    const transcript = chunks
+      .map((chunk) => chunk.text)
+      .filter((text) => typeof text === "string" && text.trim())
+      .join("\n\n");
+
+    if (!transcript.trim()) {
+      return res.status(404).json({
+        success: false,
+        message: "No usable transcript found for this lecture",
+      });
+    }
 
 
-module.exports = { testGemini, ingestLectureTranscript, embedLectureTranscript, retrieveCourseContext, summarizeLecture, };
+const prompt = `
+Generate exactly ${requestedCount} multiple-choice questions based ONLY on the lecture transcript.
+
+Return one valid JSON object matching this exact structure:
+{
+  "questions": [
+    {
+      "text": "Question text",
+      "type": "mcq",
+      "options": [
+        { "text": "First option", "isCorrect": true },
+        { "text": "Second option", "isCorrect": false },
+        { "text": "Third option", "isCorrect": false },
+        { "text": "Fourth option", "isCorrect": false }
+      ],
+      "points": 1,
+      "orderIndex": 0
+    }
+  ]
+}
+
+Strict rules:
+- Return JSON only. No Markdown fences or explanations.
+- Produce exactly ${requestedCount} questions.
+- Every question must have exactly four options.
+- Exactly one option must have "isCorrect": true.
+- Use only information explicitly supported by the transcript.
+- Escape quotation marks and backslashes correctly inside JSON strings.
+- Do not include a "correctAnswer" property.
+- Do not include trailing commas.
+- Do not write any text before or after the JSON object.
+
+LECTURE: ${lecture.title}
+
+TRANSCRIPT:
+${transcript}
+`;
+
+
+    const raw = await generateResponse(prompt, true);
+
+    const cleaned = raw
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let result;
+
+    try {
+      const start = cleaned.indexOf("{");
+      const end = cleaned.lastIndexOf("}");
+
+      if (start === -1 || end === -1 || end < start) {
+        throw new Error("No JSON object found");
+      }
+
+      result = JSON.parse(cleaned.slice(start, end + 1));
+    } catch (error) {
+      console.error("Quiz JSON parsing failed:", error.message);
+      console.error("Gemini response:", raw);
+
+      return res.status(502).json({
+        success: false,
+        message: "AI returned invalid quiz JSON. Please try again.",
+      });
+    }
+
+    const questions = result?.questions;
+
+    const validQuestions =
+      Array.isArray(questions) &&
+      questions.length === requestedCount &&
+      questions.every((question, index) =>
+        typeof question.text === "string" &&
+        question.text.trim().length > 0 &&
+        question.type === "mcq" &&
+        Array.isArray(question.options) &&
+        question.options.length === 4 &&
+        question.options.every(
+          (option) =>
+            typeof option.text === "string" &&
+            option.text.trim().length > 0 &&
+            typeof option.isCorrect === "boolean"
+        ) &&
+        new Set(
+          question.options.map((option) =>
+            option.text.trim().toLowerCase()
+          )
+        ).size === 4 &&
+        question.options.filter((option) => option.isCorrect).length === 1 &&
+        index >= 0
+      );
+
+    if (!validQuestions) {
+      return res.status(502).json({
+        success: false,
+        message: "AI returned questions in an invalid format. Please try again.",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      lectureId: lecture._id,
+      lectureTitle: lecture.title,
+      courseId: course._id,
+      count: questions.length,
+      questions: questions.map((question, index) => ({
+        ...question,
+        points: 1,
+        orderIndex: index,
+      })),
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+
+module.exports = { testGemini, ingestLectureTranscript, embedLectureTranscript, retrieveCourseContext, summarizeLecture,generateLectureQuiz, };

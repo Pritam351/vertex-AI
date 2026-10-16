@@ -14,6 +14,7 @@ const ai = new GoogleGenAI({
 const MODELS = [
   "gemini-3.1-flash-lite",
   "gemini-3.5-flash-lite",
+  "gemini-3.8-flash"
 ];
 
 function isTemporaryError(error) {
@@ -33,20 +34,27 @@ function isTemporaryError(error) {
   );
 }
 
-async function generateResponse(prompt) {
+
+async function generateResponse(prompt, jsonMode = false) {
   let lastError;
 
   for (const model of MODELS) {
     try {
+      const config = {
+        thinkingConfig: {
+          thinkingLevel: "low",
+        },
+        maxOutputTokens: jsonMode ? 4000 : 1000,
+      };
+
+      if (jsonMode) {
+        config.responseMimeType = "application/json";
+      }
+
       const response = await ai.models.generateContent({
         model,
         contents: prompt,
-        config: {
-          thinkingConfig: {
-            thinkingLevel: "low",
-          },
-          maxOutputTokens: 300,
-        },
+        config,
       });
 
       if (!response.text) {
@@ -60,7 +68,6 @@ async function generateResponse(prompt) {
 
       console.error(`Gemini model ${model} failed:`, error.message);
 
-      // Don't retry authentication, permission, or invalid-request errors.
       if (!isTemporaryError(error)) {
         throw error;
       }
@@ -69,5 +76,6 @@ async function generateResponse(prompt) {
 
   throw lastError;
 }
+
 
 module.exports = { generateResponse };
