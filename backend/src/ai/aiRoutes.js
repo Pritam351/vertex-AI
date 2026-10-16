@@ -11,6 +11,12 @@ const {
   retrieveCourseContext,
 } = require("./aiController");
 
+const {
+  sendChatMessage,
+  getCourseChatHistory,
+  getChatSession,
+} = require("./chatController");
+
 const router = express.Router();
 
 // Temporary Gemini connection test.
@@ -37,6 +43,30 @@ router.post(
   authMiddleware,
   requireRole("student"),
   retrieveCourseContext
+);
+
+// AI tutor chat: send a question and save the response.
+router.post(
+  "/courses/:courseId/chat",
+  authMiddleware,
+  requireRole("student", "admin"),
+  sendChatMessage
+);
+
+// List the current user's chat sessions for a course.
+router.get(
+  "/courses/:courseId/chats",
+  authMiddleware,
+  requireRole("student", "admin"),
+  getCourseChatHistory
+);
+
+// Reopen one of the current user's conversations.
+router.get(
+  "/chats/:sessionId",
+  authMiddleware,
+  requireRole("student", "admin"),
+  getChatSession
 );
 
 module.exports = router;
