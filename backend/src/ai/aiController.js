@@ -1,5 +1,7 @@
 const mongoose = require("mongoose");
 
+const TranscriptChunk = require("./transcriptChunkModel");
+
 const Course = require("../modules/courses/courseModel");
 const Enrollment = require("../modules/enrollments/enrollmentModel");
 const CourseModule = require("../modules/courses/moduleModel");
@@ -205,4 +207,127 @@ async function retrieveCourseContext(req, res, next) {
   }
 }
 
-module.exports = { testGemini, ingestLectureTranscript, embedLectureTranscript, retrieveCourseContext };
+
+async function summarizeLecture(req, res, next) {
+  try {
+    const { lectureId } = req.params;
+
+    if (!mongoose.isValidObjectId(lectureId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid lecture ID",
+      });
+    }
+
+    // Find the lecture.
+    const lecture = await Lecture.findById(lectureId).lean();
+
+    if (!lecture) {
+      return res.status(404).json({
+        success: false,
+        message: "Lecture not found",
+      });
+    }
+
+    // Verify the lecture's module and course.
+    const courseModule = await CourseModule.findById(
+      lecture.moduleId
+    ).lean();
+
+    if (!courseModule) {
+      return res.status(404).json({
+        success: false,
+        message: "Lecture module not found",
+      });
+    }
+
+    const course = await Course.findOne({
+      _id: courseModule.courseId,
+      status: "approved",
+    }).lean();
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Approved course not found",
+      });
+    }
+
+    // Only enrolled students and admins can access summaries.
+    const enrollment = await Enrollment.exists({
+      userId: req.user._id,
+      courseId: course._id,
+    });
+
+    if (!enrollment && req.user.role !== "admin") {
+      return res.status(403).json({
+        success: false,
+        message: "Enroll in this course to summarize its lectures",
+      });
+    }
+
+    // Load transcript chunks in their original order.
+    const chunks = await TranscriptChunk.find({
+      lectureId: lecture._id,
+      courseId: course._id,
+    })
+      .select("chunkIndex text")
+      .sort({ chunkIndex: 1 })
+      .lean();
+
+    if (chunks.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "No transcript chunks found for this lecture",
+      });
+    }
+
+    const transcript = chunks
+      .map((chunk) => chunk.text)
+      .filter((text) => typeof text === "string" && text.trim())
+      .join("\n\n");
+
+    if (!transcript.trim()) {
+      return res.status(404).json({
+        success: false,
+        message: "The lecture transcript is empty",
+      });
+    }
+
+    const prompt = `
+You are an AI learning assistant for the course "${course.title}".
+
+Create a concise, useful summary of the lecture "${lecture.title}".
+
+Use ONLY the transcript below. Do not invent facts or add outside knowledge.
+If the transcript contains limited information, summarize only what is available.
+
+Format the response with:
+1. Overview
+2. Key points
+3. Important terms
+4. Quick revision
+
+LECTURE TRANSCRIPT:
+${transcript}
+`;
+
+    const summary = await generateResponse(prompt);
+
+    return res.status(200).json({
+      success: true,
+      lectureId: lecture._id,
+      lectureTitle: lecture.title,
+      courseId: course._id,
+      summary,
+      chunksUsed: chunks.length,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+
+
+
+module.exports = { testGemini, ingestLectureTranscript, embedLectureTranscript, retrieveCourseContext, summarizeLecture, };

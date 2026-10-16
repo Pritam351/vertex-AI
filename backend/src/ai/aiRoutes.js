@@ -9,6 +9,7 @@ const {
   ingestLectureTranscript,
   embedLectureTranscript,
   retrieveCourseContext,
+  summarizeLecture,
 } = require("./aiController");
 
 const {
@@ -67,6 +68,13 @@ router.get(
   authMiddleware,
   requireRole("student", "admin"),
   getChatSession
+);
+
+router.post(
+  "/lectures/:lectureId/summarize",
+  authMiddleware,
+  requireRole("student", "admin"),
+  summarizeLecture
 );
 
 module.exports = router;
