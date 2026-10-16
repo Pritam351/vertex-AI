@@ -1,6 +1,7 @@
 
 const { generateResponse } = require("./geminiService");
 const { ingestLecture } = require("./transcriptService");
+const { embedLectureChunks } = require("./embeddingService");
 
 async function testGemini(req, res, next) {
   try {
@@ -41,4 +42,21 @@ async function ingestLectureTranscript(req, res, next) {
   }
 }
 
-module.exports = { testGemini, ingestLectureTranscript };
+async function embedLectureTranscript(req, res, next) {
+  try {
+    const result = await embedLectureChunks(
+      req.params.lectureId,
+      req.body.courseId
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Lecture embeddings generated successfully",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { testGemini, ingestLectureTranscript, embedLectureTranscript };

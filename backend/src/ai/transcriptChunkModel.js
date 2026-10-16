@@ -25,6 +25,10 @@ const transcriptChunkSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    embedding: {
+      type: [Number],
+      default: undefined,
+    },
   },
   { timestamps: true }
 );

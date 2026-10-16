@@ -7,6 +7,7 @@ const requireRole = require("../middleware/roleMiddleware");
 const {
   testGemini,
   ingestLectureTranscript,
+  embedLectureTranscript,
 } = require("./aiController");
 
 const router = express.Router();
@@ -21,6 +22,13 @@ router.post(
   authMiddleware,
   requireRole("instructor", "admin"),
   ingestLectureTranscript
+);
+
+router.post(
+  "/lectures/:lectureId/embed",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  embedLectureTranscript
 );
 
 module.exports = router;
