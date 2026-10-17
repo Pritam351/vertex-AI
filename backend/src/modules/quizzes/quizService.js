@@ -298,10 +298,38 @@ const getMyAttempts = async (user) => {
     .lean();
 };
 
+const publishQuiz = async (quizId, user) => {
+  if (!validId(quizId)) fail(400, "Invalid quiz ID");
+
+  const quiz = await Quiz.findById(quizId);
+  if (!quiz) fail(404, "Quiz not found");
+
+  const course = await Course.findById(quiz.courseId);
+  if (!course) fail(404, "Course not found");
+
+  if (
+    user.role !== "admin" &&
+    course.instructorId.toString() !== user._id.toString()
+  ) {
+    fail(403, "You cannot publish quizzes for another instructor's course");
+  }
+
+  quiz.isPublished = true;
+  await quiz.save();
+
+  return {
+    quizId: quiz._id,
+    title: quiz.title,
+    isPublished: quiz.isPublished,
+  };
+};
+
+
 module.exports = {
   createQuiz,
   listCourseQuizzes,
   startAttempt,
   submitAttempt,
   getMyAttempts,
+  publishQuiz,
 };

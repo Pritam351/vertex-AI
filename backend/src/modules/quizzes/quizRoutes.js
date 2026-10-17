@@ -9,6 +9,7 @@ const {
   startAttempt,
   submitAttempt,
   getMyAttempts,
+  publishQuiz,
 } = require("./quizController");
 
 const router = express.Router();
@@ -19,6 +20,15 @@ router.post(
   requireRole("instructor", "admin"),
   createQuiz
 );
+
+
+router.patch(
+  "/quizzes/:id/publish",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  publishQuiz
+);
+
 
 router.get(
   "/courses/:courseId/quizzes",

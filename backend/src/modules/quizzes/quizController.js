@@ -107,10 +107,29 @@ const getMyAttempts = async (req, res, next) => {
   }
 };
 
+const publishQuiz = async (req, res, next) => {
+  try {
+    const result = await quizService.publishQuiz(
+      req.params.id,
+      req.user
+    );
+
+    res.status(200).json({
+      success: true,
+      message: "Quiz published successfully",
+      data: { quiz: result },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 module.exports = {
   createQuiz,
   listCourseQuizzes,
   startAttempt,
   submitAttempt,
   getMyAttempts,
+  publishQuiz,
 };
