@@ -22,6 +22,10 @@ const {
   getChatSession,
 } = require("./chatController");
 
+const { 
+  createStudyPlan,
+} = require("./studyPlanController");
+
 const router = express.Router();
 
 // Temporary Gemini connection test.
@@ -108,6 +112,14 @@ router.get(
   authMiddleware,
   requireRole("student"),
   getFlashcardSet
+);
+
+// Personalized study plan, mastery, and recommendations.
+router.post(
+  "/study-plan",
+  authMiddleware,
+  requireRole("student"),
+  createStudyPlan
 );
 
 module.exports = router;
