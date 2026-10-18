@@ -11,6 +11,7 @@ const {
   retrieveCourseContext,
   summarizeLecture,
   generateLectureQuiz,
+  generateModuleFlashcards,
 } = require("./aiController");
 
 const {
@@ -86,5 +87,11 @@ router.post(
   generateLectureQuiz
 );
 
+router.post(
+  "/modules/:moduleId/flashcards",
+  authMiddleware,
+  requireRole("student", "instructor", "admin"),
+  generateModuleFlashcards
+);
 
 module.exports = router;

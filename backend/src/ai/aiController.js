@@ -1,13 +1,13 @@
 const mongoose = require("mongoose");
 
 const TranscriptChunk = require("./transcriptChunkModel");
-const { createQuiz } = require("../modules/quizzes/quizService");
 
 const Course = require("../modules/courses/courseModel");
 const Enrollment = require("../modules/enrollments/enrollmentModel");
 const CourseModule = require("../modules/courses/moduleModel");
 const Lecture = require("../modules/courses/lectureModel");
 
+const { createQuiz } = require("../modules/quizzes/quizService");
 const { generateResponse } = require("./geminiService");
 const { searchCourseTranscript } = require("./vectorSearchService");
 
@@ -580,6 +580,195 @@ ${transcript}
   }
 }
 
+async function generateModuleFlashcards(req, res, next) {
+  try {
+    const { moduleId } = req.params;
+    const requestedCount = req.body?.count ?? 10;
 
+    if (!mongoose.isValidObjectId(moduleId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid module ID",
+      });
+    }
 
-module.exports = { testGemini, ingestLectureTranscript, embedLectureTranscript, retrieveCourseContext, summarizeLecture, generateLectureQuiz, };
+    if (
+      !Number.isInteger(requestedCount) ||
+      requestedCount < 1 ||
+      requestedCount > 20
+    ) {
+      return res.status(400).json({
+        success: false,
+        message: "count must be an integer from 1 to 20",
+      });
+    }
+
+    const courseModule = await CourseModule.findById(moduleId).lean();
+
+    if (!courseModule) {
+      return res.status(404).json({
+        success: false,
+        message: "Module not found",
+      });
+    }
+
+    const course = await Course.findOne({
+      _id: courseModule.courseId,
+      status: "approved",
+    }).lean();
+
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Approved course not found",
+      });
+    }
+
+    const isInstructor =
+      req.user.role === "instructor" &&
+      String(course.instructorId) === String(req.user._id);
+
+    const isAdmin = req.user.role === "admin";
+
+    if (!isInstructor && !isAdmin) {
+      const enrolled = await Enrollment.exists({
+        userId: req.user._id,
+        courseId: course._id,
+      });
+
+      if (!enrolled) {
+        return res.status(403).json({
+          success: false,
+          message: "Enroll in this course to generate flashcards",
+        });
+      }
+    }
+
+    const lectures = await Lecture.find({
+      moduleId: courseModule._id,
+    })
+      .select("_id title")
+      .lean();
+
+    if (!lectures.length) {
+      return res.status(404).json({
+        success: false,
+        message: "No lectures found in this module",
+      });
+    }
+
+    const chunks = await TranscriptChunk.find({
+      courseId: course._id,
+      lectureId: { $in: lectures.map((lecture) => lecture._id) },
+    })
+      .select("text")
+      .sort({ chunkIndex: 1 })
+      .lean();
+
+    const transcript = chunks
+      .map((chunk) => chunk.text)
+      .filter((text) => typeof text === "string" && text.trim())
+      .join("\n\n");
+
+    if (!transcript.trim()) {
+      return res.status(404).json({
+        success: false,
+        message: "No usable lecture transcripts found",
+      });
+    }
+
+    const prompt = `
+Create exactly ${requestedCount} study flashcards based ONLY
+on the lecture transcript below.
+
+Return valid JSON only in this format:
+{
+  "flashcards": [
+    {
+      "question": "A concise question",
+      "answer": "A concise answer"
+    }
+  ]
+}
+
+Rules:
+- Return exactly ${requestedCount} flashcards.
+- Every question and answer must be non-empty.
+- Cover important concepts and avoid duplicate questions.
+- Do not invent facts not supported by the transcript.
+- Return JSON only, without Markdown fences.
+
+MODULE: ${courseModule.title}
+
+TRANSCRIPT:
+${transcript}
+`;
+
+    const raw = await generateResponse(prompt);
+    const cleaned = raw
+      .replace(/```json/gi, "")
+      .replace(/```/g, "")
+      .trim();
+
+    let result;
+
+    try {
+      const start = cleaned.indexOf("{");
+      const end = cleaned.lastIndexOf("}");
+
+      if (start < 0 || end < start) {
+        throw new Error("No JSON object found");
+      }
+
+      result = JSON.parse(cleaned.slice(start, end + 1));
+    } catch (error) {
+      console.error("Flashcard JSON parsing failed:", error.message);
+
+      return res.status(502).json({
+        success: false,
+        message: "AI returned invalid flashcard JSON. Please try again.",
+      });
+    }
+
+    const flashcards = result?.flashcards;
+
+    const valid =
+      Array.isArray(flashcards) &&
+      flashcards.length === requestedCount &&
+      flashcards.every(
+        (card) =>
+          typeof card.question === "string" &&
+          card.question.trim().length > 0 &&
+          typeof card.answer === "string" &&
+          card.answer.trim().length > 0
+      );
+
+    if (!valid) {
+      return res.status(502).json({
+        success: false,
+        message: "AI returned flashcards in an invalid format",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      moduleId: courseModule._id,
+      moduleTitle: courseModule.title,
+      courseId: course._id,
+      count: flashcards.length,
+      flashcards,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = { 
+  testGemini, 
+  ingestLectureTranscript, 
+  embedLectureTranscript, 
+  retrieveCourseContext, 
+  summarizeLecture, 
+  generateLectureQuiz, 
+  generateModuleFlashcards, 
+};
