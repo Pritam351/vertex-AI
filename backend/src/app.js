@@ -12,6 +12,8 @@ const learningRoutes = require("./modules/enrollments/learningRoutes");
 const assignmentRoutes = require("./modules/assignments/assignmentRoutes");
 const quizRoutes = require("./modules/quizzes/quizRoutes");
 const certificateRoutes = require("./modules/certificates/certificateRoutes");
+const discussionRoutes = require("./modules/discussions/discussionRoutes");
+const notificationRoutes = require("./modules/notifications/notificationRoutes");
 
 const aiRoutes = require("./ai/aiRoutes");
 
@@ -41,6 +43,8 @@ app.use("/api/v1", learningRoutes);
 app.use("/api/v1", assignmentRoutes);
 app.use("/api/v1", quizRoutes);
 app.use("/api/v1", certificateRoutes);
+app.use("/api/v1", discussionRoutes);
+app.use("/api/v1", notificationRoutes);
 
 app.use("/api/v1/ai", aiRoutes);
 
