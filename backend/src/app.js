@@ -15,6 +15,7 @@ const certificateRoutes = require("./modules/certificates/certificateRoutes");
 
 const aiRoutes = require("./ai/aiRoutes");
 
+const notFoundMiddleware = require("./middleware/notFoundMiddleware");
 const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
@@ -43,6 +44,7 @@ app.use("/api/v1", certificateRoutes);
 
 app.use("/api/v1/ai", aiRoutes);
 
+app.use(notFoundMiddleware);
 app.use(errorMiddleware);
 
 module.exports = app;
