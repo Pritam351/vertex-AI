@@ -6,6 +6,7 @@ const Course = require("../modules/courses/courseModel");
 const Enrollment = require("../modules/enrollments/enrollmentModel");
 const CourseModule = require("../modules/courses/moduleModel");
 const Lecture = require("../modules/courses/lectureModel");
+const FlashcardSet = require("./flashcardSetModel");
 
 const { createQuiz } = require("../modules/quizzes/quizService");
 const { generateResponse } = require("./geminiService");
@@ -750,25 +751,58 @@ ${transcript}
       });
     }
 
-    return res.status(200).json({
+    const savedSet = await FlashcardSet.create({
+      userId: req.user._id,
+      courseId: course._id,
+      moduleId: courseModule._id,
+      title: `${courseModule.title} Flashcards`,
+      cards: flashcards.map((card) => ({
+        question: card.question.trim(),
+        answer: card.answer.trim(),
+      })),
+    });
+
+    return res.status(201).json({
       success: true,
+      message: "Flashcards generated and saved successfully",
+      setId: savedSet._id,
       moduleId: courseModule._id,
       moduleTitle: courseModule.title,
       courseId: course._id,
-      count: flashcards.length,
-      flashcards,
+      count: savedSet.cards.length,
+      flashcards: savedSet.cards,
     });
   } catch (error) {
     next(error);
   }
 }
 
-module.exports = { 
-  testGemini, 
-  ingestLectureTranscript, 
-  embedLectureTranscript, 
-  retrieveCourseContext, 
-  summarizeLecture, 
-  generateLectureQuiz, 
-  generateModuleFlashcards, 
+async function getMyFlashcardSets(req, res, next) {
+  try {
+    const sets = await FlashcardSet.find({
+      userId: req.user._id,
+    })
+      .select("title courseId moduleId cards createdAt updatedAt")
+      .sort({ updatedAt: -1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      count: sets.length,
+      sets,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
+module.exports = {
+  testGemini,
+  ingestLectureTranscript,
+  embedLectureTranscript,
+  retrieveCourseContext,
+  summarizeLecture,
+  generateLectureQuiz,
+  generateModuleFlashcards,
+  getMyFlashcardSets,
 };
