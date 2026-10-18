@@ -796,6 +796,38 @@ async function getMyFlashcardSets(req, res, next) {
   }
 }
 
+async function getFlashcardSet(req, res, next) {
+  try {
+    const { setId } = req.params;
+
+    if (!mongoose.isValidObjectId(setId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid flashcard set ID",
+      });
+    }
+
+    const set = await FlashcardSet.findOne({
+      _id: setId,
+      userId: req.user._id,
+    }).lean();
+
+    if (!set) {
+      return res.status(404).json({
+        success: false,
+        message: "Flashcard set not found",
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      set,
+    });
+  } catch (error) {
+    next(error);
+  }
+}
+
 module.exports = {
   testGemini,
   ingestLectureTranscript,
@@ -805,4 +837,5 @@ module.exports = {
   generateLectureQuiz,
   generateModuleFlashcards,
   getMyFlashcardSets,
+  getFlashcardSet,
 };

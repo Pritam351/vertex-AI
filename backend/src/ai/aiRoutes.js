@@ -13,6 +13,7 @@ const {
   generateLectureQuiz,
   generateModuleFlashcards,
   getMyFlashcardSets,
+  getFlashcardSet,
 } = require("./aiController");
 
 const {
@@ -100,6 +101,13 @@ router.get(
   authMiddleware,
   requireRole("student"),
   getMyFlashcardSets
+);
+
+router.get(
+  "/flashcards/:setId",
+  authMiddleware,
+  requireRole("student"),
+  getFlashcardSet
 );
 
 module.exports = router;
