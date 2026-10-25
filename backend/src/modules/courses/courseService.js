@@ -46,6 +46,17 @@ const listCourses = async (query) => {
   };
 };
 
+
+const listInstructorCourses = async (user) => {
+  const Course = require("./courseModel");
+
+  return Course.find({ instructorId: user._id })
+    .select("-__v")
+    .sort({ updatedAt: -1 })
+    .lean();
+};
+
+
 const getCourseById = async (id) => {
   if (!mongoose.isValidObjectId(id)) {
     const error = new Error("Invalid course ID");
@@ -134,6 +145,7 @@ function escapeRegex(value) {
 module.exports = {
   createCourse,
   listCourses,
+  listInstructorCourses,
   getCourseById,
   updateCourse,
   deleteCourse,

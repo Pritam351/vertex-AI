@@ -39,6 +39,21 @@ const listCourses = async (req, res, next) => {
   }
 };
 
+
+const listMyCourses = async (req, res, next) => {
+  try {
+    const courses = await courseService.listInstructorCourses(req.user);
+
+    return res.status(200).json({
+      success: true,
+      data: { courses },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+
 const getCourseById = async (req, res, next) => {
   try {
     const course = await courseService.getCourseById(req.params.id);
@@ -96,6 +111,7 @@ const deleteCourse = async (req, res, next) => {
 module.exports = {
   createCourse,
   listCourses,
+  listMyCourses,
   getCourseById,
   updateCourse,
   deleteCourse,

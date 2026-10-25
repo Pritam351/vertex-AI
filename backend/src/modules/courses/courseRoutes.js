@@ -6,6 +6,7 @@ const requireRole = require("../../middleware/roleMiddleware");
 const {
   createCourse,
   listCourses,
+  listMyCourses,
   getCourseById,
   updateCourse,
   deleteCourse,
@@ -15,6 +16,14 @@ const router = express.Router();
 
 // Public catalog
 router.get("/", listCourses);
+
+router.get(
+  "/mine",
+  authMiddleware,
+  requireRole("instructor"),
+  listMyCourses
+);
+
 router.get("/:id", getCourseById);
 
 // Instructor/admin actions
