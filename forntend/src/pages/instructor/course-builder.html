@@ -1,0 +1,80 @@
+<section class="view" id="course-builder" data-view hidden>
+    <div class="section-intro">
+        <p class="eyebrow">COURSE BUILDER</p>
+        <h2>Shape your course</h2>
+        <p>Author one approved-backend workflow at a time. Lectures accept hosted URLs and optional transcript text;
+            this backend does not accept file uploads.</p>
+    </div>
+    <div class="builder-grid">
+        <form class="panel form-panel" id="course-form" novalidate>
+            <div class="panel-title"><span class="step-number">01</span>
+                <div>
+                    <h3>Create course</h3>
+                    <p>Courses are submitted as pending for approval.</p>
+                </div>
+            </div><label>Course title<input name="title" required minlength="3" maxlength="200"
+                    placeholder="e.g. Applied Prompt Engineering" /></label><label>Short description<textarea
+                    name="description" maxlength="5000"
+                    placeholder="What will learners be able to do?"></textarea></label>
+            <div class="form-row"><label>Category<input name="category" maxlength="80"
+                        placeholder="Artificial Intelligence" /></label><label>Difficulty<select name="difficulty">
+                        <option value="beginner">Beginner</option>
+                        <option value="intermediate">Intermediate</option>
+                        <option value="advanced">Advanced</option>
+                    </select></label></div>
+            <div class="form-row"><label>Thumbnail URL <input name="thumbnailUrl" type="url" maxlength="2048"
+                        placeholder="https://..." /></label><label>Price <input name="price" type="number" min="0"
+                        step="0.01" value="0" /></label></div>
+            <p class="form-message" data-message="course" role="alert" aria-live="polite"></p><button
+                class="button button-primary" type="submit">Create course <span aria-hidden="true">→</span></button>
+        </form>
+        <section class="panel builder-status" aria-live="polite">
+            <div class="panel-title"><span class="step-number">02</span>
+                <div>
+                    <h3>Active course</h3>
+                    <p>Select or create a course to build its curriculum.</p>
+                </div>
+            </div>
+            <div id="active-course-placeholder" class="context-placeholder"><span aria-hidden="true">◎</span>
+                <p>Create or select a course to unlock curriculum tools.</p>
+            </div>
+            <div id="active-course-context" hidden></div>
+        </section>
+    </div>
+    <div class="authoring-grid" id="curriculum-tools" aria-disabled="true">
+        <form class="panel form-panel subdued" id="module-form" novalidate>
+            <div class="panel-title"><span class="step-number">03</span>
+                <div>
+                    <h3>Add module</h3>
+                    <p>Group lessons into a clear sequence.</p>
+                </div>
+            </div><label>Module title<input name="title" required minlength="2" maxlength="200"
+                    placeholder="e.g. Foundations" /></label><label>Position <input name="orderIndex" type="number"
+                    min="1" placeholder="Auto" /></label>
+            <p class="form-message" data-message="module" role="alert" aria-live="polite"></p><button
+                class="button button-secondary" type="submit">Add module</button>
+            <div class="created-list" id="module-list"></div>
+        </form>
+        <form class="panel form-panel subdued" id="lecture-form" novalidate>
+            <div class="panel-title"><span class="step-number">04</span>
+                <div>
+                    <h3>Add lecture</h3>
+                    <p>Use hosted resource links; uploads are not supported.</p>
+                </div>
+            </div><label>Module<select name="moduleId" id="lecture-module" required disabled>
+                    <option value="">Add a module first</option>
+                </select></label><label>Lecture title<input name="title" required minlength="2" maxlength="200"
+                    placeholder="e.g. Designing useful prompts" /></label>
+            <div class="form-row"><label>Video URL<input name="videoUrl" type="url"
+                        placeholder="https://..." /></label><label>Duration (seconds)<input name="durationSeconds"
+                        type="number" min="0" placeholder="600" /></label></div><label>Resources <small>One URL per
+                    line</small><textarea name="resourceUrls"
+                    placeholder="https://example.com/worksheet.pdf"></textarea></label><label>Transcript
+                <small>Optional, used by AI features</small><textarea name="transcript" maxlength="100000"
+                    placeholder="Paste lecture transcript text"></textarea></label>
+            <p class="form-message" data-message="lecture" role="alert" aria-live="polite"></p><button
+                class="button button-secondary" type="submit">Add lecture</button>
+            <div class="created-list" id="lecture-list"></div>
+        </form>
+    </div>
+</section>

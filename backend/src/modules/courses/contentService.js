@@ -52,15 +52,21 @@ const createModule = async (courseId, data, user) => {
   });
 };
 
-const listModules = async (courseId) => {
+const listModules = async (courseId, user) => {
   if (!validId(courseId)) fail(400, "Invalid course ID");
 
-  const course = await Course.findOne({
-    _id: courseId,
-    status: "approved",
-  });
-
+  const course = await Course.findById(courseId);
   if (!course) fail(404, "Course not found");
+
+  if (course.status !== "approved") {
+    if (
+      !user ||
+      (user.role !== "admin" &&
+        course.instructorId.toString() !== user._id.toString())
+    ) {
+      fail(404, "Course not found");
+    }
+  }
 
   const modules = await CourseModule.find({ courseId })
     .sort({ orderIndex: 1 })

@@ -1,0 +1,50 @@
+
+<section class="view is-active" id="overview" data-view>
+  <div class="welcome-row">
+    <div>
+      <h2>Good to see you, <span id="welcome-name">Instructor</span>.</h2>
+      <p>Create the structure learners will follow. Your current course stays available while this session is open.</p>
+    </div>
+    <button class="button button-primary" type="button" data-go="course-builder">
+      <span>New course</span><span aria-hidden="true">+</span>
+    </button>
+  </div>
+
+  <section aria-labelledby="course-status-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">MY COURSES</p>
+        <h3 id="course-status-heading">All courses</h3>
+      </div>
+      <span class="count-pill" id="course-count">0 courses</span>
+    </div>
+
+    <div id="course-empty" class="empty-state">
+      <div class="empty-icon" aria-hidden="true">▣</div>
+      <h3>No courses found</h3>
+      <p>Start with a course outline. It will be sent to the backend for approval before it is public.</p>
+      <button class="button button-secondary" type="button" data-go="course-builder">Create a course</button>
+    </div>
+
+    <div id="courses-list-container" class="courses-list-grid"></div>
+    <article id="course-summary" class="course-summary" hidden></article>
+  </section>
+
+  <section class="availability-grid" aria-label="Workspace availability">
+    <article>
+      <span class="availability-icon" aria-hidden="true">✓</span>
+      <h3>Authoring</h3>
+      <p>Create courses, modules, lectures, quizzes, and assignments.</p>
+    </article>
+    <article>
+      <span class="availability-icon muted" aria-hidden="true">—</span>
+      <h3>Analytics</h3>
+      <p>Unavailable until the backend exposes instructor analytics.</p>
+    </article>
+    <article>
+      <span class="availability-icon muted" aria-hidden="true">—</span>
+      <h3>Submission review</h3>
+      <p>Unavailable until instructor submission listing is implemented.</p>
+    </article>
+  </section>
+</section>

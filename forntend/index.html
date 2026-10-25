@@ -9,11 +9,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="assets/css/app.css" />
+    <link rel="stylesheet" href="public/assets/css/app.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to workspace</a>
-    <main id="app">
+    <div id="app">
       <section class="auth-screen" id="auth-screen" aria-labelledby="login-title">
         <div class="auth-brand">
           <a class="brand" href="index.html" aria-label="VertexLearn AI home">
@@ -70,41 +70,12 @@
           </header>
 
           <main id="main-content" class="content">
-            <section class="view is-active" id="overview" data-view>
-              <div class="welcome-row">
-                <div><h2>Good to see you, <span id="welcome-name">Instructor</span>.</h2><p>Create the structure learners will follow. Your current course stays available while this session is open.</p></div>
-                <button class="button button-primary" type="button" data-go="course-builder"><span>New course</span><span aria-hidden="true">+</span></button>
-              </div>
-              <section class="notice notice-info"><span aria-hidden="true">i</span><div><strong>Course catalogue limitation</strong><p>The current API does not provide an instructor-owned course list. Courses created in this session appear below; after refresh, use the course ID from your creation confirmation to continue authoring.</p></div></section>
-              <section aria-labelledby="course-status-heading"><div class="section-heading"><div><p class="eyebrow">ACTIVE WORK</p><h3 id="course-status-heading">Current course</h3></div><span class="count-pill" id="course-count">0 course</span></div><div id="course-empty" class="empty-state"><div class="empty-icon" aria-hidden="true">▣</div><h3>No course in this session</h3><p>Start with a course outline. It will be sent to the backend for approval before it is public.</p><button class="button button-secondary" type="button" data-go="course-builder">Create a course</button></div><article id="course-summary" class="course-summary" hidden></article></section>
-              <section class="availability-grid" aria-label="Workspace availability"><article><span class="availability-icon" aria-hidden="true">✓</span><h3>Authoring</h3><p>Create courses, modules, lectures, quizzes, and assignments.</p></article><article><span class="availability-icon muted" aria-hidden="true">—</span><h3>Analytics</h3><p>Unavailable until the backend exposes instructor analytics.</p></article><article><span class="availability-icon muted" aria-hidden="true">—</span><h3>Submission review</h3><p>Unavailable until instructor submission listing is implemented.</p></article></section>
-            </section>
-
-            <section class="view" id="course-builder" data-view hidden>
-              <div class="section-intro"><p class="eyebrow">COURSE BUILDER</p><h2>Shape your course</h2><p>Author one approved-backend workflow at a time. Lectures accept hosted URLs and optional transcript text; this backend does not accept file uploads.</p></div>
-              <div class="builder-grid">
-                <form class="panel form-panel" id="course-form" novalidate><div class="panel-title"><span class="step-number">01</span><div><h3>Create course</h3><p>Courses are submitted as pending for approval.</p></div></div><label>Course title<input name="title" required minlength="3" maxlength="200" placeholder="e.g. Applied Prompt Engineering" /></label><label>Short description<textarea name="description" maxlength="5000" placeholder="What will learners be able to do?"></textarea></label><div class="form-row"><label>Category<input name="category" maxlength="80" placeholder="Artificial Intelligence" /></label><label>Difficulty<select name="difficulty"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label></div><div class="form-row"><label>Thumbnail URL <input name="thumbnailUrl" type="url" maxlength="2048" placeholder="https://..." /></label><label>Price <input name="price" type="number" min="0" step="0.01" value="0" /></label></div><p class="form-message" data-message="course" role="alert" aria-live="polite"></p><button class="button button-primary" type="submit">Create course <span aria-hidden="true">→</span></button></form>
-                <section class="panel builder-status" aria-live="polite"><div class="panel-title"><span class="step-number">02</span><div><h3>Active course</h3><p>Created courses remain in this browser session.</p></div></div><div id="active-course-placeholder" class="context-placeholder"><span aria-hidden="true">◎</span><p>Create a course to unlock curriculum tools.</p></div><div id="active-course-context" hidden></div></section>
-              </div>
-              <div class="authoring-grid" id="curriculum-tools" aria-disabled="true">
-                <form class="panel form-panel subdued" id="module-form" novalidate><div class="panel-title"><span class="step-number">03</span><div><h3>Add module</h3><p>Group lessons into a clear sequence.</p></div></div><label>Module title<input name="title" required minlength="2" maxlength="200" placeholder="e.g. Foundations" /></label><label>Position <input name="orderIndex" type="number" min="1" placeholder="Auto" /></label><p class="form-message" data-message="module" role="alert" aria-live="polite"></p><button class="button button-secondary" type="submit">Add module</button><div class="created-list" id="module-list"></div></form>
-                <form class="panel form-panel subdued" id="lecture-form" novalidate><div class="panel-title"><span class="step-number">04</span><div><h3>Add lecture</h3><p>Use hosted resource links; uploads are not supported.</p></div></div><label>Module<select name="moduleId" id="lecture-module" required disabled><option value="">Add a module first</option></select></label><label>Lecture title<input name="title" required minlength="2" maxlength="200" placeholder="e.g. Designing useful prompts" /></label><div class="form-row"><label>Video URL<input name="videoUrl" type="url" placeholder="https://..." /></label><label>Duration (seconds)<input name="durationSeconds" type="number" min="0" placeholder="600" /></label></div><label>Resources <small>One URL per line</small><textarea name="resourceUrls" placeholder="https://example.com/worksheet.pdf"></textarea></label><label>Transcript <small>Optional, used by AI features</small><textarea name="transcript" maxlength="100000" placeholder="Paste lecture transcript text"></textarea></label><p class="form-message" data-message="lecture" role="alert" aria-live="polite"></p><button class="button button-secondary" type="submit">Add lecture</button><div class="created-list" id="lecture-list"></div></form>
-              </div>
-            </section>
-
-            <section class="view" id="assessments" data-view hidden>
-              <div class="section-intro"><p class="eyebrow">ASSESSMENTS</p><h2>Check understanding</h2><p>Create a single-choice quiz, publish it when ready, or create an assignment with a clear deadline.</p></div>
-              <section class="notice notice-info"><span aria-hidden="true">i</span><div><strong>Real data only</strong><p>Assessment tools require the active course created in this session. The backend does not yet provide an instructor assessment list after refresh.</p></div></section>
-              <div class="assessment-grid" id="assessment-tools" aria-disabled="true">
-                <form class="panel form-panel subdued" id="quiz-form" novalidate><div class="panel-title"><span class="step-number">05</span><div><h3>Create a quiz</h3><p>One multiple-choice question is required for the first version.</p></div></div><label>Quiz title<input name="title" required minlength="3" maxlength="200" placeholder="Module 1 knowledge check" /></label><label>Instructions<textarea name="instructions" maxlength="5000" placeholder="Set expectations for learners"></textarea></label><label>Question<input name="questionText" required maxlength="5000" placeholder="What is the main purpose of a prompt?" /></label><div class="options-grid"><label>Option A<input name="optionA" required maxlength="1000" /></label><label>Option B<input name="optionB" required maxlength="1000" /></label><label>Option C<input name="optionC" required maxlength="1000" /></label><label>Option D<input name="optionD" required maxlength="1000" /></label></div><label>Correct option<select name="correctOption"><option value="0">Option A</option><option value="1">Option B</option><option value="2">Option C</option><option value="3">Option D</option></select></label><div class="form-row"><label>Passing score<input name="passingScore" type="number" min="0" max="100" value="50" /></label><label>Time limit (minutes)<input name="timeLimitMinutes" type="number" min="1" max="300" value="30" /></label></div><p class="form-message" data-message="quiz" role="alert" aria-live="polite"></p><button class="button button-secondary" type="submit">Create quiz</button><div class="created-list" id="quiz-list"></div></form>
-                <form class="panel form-panel subdued" id="assignment-form" novalidate><div class="panel-title"><span class="step-number">06</span><div><h3>Create assignment</h3><p>Submissions are URL-based in the existing API.</p></div></div><label>Assignment title<input name="title" required minlength="3" maxlength="200" placeholder="Prompt improvement exercise" /></label><label>Instructions<textarea name="instructions" required maxlength="10000" placeholder="Describe what learners should submit"></textarea></label><label>Due date<input name="dueDate" type="datetime-local" required /></label><label>Rubric <small>Optional JSON object</small><textarea name="rubric" placeholder='{"clarity": 40, "reasoning": 60}'></textarea></label><p class="form-message" data-message="assignment" role="alert" aria-live="polite"></p><button class="button button-secondary" type="submit">Create assignment</button><div class="created-list" id="assignment-list"></div></form>
-              </div>
-            </section>
+            <div id="instructor-page-container"></div>
           </main>
         </div>
       </section>
-    </main>
+    </div>
     <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-    <script type="module" src="assets/js/pages/instructor.js"></script>
+    <script type="module" src="public/assets/js/pages/instructor.js"></script>
   </body>
 </html>

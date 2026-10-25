@@ -34,7 +34,7 @@ const createModule = async (req, res, next) => {
 
 const listModules = async (req, res, next) => {
   try {
-    const modules = await service.listModules(req.params.courseId);
+    const modules = await service.listModules(req.params.courseId, req.user);
     return res.status(200).json({
       success: true,
       data: { modules },

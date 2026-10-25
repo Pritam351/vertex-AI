@@ -1,0 +1,60 @@
+<section class="view" id="assessments" data-view hidden>
+    <div class="section-intro">
+        <p class="eyebrow">ASSESSMENTS</p>
+        <h2>Check understanding</h2>
+        <p>Create a single-choice quiz, publish it when ready, or create an assignment with a clear deadline.</p>
+    </div>
+    <section class="notice notice-info"><span aria-hidden="true">i</span>
+        <div><strong id="assessment-course-label">Active Course: None</strong>
+            <p id="assessment-course-desc">Assessments are created and managed for the active course selected in your studio.</p>
+        </div>
+    </section>
+    <div class="assessment-grid" id="assessment-tools" aria-disabled="true">
+        <form class="panel form-panel subdued" id="quiz-form" novalidate>
+            <div class="panel-title"><span class="step-number">05</span>
+                <div>
+                    <h3>Create a quiz</h3>
+                    <p>One multiple-choice question is required for the first version.</p>
+                </div>
+            </div><label>Quiz title<input name="title" required minlength="3" maxlength="200"
+                    placeholder="Module 1 knowledge check" /></label><label>Instructions<textarea name="instructions"
+                    maxlength="5000"
+                    placeholder="Set expectations for learners"></textarea></label><label>Question<input
+                    name="questionText" required maxlength="5000"
+                    placeholder="What is the main purpose of a prompt?" /></label>
+            <div class="options-grid"><label>Option A<input name="optionA" required
+                        maxlength="1000" /></label><label>Option B<input name="optionB" required
+                        maxlength="1000" /></label><label>Option C<input name="optionC" required
+                        maxlength="1000" /></label><label>Option D<input name="optionD" required
+                        maxlength="1000" /></label></div><label>Correct option<select name="correctOption">
+                    <option value="0">Option A</option>
+                    <option value="1">Option B</option>
+                    <option value="2">Option C</option>
+                    <option value="3">Option D</option>
+                </select></label>
+            <div class="form-row"><label>Passing score<input name="passingScore" type="number" min="0" max="100"
+                        value="50" /></label><label>Time limit (minutes)<input name="timeLimitMinutes" type="number"
+                        min="1" max="300" value="30" /></label></div>
+            <p class="form-message" data-message="quiz" role="alert" aria-live="polite"></p><button
+                class="button button-secondary" type="submit">Create quiz</button>
+            <div class="created-list" id="quiz-list"></div>
+        </form>
+        <form class="panel form-panel subdued" id="assignment-form" novalidate>
+            <div class="panel-title"><span class="step-number">06</span>
+                <div>
+                    <h3>Create assignment</h3>
+                    <p>Submissions are URL-based in the existing API.</p>
+                </div>
+            </div><label>Assignment title<input name="title" required minlength="3" maxlength="200"
+                    placeholder="Prompt improvement exercise" /></label><label>Instructions<textarea name="instructions"
+                    required maxlength="10000"
+                    placeholder="Describe what learners should submit"></textarea></label><label>Due date<input
+                    name="dueDate" type="datetime-local" required /></label><label>Rubric <small>Optional JSON
+                    object</small><textarea name="rubric"
+                    placeholder='{"clarity": 40, "reasoning": 60}'></textarea></label>
+            <p class="form-message" data-message="assignment" role="alert" aria-live="polite"></p><button
+                class="button button-secondary" type="submit">Create assignment</button>
+            <div class="created-list" id="assignment-list"></div>
+        </form>
+    </div>
+</section>
