@@ -1,0 +1,24 @@
+<p class="eyebrow">GET STARTED</p>
+<h2>Create your student account</h2>
+<p>Sign up to start discovering courses, tracking your learning journey, and utilizing AI study tools.</p>
+<form id="register-form" novalidate>
+  <label>
+    Full name
+    <input name="fullName" type="text" autocomplete="name" required placeholder="Alex Mercer" />
+  </label>
+  <label>
+    Email
+    <input name="email" type="email" autocomplete="email" required placeholder="alex@example.com" />
+  </label>
+  <label>
+    Password
+    <input name="password" type="password" autocomplete="new-password" required minlength="6" placeholder="Choose a password (min. 6 characters)" />
+  </label>
+  <p class="form-message" id="register-message" role="alert" aria-live="polite"></p>
+  <button class="button button-primary button-full" type="submit">
+    <span>Create account</span><span aria-hidden="true">→</span>
+  </button>
+</form>
+<p class="auth-footnote" style="margin-top: 1.5rem;">
+  Already have an account? <a href="#/login" style="color: var(--violet-light); font-weight: 600;">Sign in</a>
+</p>

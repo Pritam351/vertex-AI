@@ -1,0 +1,50 @@
+<section class="view is-active" id="course-catalog">
+  <div class="section-intro">
+    <p class="eyebrow">COURSE CATALOG</p>
+    <h2>Expand your knowledge</h2>
+    <p>Discover interactive courses with structured modules, assessments, and AI-assisted tutoring.</p>
+  </div>
+
+  <div class="panel" style="padding: 1.25rem; margin-bottom: 2rem;">
+    <form id="catalog-filter-form" style="display:flex; flex-wrap:wrap; gap:1rem; align-items:flex-end;">
+      <label style="flex: 2; min-width: 220px; margin:0;">
+        Search courses
+        <input name="search" type="search" placeholder="Filter by title or topic…" />
+      </label>
+      <label style="flex: 1; min-width: 150px; margin:0;">
+        Category
+        <input name="category" placeholder="e.g. AI, Python" />
+      </label>
+      <label style="flex: 1; min-width: 140px; margin:0;">
+        Difficulty
+        <select name="difficulty">
+          <option value="">All Levels</option>
+          <option value="beginner">Beginner</option>
+          <option value="intermediate">Intermediate</option>
+          <option value="advanced">Advanced</option>
+        </select>
+      </label>
+      <button class="button button-primary" type="submit" style="height: 44px; align-self: flex-end;">
+        Apply Filter
+      </button>
+    </form>
+  </div>
+
+  <section aria-labelledby="catalog-courses-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">EXPLORE</p>
+        <h3 id="catalog-courses-heading">Available Courses</h3>
+      </div>
+      <span class="count-pill" id="catalog-count">0 courses</span>
+    </div>
+
+    <div id="catalog-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">▣</div>
+      <h3>No courses match your filter</h3>
+      <p>Try adjusting your search criteria or clear filters to view all courses.</p>
+    </div>
+
+    <div id="catalog-list-container" class="courses-list-grid"></div>
+  </section>
+</section>

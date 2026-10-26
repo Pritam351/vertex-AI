@@ -4,78 +4,17 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="vertex-api-base" content="http://localhost:5000/api/v1" />
-    <title>VertexLearn AI | Instructor Studio</title>
-    <meta name="description" content="VertexLearn AI instructor course authoring workspace." />
+    <title>VertexLearn AI | Learning & Teaching Platform</title>
+    <meta name="description" content="VertexLearn AI unified platform for instructors, students, and administrators." />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="public/assets/css/app.css" />
+    <link rel="stylesheet" href="src/styles/app.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to workspace</a>
-    <div id="app">
-      <section class="auth-screen" id="auth-screen" aria-labelledby="login-title">
-        <div class="auth-brand">
-          <a class="brand" href="index.html" aria-label="VertexLearn AI home">
-            <span class="brand-mark" aria-hidden="true">✦</span>
-            <span>VERTEX<span>LEARN</span> AI</span>
-          </a>
-          <p class="eyebrow">INSTRUCTOR STUDIO</p>
-          <h1 id="login-title">Build learning that<br /><em>moves people forward.</em></h1>
-          <p class="auth-copy">Create a course, organise its curriculum, and prepare assessments from one focused workspace.</p>
-          <ul class="auth-points">
-            <li>Course and curriculum authoring</li>
-            <li>Quiz publishing workflow</li>
-            <li>Assignment creation</li>
-          </ul>
-        </div>
-        <div class="auth-card">
-          <p class="eyebrow">WELCOME BACK</p>
-          <h2>Sign in to your studio</h2>
-          <p>Use an existing instructor account. Registration creates student accounts only.</p>
-          <form id="login-form" novalidate>
-            <label>Email<input name="email" type="email" autocomplete="email" required placeholder="you@example.com" /></label>
-            <label>Password<input name="password" type="password" autocomplete="current-password" required minlength="1" placeholder="Your password" /></label>
-            <p class="form-message" id="login-message" role="alert" aria-live="polite"></p>
-            <button class="button button-primary button-full" type="submit"><span>Sign in</span><span aria-hidden="true">→</span></button>
-          </form>
-          <p class="auth-footnote">Access is verified by the API. Student accounts cannot enter this workspace.</p>
-        </div>
-      </section>
-
-      <section class="workspace" id="workspace" hidden>
-        <aside class="sidebar" id="sidebar" aria-label="Instructor navigation">
-          <a class="brand" href="#overview" aria-label="VertexLearn AI Instructor Studio">
-            <span class="brand-mark" aria-hidden="true">✦</span>
-            <span>VERTEX<span>LEARN</span> AI</span>
-          </a>
-          <p class="sidebar-label">INSTRUCTOR STUDIO</p>
-          <!-- <button class="icon-button mobile-menu" id="menu-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button> -->
-          <nav class="sidebar-nav" aria-label="Workspace sections">
-            <a href="#overview" class="nav-link is-active" data-section="overview"><span aria-hidden="true">◈</span>Overview</a>
-            <a href="#course-builder" class="nav-link" data-section="course-builder"><span aria-hidden="true">▣</span>Course builder</a>
-            <a href="#assessments" class="nav-link" data-section="assessments"><span aria-hidden="true">◇</span>Assessments</a>
-          </nav>
-          <div class="sidebar-note">
-            <span class="status-dot" aria-hidden="true"></span>
-            <div><strong>API-connected</strong><small>Content saves to your active course.</small></div>
-          </div>
-        </aside>
-
-        <div class="workspace-body">
-          <header class="topbar">
-            <button class="icon-button mobile-menu" id="menu-toggle" aria-label="Toggle navigation" aria-expanded="false">☰</button>
-            <div class="page-context"><p class="eyebrow">INSTRUCTOR WORKSPACE</p><h1 id="page-title">Overview</h1></div>
-            <div class="account-menu"><span class="avatar" id="user-initials" aria-hidden="true">--</span><div><strong id="user-name">Instructor</strong><small id="user-role">Instructor</small></div><button class="text-button" id="sign-out" type="button">Sign out</button></div>
-          </header>
-
-          <main id="main-content" class="content">
-            <div id="instructor-page-container"></div>
-          </main>
-        </div>
-      </section>
-    </div>
+    <div id="app"></div>
     <div class="toast-region" id="toast-region" aria-live="polite" aria-atomic="true"></div>
-    <script type="module" src="public/assets/js/pages/instructor.js"></script>
+    <script type="module" src="src/main.js"></script>
   </body>
 </html>

@@ -1,0 +1,24 @@
+@import "../../public/assets/css/app.css";
+
+/* Additional multi-role utility classes */
+.is-active-card {
+  border-color: var(--violet) !important;
+  box-shadow: 0 0 0 1px var(--violet), var(--shadow);
+}
+
+.is-active-lecture {
+  background: var(--surface) !important;
+  border-left: 3px solid var(--violet);
+  padding-left: calc(0.75rem - 3px) !important;
+}
+
+.mini-button {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+.toast-fade-out {
+  opacity: 0;
+  transform: translateY(-8px);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}

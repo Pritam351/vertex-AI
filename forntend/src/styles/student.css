@@ -1,0 +1,4 @@
+/* Student portal styles */
+.player-layout {
+  min-height: calc(100vh - 120px);
+}

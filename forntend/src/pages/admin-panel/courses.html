@@ -1,0 +1,25 @@
+<section class="view is-active" id="admin-courses">
+  <div class="section-intro">
+    <p class="eyebrow">MODERATION</p>
+    <h2>Course Approvals</h2>
+    <p>Review submitted instructor courses before publishing them to the public student catalog.</p>
+  </div>
+
+  <section aria-labelledby="pending-courses-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">SUBMISSIONS</p>
+        <h3 id="pending-courses-heading">Pending Courses</h3>
+      </div>
+      <span class="count-pill" id="pending-count">0 pending</span>
+    </div>
+
+    <div id="pending-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">✓</div>
+      <h3>All caught up</h3>
+      <p>There are no courses currently waiting for administrative review.</p>
+    </div>
+
+    <div id="pending-list-container" class="courses-list-grid"></div>
+  </section>
+</section>

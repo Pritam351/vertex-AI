@@ -1,0 +1,48 @@
+<section class="view is-active" id="student-dashboard">
+  <div class="welcome-row">
+    <div>
+      <h2>Welcome back, <span id="student-welcome-name">Student</span>!</h2>
+      <p>Pick up where you left off and keep moving toward your learning goals.</p>
+    </div>
+    <a class="button button-primary" href="#/student/catalog">
+      <span>Explore catalog</span><span aria-hidden="true">→</span>
+    </a>
+  </div>
+
+  <section class="stats-overview" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem;">
+    <div class="panel" style="padding: 1.25rem;">
+      <p class="eyebrow">ENROLLED</p>
+      <h3 id="stat-enrolled" style="font-size: 1.8rem; margin: 0.25rem 0;">0</h3>
+      <small style="color:var(--muted);">Total courses enrolled</small>
+    </div>
+    <div class="panel" style="padding: 1.25rem;">
+      <p class="eyebrow">ACTIVE LEARNING</p>
+      <h3 id="stat-active" style="font-size: 1.8rem; margin: 0.25rem 0;">0</h3>
+      <small style="color:var(--muted);">Courses in progress</small>
+    </div>
+    <div class="panel" style="padding: 1.25rem;">
+      <p class="eyebrow">COMPLETED</p>
+      <h3 id="stat-completed" style="font-size: 1.8rem; margin: 0.25rem 0;">0</h3>
+      <small style="color:var(--muted);">Certificates earned</small>
+    </div>
+  </section>
+
+  <section aria-labelledby="enrolled-courses-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">MY LEARNING</p>
+        <h3 id="enrolled-courses-heading">In-Progress Courses</h3>
+      </div>
+      <span class="count-pill" id="enrolled-count">0 enrolled</span>
+    </div>
+
+    <div id="enrolled-empty" class="empty-state">
+      <div class="empty-icon" aria-hidden="true">▣</div>
+      <h3>No courses enrolled yet</h3>
+      <p>Discover courses crafted by industry professionals and start your learning path today.</p>
+      <a class="button button-secondary" href="#/student/catalog">Browse courses</a>
+    </div>
+
+    <div id="enrolled-list-container" class="courses-list-grid"></div>
+  </section>
+</section>

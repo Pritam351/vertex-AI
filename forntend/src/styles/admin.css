@@ -1,0 +1,5 @@
+/* Admin panel styles */
+.status.pending {
+  color: #ffc107;
+  border-color: rgba(255, 193, 7, 0.3);
+}

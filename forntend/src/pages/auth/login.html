@@ -1,0 +1,20 @@
+<p class="eyebrow">WELCOME BACK</p>
+<h2>Sign in to VertexLearn AI</h2>
+<p>Enter your credentials to access your instructor studio, student workspace, or admin panel.</p>
+<form id="login-form" novalidate>
+  <label>
+    Email
+    <input name="email" type="email" autocomplete="email" required placeholder="you@example.com" />
+  </label>
+  <label>
+    Password
+    <input name="password" type="password" autocomplete="current-password" required minlength="1" placeholder="Your password" />
+  </label>
+  <p class="form-message" id="login-message" role="alert" aria-live="polite"></p>
+  <button class="button button-primary button-full" type="submit">
+    <span>Sign in</span><span aria-hidden="true">→</span>
+  </button>
+</form>
+<p class="auth-footnote" style="margin-top: 1.5rem;">
+  Don't have an account? <a href="#/register" style="color: var(--violet-light); font-weight: 600;">Register as a student</a>
+</p>
