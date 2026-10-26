@@ -14,29 +14,61 @@
             <div class="panel-title"><span class="step-number">05</span>
                 <div>
                     <h3>Create a quiz</h3>
-                    <p>One multiple-choice question is required for the first version.</p>
+                    <p>Build quizzes with single-choice MCQs, multi-select questions, and short answers.</p>
                 </div>
-            </div><label>Quiz title<input name="title" required minlength="3" maxlength="200"
-                    placeholder="Module 1 knowledge check" /></label><label>Instructions<textarea name="instructions"
-                    maxlength="5000"
-                    placeholder="Set expectations for learners"></textarea></label><label>Question<input
-                    name="questionText" required maxlength="5000"
-                    placeholder="What is the main purpose of a prompt?" /></label>
-            <div class="options-grid"><label>Option A<input name="optionA" required
-                        maxlength="1000" /></label><label>Option B<input name="optionB" required
-                        maxlength="1000" /></label><label>Option C<input name="optionC" required
-                        maxlength="1000" /></label><label>Option D<input name="optionD" required
-                        maxlength="1000" /></label></div><label>Correct option<select name="correctOption">
-                    <option value="0">Option A</option>
-                    <option value="1">Option B</option>
-                    <option value="2">Option C</option>
-                    <option value="3">Option D</option>
-                </select></label>
-            <div class="form-row"><label>Passing score<input name="passingScore" type="number" min="0" max="100"
-                        value="50" /></label><label>Time limit (minutes)<input name="timeLimitMinutes" type="number"
-                        min="1" max="300" value="30" /></label></div>
-            <p class="form-message" data-message="quiz" role="alert" aria-live="polite"></p><button
-                class="button button-secondary" type="submit">Create quiz</button>
+            </div>
+            <label>Quiz title<input name="title" required minlength="3" maxlength="200"
+                    placeholder="Module 1 knowledge check" /></label>
+            <label>Instructions<textarea name="instructions" maxlength="5000"
+                    placeholder="Set expectations for learners"></textarea></label>
+            <div class="form-row">
+                <label>Passing score (%)<input name="passingScore" type="number" min="0" max="100"
+                        value="50" /></label>
+                <label>Time limit (minutes)<input name="timeLimitMinutes" type="number"
+                        min="1" max="300" value="30" /></label>
+            </div>
+
+            <!-- Quiz Questions Section -->
+            <div class="quiz-questions-section">
+                <div class="quiz-questions-header">
+                    <div>
+                        <h4 class="quiz-section-title">Questions (<span id="quiz-question-count">0</span>)</h4>
+                        <p class="quiz-section-desc">Create normal MCQs, multi-select MCQs, or short-answer questions</p>
+                    </div>
+                    <span class="quiz-total-points-badge" id="quiz-total-points">0 Total Points</span>
+                </div>
+
+                <!-- Generator / Batch Toolbar -->
+                <div class="quiz-generator-toolbar">
+                    <div class="generator-group">
+                        <label class="generator-label" for="add-q-type">Question Type</label>
+                        <select id="add-q-type" class="generator-select">
+                            <option value="mcq">Single-choice MCQ</option>
+                            <option value="multi_select">Multi-select MCQ</option>
+                            <option value="short_answer">Short answer</option>
+                        </select>
+                    </div>
+                    <div class="generator-group generator-qty">
+                        <label class="generator-label" for="add-q-qty">Quantity</label>
+                        <input id="add-q-qty" class="generator-input" type="number" min="1" max="20" value="1" />
+                    </div>
+                    <button type="button" class="button button-primary generator-btn" id="btn-add-questions">
+                        + Add Questions
+                    </button>
+                </div>
+
+                <!-- Dynamic container for question cards -->
+                <div id="quiz-questions-list" class="quiz-questions-list"></div>
+
+                <div class="quiz-questions-footer">
+                    <button type="button" class="button button-secondary button-sm" id="btn-add-single-q">
+                        + Add One Question
+                    </button>
+                </div>
+            </div>
+
+            <p class="form-message" data-message="quiz" role="alert" aria-live="polite"></p>
+            <button class="button button-secondary" type="submit">Create quiz</button>
             <div class="created-list" id="quiz-list"></div>
         </form>
         <form class="panel form-panel subdued" id="assignment-form" novalidate>

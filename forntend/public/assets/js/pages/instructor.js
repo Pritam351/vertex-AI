@@ -233,7 +233,7 @@ function render() {
   }
   const assessDesc = $("#assessment-course-desc");
   if (assessDesc) {
-    assessDesc.textContent = course 
+    assessDesc.textContent = course
       ? `Assessments are linked to "${course.title}". (${state.workflow.quizzes.length} quizzes, ${state.workflow.assignments.length} assignments found)`
       : "Select or create a course to unlock assessment tools.";
   }
@@ -263,7 +263,10 @@ function render() {
   const quizList = $("#quiz-list");
   if (quizList) {
     quizList.innerHTML = state.workflow.quizzes.length
-      ? state.workflow.quizzes.map((item) => `<div class="created-item"><span class="status ${item.isPublished ? "published" : "pending"}">${item.isPublished ? "Published" : "Draft"}</span><strong>${escapeHtml(item.title)}</strong>${item.isPublished ? "" : `<button class="mini-button" type="button" data-publish="${item._id}">Publish</button>`}</div>`).join("")
+      ? state.workflow.quizzes.map((item) => {
+        const qCount = item.questions?.length || 0;
+        return `<div class="created-item"><span class="status ${item.isPublished ? "published" : "pending"}">${item.isPublished ? "Published" : "Draft"}</span><strong>${escapeHtml(item.title)}</strong><small style="color:var(--muted);">${qCount} ${qCount === 1 ? "question" : "questions"} • Pass: ${item.passingScore ?? 50}%</small>${item.isPublished ? "" : `<button class="mini-button" type="button" data-publish="${item._id}">Publish</button>`}</div>`;
+      }).join("")
       : '<p style="color:var(--muted); font-size:0.8rem; margin-top:0.5rem;">No quizzes created yet.</p>';
   }
 
@@ -460,30 +463,374 @@ function bindWorkspaceEventListeners() {
     }
   });
 
+  // Quiz Builder State and Helpers
+  const LETTERS = ["A", "B", "C", "D", "E", "F", "G", "H"];
+  let quizQuestions = [];
+
+  function createDefaultQuestion(type = "mcq") {
+    const id = "q_" + Date.now() + "_" + Math.random().toString(36).substr(2, 6);
+    if (type === "short_answer") {
+      return {
+        id,
+        type: "short_answer",
+        text: "",
+        points: 1,
+        options: [],
+        correctAnswer: ""
+      };
+    }
+    return {
+      id,
+      type,
+      text: "",
+      points: 1,
+      options: [
+        { text: "", isCorrect: true },
+        { text: "", isCorrect: false },
+        { text: "", isCorrect: false },
+        { text: "", isCorrect: false }
+      ],
+      correctAnswer: ""
+    };
+  }
+
+  function initQuizBuilder() {
+    if (!quizQuestions.length) {
+      quizQuestions = [createDefaultQuestion("mcq")];
+    }
+    renderQuizQuestions();
+  }
+
+  function renderQuizQuestions() {
+    const container = $("#quiz-questions-list");
+    if (!container) return;
+
+    const countEl = $("#quiz-question-count");
+    const totalPointsEl = $("#quiz-total-points");
+    if (countEl) countEl.textContent = quizQuestions.length;
+
+    const totalPoints = quizQuestions.reduce((sum, q) => sum + (Number(q.points) || 1), 0);
+    if (totalPointsEl) totalPointsEl.textContent = `${totalPoints} Total ${totalPoints === 1 ? "Point" : "Points"}`;
+
+    container.innerHTML = quizQuestions.map((q, index) => {
+      const isSingle = q.type === "mcq";
+      const isMulti = q.type === "multi_select";
+      const isShort = q.type === "short_answer";
+
+      let bodyHtml = "";
+      if (isShort) {
+        bodyHtml = `
+          <div class="quiz-q-body">
+            <span class="quiz-q-hint">⌨ Accepted answer (evaluation is case-insensitive):</span>
+            <div class="quiz-short-answer-box">
+              <input type="text" class="quiz-short-answer-input" data-action="update-short-answer" data-id="${q.id}" placeholder="e.g. HyperText Markup Language" value="${escapeHtml(q.correctAnswer || "")}" required />
+            </div>
+          </div>
+        `;
+      } else {
+        const hint = isSingle
+          ? "● Select the radio button of the single correct option:"
+          : "☑ Check all checkboxes that are correct answers (at least 1 required):";
+
+        const optionsHtml = q.options.map((opt, optIdx) => {
+          const letter = LETTERS[optIdx] || (optIdx + 1);
+          const inputType = isSingle ? "radio" : "checkbox";
+          const inputName = `correct_opt_${q.id}`;
+          const canDelete = q.options.length > 2;
+
+          return `
+            <div class="quiz-option-row ${opt.isCorrect ? "is-correct" : ""}" data-row-idx="${optIdx}">
+              <input type="${inputType}" name="${inputName}" class="quiz-option-indicator" data-action="toggle-correct" data-id="${q.id}" data-opt-idx="${optIdx}" ${opt.isCorrect ? "checked" : ""} title="Mark as correct" />
+              <span class="quiz-option-letter">${letter}.</span>
+              <input type="text" class="quiz-option-input" data-action="update-option-text" data-id="${q.id}" data-opt-idx="${optIdx}" placeholder="Option ${letter}" value="${escapeHtml(opt.text || "")}" required maxlength="1000" />
+              ${canDelete ? `<button type="button" class="quiz-option-delete" data-action="remove-option" data-id="${q.id}" data-opt-idx="${optIdx}" title="Remove option">✕</button>` : ""}
+            </div>
+          `;
+        }).join("");
+
+        const canAddOption = q.options.length < 6;
+
+        bodyHtml = `
+          <div class="quiz-q-body">
+            <span class="quiz-q-hint">${hint}</span>
+            <div class="quiz-options-list">
+              ${optionsHtml}
+            </div>
+            ${canAddOption ? `<button type="button" class="quiz-add-opt-btn" data-action="add-option" data-id="${q.id}">+ Add Option</button>` : ""}
+          </div>
+        `;
+      }
+
+      return `
+        <div class="quiz-question-card" data-card-id="${q.id}">
+          <div class="quiz-q-header">
+            <div class="quiz-q-header-left">
+              <span class="quiz-q-pill">Q${index + 1}</span>
+              <select class="quiz-q-type-select" data-action="change-type" data-id="${q.id}">
+                <option value="mcq" ${isSingle ? "selected" : ""}>Single-choice MCQ</option>
+                <option value="multi_select" ${isMulti ? "selected" : ""}>Multi-select MCQ</option>
+                <option value="short_answer" ${isShort ? "selected" : ""}>Short answer</option>
+              </select>
+            </div>
+            <div class="quiz-q-header-right">
+              <div class="quiz-q-points-wrapper">
+                <label for="pts_${q.id}">Points:</label>
+                <input type="number" id="pts_${q.id}" class="quiz-q-points-input" data-action="update-points" data-id="${q.id}" min="1" max="100" value="${q.points || 1}" />
+              </div>
+              <button type="button" class="quiz-q-btn-remove" data-action="remove-question" data-id="${q.id}" ${quizQuestions.length <= 1 ? "disabled" : ""} title="Remove this question">
+                ✕ Remove
+              </button>
+            </div>
+          </div>
+          <label class="quiz-q-prompt-label">
+            Question Prompt
+            <textarea class="quiz-q-prompt-input" data-action="update-text" data-id="${q.id}" placeholder="What is the question?" required maxlength="5000">${escapeHtml(q.text || "")}</textarea>
+          </label>
+          ${bodyHtml}
+        </div>
+      `;
+    }).join("");
+  }
+
+  // Batch add questions (Quantity + Type)
+  $("#btn-add-questions")?.addEventListener("click", () => {
+    const type = $("#add-q-type")?.value || "mcq";
+    const qtyInput = $("#add-q-qty");
+    const qty = Math.min(20, Math.max(1, parseInt(qtyInput?.value, 10) || 1));
+    for (let i = 0; i < qty; i++) {
+      quizQuestions.push(createDefaultQuestion(type));
+    }
+    renderQuizQuestions();
+    const typeLabel = type === "mcq" ? "Single-choice MCQ" : type === "multi_select" ? "Multi-select MCQ" : "Short answer";
+    toast(`Added ${qty} ${typeLabel} question${qty > 1 ? "s" : ""}.`);
+  });
+
+  // Add one question button
+  $("#btn-add-single-q")?.addEventListener("click", () => {
+    const type = $("#add-q-type")?.value || "mcq";
+    quizQuestions.push(createDefaultQuestion(type));
+    renderQuizQuestions();
+  });
+
+  // Delegated events on quiz questions list
+  const qListContainer = $("#quiz-questions-list");
+  if (qListContainer) {
+    qListContainer.addEventListener("input", (event) => {
+      const target = event.target;
+      const action = target.dataset.action;
+      const qId = target.dataset.id;
+      if (!action || !qId) return;
+
+      const q = quizQuestions.find((item) => item.id === qId);
+      if (!q) return;
+
+      if (action === "update-text") {
+        q.text = target.value;
+      } else if (action === "update-short-answer") {
+        q.correctAnswer = target.value;
+      } else if (action === "update-option-text") {
+        const optIdx = Number(target.dataset.optIdx);
+        if (q.options && q.options[optIdx]) {
+          q.options[optIdx].text = target.value;
+        }
+      } else if (action === "update-points") {
+        q.points = Math.max(1, parseInt(target.value, 10) || 1);
+        const totalPointsEl = $("#quiz-total-points");
+        const totalPoints = quizQuestions.reduce((sum, item) => sum + (Number(item.points) || 1), 0);
+        if (totalPointsEl) totalPointsEl.textContent = `${totalPoints} Total ${totalPoints === 1 ? "Point" : "Points"}`;
+      }
+    });
+
+    qListContainer.addEventListener("change", (event) => {
+      const target = event.target;
+      const action = target.dataset.action;
+      const qId = target.dataset.id;
+      if (!action || !qId) return;
+
+      const q = quizQuestions.find((item) => item.id === qId);
+      if (!q) return;
+
+      if (action === "change-type") {
+        const newType = target.value;
+        q.type = newType;
+        if (newType === "short_answer") {
+          q.options = [];
+        } else {
+          if (!q.options || q.options.length < 2) {
+            q.options = [
+              { text: "", isCorrect: true },
+              { text: "", isCorrect: false },
+              { text: "", isCorrect: false },
+              { text: "", isCorrect: false }
+            ];
+          }
+          if (newType === "mcq") {
+            const hasCorrect = q.options.some((o) => o.isCorrect);
+            if (!hasCorrect) {
+              q.options[0].isCorrect = true;
+            } else {
+              let foundFirst = false;
+              q.options.forEach((o) => {
+                if (o.isCorrect && !foundFirst) {
+                  foundFirst = true;
+                } else if (o.isCorrect && foundFirst) {
+                  o.isCorrect = false;
+                }
+              });
+            }
+          } else if (newType === "multi_select") {
+            const hasCorrect = q.options.some((o) => o.isCorrect);
+            if (!hasCorrect) q.options[0].isCorrect = true;
+          }
+        }
+        renderQuizQuestions();
+      } else if (action === "toggle-correct") {
+        const optIdx = Number(target.dataset.optIdx);
+        if (q.type === "mcq") {
+          q.options.forEach((opt, idx) => {
+            opt.isCorrect = idx === optIdx;
+          });
+          const card = target.closest(".quiz-question-card");
+          if (card) {
+            card.querySelectorAll(".quiz-option-row").forEach((row, idx) => {
+              row.classList.toggle("is-correct", idx === optIdx);
+            });
+          }
+        } else if (q.type === "multi_select") {
+          if (q.options[optIdx]) {
+            q.options[optIdx].isCorrect = target.checked;
+          }
+          const row = target.closest(".quiz-option-row");
+          if (row) {
+            row.classList.toggle("is-correct", target.checked);
+          }
+        }
+      }
+    });
+
+    qListContainer.addEventListener("click", (event) => {
+      const target = event.target.closest("[data-action]");
+      if (!target) return;
+      const action = target.dataset.action;
+      const qId = target.dataset.id;
+      if (!action || !qId) return;
+
+      const q = quizQuestions.find((item) => item.id === qId);
+      if (!q) return;
+
+      if (action === "remove-question") {
+        if (quizQuestions.length > 1) {
+          quizQuestions = quizQuestions.filter((item) => item.id !== qId);
+          renderQuizQuestions();
+        }
+      } else if (action === "add-option") {
+        if (q.options.length < 8) {
+          q.options.push({ text: "", isCorrect: false });
+          renderQuizQuestions();
+        }
+      } else if (action === "remove-option") {
+        const optIdx = Number(target.dataset.optIdx);
+        if (q.options.length > 2) {
+          q.options.splice(optIdx, 1);
+          if (q.type === "mcq" && !q.options.some((o) => o.isCorrect)) {
+            q.options[0].isCorrect = true;
+          }
+          renderQuizQuestions();
+        }
+      }
+    });
+  }
+
+  // Quiz submission
   $("#quiz-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     if (!requireCourse(form, "quiz")) return;
-    const button = form.querySelector("button");
+    const button = form.querySelector("button[type='submit']");
     const raw = Object.fromEntries(new FormData(form));
-    const options = [raw.optionA, raw.optionB, raw.optionC, raw.optionD].map((text, index) => ({ text, isCorrect: index === Number(raw.correctOption) }));
+    const msgEl = form.querySelector('[data-message="quiz"]');
+    message(msgEl);
+
+    if (!raw.title || raw.title.trim().length < 3) {
+      return message(msgEl, "Quiz title must be at least 3 characters long.", "error");
+    }
+
+    if (!quizQuestions.length) {
+      return message(msgEl, "A quiz must contain at least one question.", "error");
+    }
+
+    // Comprehensive client-side validation
+    for (let i = 0; i < quizQuestions.length; i++) {
+      const q = quizQuestions[i];
+      const qNum = i + 1;
+
+      if (!q.text || !q.text.trim()) {
+        return message(msgEl, `Question ${qNum} is missing its question prompt text.`, "error");
+      }
+
+      if (q.type === "mcq") {
+        if (!q.options || q.options.length < 2) {
+          return message(msgEl, `Question ${qNum} (MCQ) requires at least two options.`, "error");
+        }
+        for (let j = 0; j < q.options.length; j++) {
+          if (!q.options[j].text || !q.options[j].text.trim()) {
+            return message(msgEl, `Question ${qNum} Option ${LETTERS[j] || (j + 1)} cannot be blank.`, "error");
+          }
+        }
+        const correctCount = q.options.filter((o) => o.isCorrect === true).length;
+        if (correctCount !== 1) {
+          return message(msgEl, `Question ${qNum} (MCQ) must have exactly one correct option selected.`, "error");
+        }
+      } else if (q.type === "multi_select") {
+        if (!q.options || q.options.length < 2) {
+          return message(msgEl, `Question ${qNum} (Multi-select) requires at least two options.`, "error");
+        }
+        for (let j = 0; j < q.options.length; j++) {
+          if (!q.options[j].text || !q.options[j].text.trim()) {
+            return message(msgEl, `Question ${qNum} Option ${LETTERS[j] || (j + 1)} cannot be blank.`, "error");
+          }
+        }
+        const hasCorrect = q.options.some((o) => o.isCorrect === true);
+        if (!hasCorrect) {
+          return message(msgEl, `Question ${qNum} (Multi-select) requires at least one correct option checked.`, "error");
+        }
+      } else if (q.type === "short_answer") {
+        if (!q.correctAnswer || !q.correctAnswer.trim()) {
+          return message(msgEl, `Question ${qNum} (Short answer) requires an accepted correct answer.`, "error");
+        }
+      }
+    }
+
     const body = {
       courseId: activeCourse()._id,
-      title: raw.title,
-      ...(raw.instructions ? { instructions: raw.instructions } : {}),
-      questions: [{ text: raw.questionText, type: "mcq", options, points: 1, orderIndex: 0 }],
-      passingScore: Number(raw.passingScore),
-      timeLimitMinutes: Number(raw.timeLimitMinutes)
+      title: raw.title.trim(),
+      ...(raw.instructions?.trim() ? { instructions: raw.instructions.trim() } : {}),
+      questions: quizQuestions.map((q, index) => ({
+        text: q.text.trim(),
+        type: q.type,
+        options: q.type === "short_answer" ? [] : q.options.map((opt) => ({
+          text: opt.text.trim(),
+          isCorrect: Boolean(opt.isCorrect)
+        })),
+        ...(q.type === "short_answer" ? { correctAnswer: q.correctAnswer.trim() } : {}),
+        points: Math.max(1, parseInt(q.points, 10) || 1),
+        orderIndex: index
+      })),
+      passingScore: Math.min(100, Math.max(0, Number(raw.passingScore) || 50)),
+      timeLimitMinutes: Math.min(300, Math.max(1, Number(raw.timeLimitMinutes) || 30))
     };
+
     setBusy(button, true);
     try {
       const payload = await api("/quizzes", { method: "POST", body });
       state.workflow.quizzes.push(payload.data.quiz);
       save();
       form.reset();
+      quizQuestions = [createDefaultQuestion("mcq")];
+      renderQuizQuestions();
       toast("Quiz created as a draft.");
     } catch (error) {
-      message(form.querySelector('[data-message="quiz"]'), errorText(error), "error");
+      message(msgEl, errorText(error), "error");
     } finally {
       setBusy(button, false);
     }
@@ -549,6 +896,7 @@ async function initializeInstructorApp() {
       await loadInstructorPages(container);
     }
     bindWorkspaceEventListeners();
+    initQuizBuilder();
     render();
     await restoreSession();
   } catch (error) {
