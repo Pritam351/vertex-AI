@@ -7,9 +7,12 @@ export function formatDate(value, options = { dateStyle: "medium" }) {
   }
 }
 
-export function formatCurrency(amount, currency = "USD") {
+export function formatCurrency(amount, currency = "INR") {
   const num = Number(amount || 0);
   if (num <= 0) return "Free";
+  if (currency === "INR" || !currency) {
+    return `₹${num}`;
+  }
   return new Intl.NumberFormat(undefined, {
     style: "currency",
     currency

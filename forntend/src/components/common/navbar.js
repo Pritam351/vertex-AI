@@ -1,5 +1,6 @@
 import { initials } from "../../utils/formatters.js";
 import { authService } from "../../services/authService.js";
+import { toast } from "./toast.js";
 
 export function renderNavbar({ title = "Workspace", eyebrow = "STUDIO", user = null }) {
   const userInitials = initials(user?.fullName || "User");
@@ -27,6 +28,7 @@ export function renderNavbar({ title = "Workspace", eyebrow = "STUDIO", user = n
 
 export function bindNavbarEvents(container = document) {
   container.querySelector("#sign-out")?.addEventListener("click", () => {
+    toast("Signed out successfully.");
     authService.logout();
     window.location.hash = "#/login";
   });
