@@ -17,6 +17,7 @@ export function getCourseStatusClass(course) {
 export function renderInstructorCourseCard(course, isSelected = false) {
   const statusClass = getCourseStatusClass(course);
   const priceDisplay = Number(course.price) > 0 ? `₹${course.price}` : "Free";
+  const enrolledCount = course.enrolledStudentsCount || 0;
 
   return `
     <article class="course-card-item ${isSelected ? "is-active-card" : ""}">
@@ -33,6 +34,7 @@ export function renderInstructorCourseCard(course, isSelected = false) {
         <div class="course-badges-row">
           <span class="course-badge">${escapeHtml(course.category || "General")}</span>
           <span class="status ${statusClass}">${escapeHtml(course.status || "pending")}</span>
+          <span class="enrollment-pill">👥 ${enrolledCount} ${enrolledCount === 1 ? "student" : "students"}</span>
           ${isSelected ? `<span class="active-pill">✓ Active in Studio</span>` : ""}
         </div>
         <h3>${escapeHtml(course.title)}</h3>

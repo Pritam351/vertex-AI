@@ -1,15 +1,109 @@
-
 <section class="view is-active" id="overview" data-view>
   <div class="welcome-row">
     <div>
       <h2>Good to see you, <span id="welcome-name">Instructor</span>.</h2>
-      <p>Create the structure learners will follow. Your current course stays available while this session is open.</p>
+      <p>Manage courses, review curriculum health, monitor enrollments, and grade student submissions.</p>
     </div>
-    <button class="button button-primary" type="button" data-go="course-builder">
-      <span>New course</span><span aria-hidden="true">+</span>
-    </button>
+    <div style="display:flex; gap:0.6rem; flex-wrap:wrap;">
+      <button class="button button-secondary" type="button" data-action="refresh-courses-btn">
+        <span>↻ Refresh</span>
+      </button>
+      <button class="button button-primary" type="button" data-go="course-builder">
+        <span>New course</span><span aria-hidden="true">+</span>
+      </button>
+    </div>
   </div>
 
+  <!-- KPI Metrics Grid: Total, Approved, Pending, Rejected, Enrolled -->
+  <section class="kpi-metrics-grid" aria-label="Course status overview">
+    <article class="kpi-card">
+      <div class="kpi-icon kpi-total">📚</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Total Courses</span>
+        <strong class="kpi-value" id="kpi-total-courses">0</strong>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-icon kpi-approved">✓</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Approved</span>
+        <strong class="kpi-value status-approved" id="kpi-approved-courses">0</strong>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-icon kpi-pending">⏳</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Pending Approval</span>
+        <strong class="kpi-value status-pending" id="kpi-pending-courses">0</strong>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-icon kpi-rejected">✕</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Rejected</span>
+        <strong class="kpi-value status-rejected" id="kpi-rejected-courses">0</strong>
+      </div>
+    </article>
+    <article class="kpi-card">
+      <div class="kpi-icon kpi-enrolled">👥</div>
+      <div class="kpi-body">
+        <span class="kpi-label">Total Enrolled</span>
+        <strong class="kpi-value status-enrolled" id="kpi-total-enrolled">0</strong>
+      </div>
+    </article>
+  </section>
+
+  <!-- Active Course Deep Dive Banner -->
+  <section id="active-course-spotlight" class="active-spotlight-panel" hidden>
+    <div class="spotlight-header">
+      <div class="spotlight-info">
+        <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; margin-bottom:0.25rem;">
+          <span class="eyebrow" style="margin:0;">ACTIVE COURSE SPOTLIGHT</span>
+          <span class="status" id="spotlight-course-status">Pending</span>
+        </div>
+        <h3 id="spotlight-course-title" style="margin:0 0 0.25rem 0;">Course Title</h3>
+        <p style="margin:0; font-size:0.85rem; color:var(--muted);" id="spotlight-course-desc">Course description...</p>
+      </div>
+      <div class="spotlight-actions">
+        <button class="button button-secondary mini-button" type="button" id="btn-view-course-enrollments">
+          👥 View Enrolled Students (<span id="spotlight-enrolled-count">0</span>)
+        </button>
+        <button class="button button-primary mini-button" type="button" data-go="course-builder">
+          ✏️ Edit Curriculum →
+        </button>
+      </div>
+    </div>
+
+    <!-- Active Course Breakdown: Modules, Lectures, Quizzes Live & Drafts, Assignments -->
+    <div class="spotlight-metrics-row">
+      <div class="spotlight-metric">
+        <span class="metric-num" id="spotlight-modules-count">0</span>
+        <span class="metric-name">Modules</span>
+      </div>
+      <div class="spotlight-metric">
+        <span class="metric-num" id="spotlight-lectures-count">0</span>
+        <span class="metric-name">Lectures</span>
+      </div>
+      <div class="spotlight-metric">
+        <div class="metric-dual">
+          <span class="metric-live" title="Live / Published Quizzes"><span id="spotlight-quizzes-live">0</span> Live</span>
+          <span class="metric-sep">/</span>
+          <span class="metric-draft" title="Draft Quizzes"><span id="spotlight-quizzes-draft">0</span> Draft</span>
+        </div>
+        <span class="metric-name">Quizzes (Total: <span id="spotlight-quizzes-total">0</span>)</span>
+      </div>
+      <div class="spotlight-metric">
+        <span class="metric-num" id="spotlight-assignments-count">0</span>
+        <span class="metric-name">Assignments</span>
+      </div>
+      <div class="spotlight-metric">
+        <span class="metric-num" id="spotlight-enrolled-num">0</span>
+        <span class="metric-name">Students Enrolled</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- All Courses List -->
   <section aria-labelledby="course-status-heading">
     <div class="section-heading">
       <div>
@@ -30,21 +124,48 @@
     <article id="course-summary" class="course-summary" hidden></article>
   </section>
 
-  <section class="availability-grid" aria-label="Workspace availability">
-    <article>
-      <span class="availability-icon" aria-hidden="true">✓</span>
-      <h3>Authoring</h3>
-      <p>Create courses, modules, lectures, quizzes, and assignments.</p>
-    </article>
-    <article>
-      <span class="availability-icon muted" aria-hidden="true">—</span>
-      <h3>Analytics</h3>
-      <p>Unavailable until the backend exposes instructor analytics.</p>
-    </article>
-    <article>
-      <span class="availability-icon muted" aria-hidden="true">—</span>
-      <h3>Submission review</h3>
-      <p>Unavailable until instructor submission listing is implemented.</p>
-    </article>
+  <!-- Submissions & Grading Review Section -->
+  <section class="submissions-review-section" aria-labelledby="submissions-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">ASSESSMENT REVIEWS</p>
+        <h3 id="submissions-heading">Student Submissions & Grading</h3>
+        <p style="margin:0.25rem 0 0 0; font-size:0.85rem; color:var(--muted);">
+          Review student assignment submissions for <strong id="submissions-active-course-name">selected course</strong>. Grade submitted work with feedback.
+        </p>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.5rem;">
+        <span class="count-pill" id="submissions-count-pill">0 submissions</span>
+        <button class="button button-subtle" type="button" id="btn-refresh-submissions" title="Refresh submissions">↻</button>
+      </div>
+    </div>
+
+    <div id="submissions-loading" class="submissions-loading" hidden>
+      <div class="spinner" style="margin:0 auto 0.5rem auto; width:24px; height:24px; border:2px solid rgba(124, 58, 237, 0.2); border-top-color:var(--violet); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+      <p style="margin:0; font-size:0.85rem; color:var(--muted);">Loading student submissions…</p>
+    </div>
+
+    <div id="submissions-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">📝</div>
+      <h3>No submissions yet</h3>
+      <p id="submissions-empty-text">No student has submitted work for this course's assignments yet.</p>
+    </div>
+
+    <div class="table-responsive-wrapper" id="submissions-table-wrapper" hidden>
+      <table class="data-table" id="submissions-table">
+        <thead>
+          <tr>
+            <th>Student</th>
+            <th>Assignment</th>
+            <th>Submitted On</th>
+            <th>Status</th>
+            <th>Submitted Work</th>
+            <th style="text-align:right;">Action</th>
+          </tr>
+        </thead>
+        <tbody id="submissions-table-body">
+        </tbody>
+      </table>
+    </div>
   </section>
 </section>

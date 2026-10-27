@@ -49,11 +49,27 @@ const listCourses = async (query) => {
 
 const listInstructorCourses = async (user) => {
   const Course = require("./courseModel");
+  const Enrollment = require("../enrollments/enrollmentModel");
 
-  return Course.find({ instructorId: user._id })
+  const courses = await Course.find({ instructorId: user._id })
     .select("-__v")
     .sort({ updatedAt: -1 })
     .lean();
+
+  const courseIds = courses.map((c) => c._id);
+  const enrollmentCounts = await Enrollment.aggregate([
+    { $match: { courseId: { $in: courseIds } } },
+    { $group: { _id: "$courseId", count: { $sum: 1 } } },
+  ]);
+
+  const countMap = new Map(
+    enrollmentCounts.map((item) => [item._id.toString(), item.count])
+  );
+
+  return courses.map((c) => ({
+    ...c,
+    enrolledStudentsCount: countMap.get(c._id.toString()) || 0,
+  }));
 };
 
 

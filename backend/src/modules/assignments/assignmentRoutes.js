@@ -10,6 +10,7 @@ const {
   submitAssignment,
   getMySubmissions,
   gradeSubmission,
+  listCourseSubmissions,
 } = require("./assignmentController");
 
 const router = express.Router();
@@ -19,6 +20,14 @@ router.get(
   "/courses/:courseId/assignments",
   authMiddleware,
   listCourseAssignments
+);
+
+// Read all submissions for a course (instructor/admin)
+router.get(
+  "/courses/:courseId/submissions",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  listCourseSubmissions
 );
 
 // Instructor/admin assignment creation.

@@ -140,8 +140,28 @@ const updateLectureProgress = async (
   };
 };
 
+const getCourseEnrollments = async (courseId, user) => {
+  if (!validId(courseId)) fail(400, "Invalid course ID");
+
+  const course = await Course.findById(courseId);
+  if (!course) fail(404, "Course not found");
+
+  if (
+    user.role !== "admin" &&
+    course.instructorId.toString() !== user._id.toString()
+  ) {
+    fail(403, "You cannot view enrollments for another instructor's course");
+  }
+
+  return Enrollment.find({ courseId })
+    .populate("userId", "fullName email avatarUrl")
+    .sort({ enrolledAt: -1 })
+    .lean();
+};
+
 module.exports = {
   enrollInCourse,
   getMyEnrollments,
   updateLectureProgress,
+  getCourseEnrollments,
 };

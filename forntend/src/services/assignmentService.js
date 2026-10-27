@@ -28,5 +28,9 @@ export const assignmentService = {
       method: "PUT",
       body: gradeData
     });
+  },
+
+  async listCourseSubmissions(courseId) {
+    return api(`/courses/${courseId}/submissions`);
   }
 };

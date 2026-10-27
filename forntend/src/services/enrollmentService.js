@@ -16,5 +16,9 @@ export const enrollmentService = {
       method: "POST",
       body: data
     });
+  },
+
+  async getCourseEnrollments(courseId) {
+    return api(`/courses/${courseId}/enrollments`);
   }
 };

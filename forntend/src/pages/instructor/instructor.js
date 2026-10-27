@@ -25,12 +25,17 @@ import {
   renderQuizItem,
   renderAssignmentItem
 } from "../../components/instructor/assessment-list.js";
+import { openModal } from "../../components/common/modal.js";
+import { assignmentService } from "../../services/assignmentService.js";
+import { enrollmentService } from "../../services/enrollmentService.js";
 
 const state = {
   session: null,
   instructorCourses: [],
   isLoadingCourses: false,
   workflow: { course: null, modules: [], lectures: [], quizzes: [], assignments: [] },
+  submissions: [],
+  isLoadingSubmissions: false,
   isInitialized: false
 };
 
@@ -187,8 +192,34 @@ export function setLectureFormMode(mode, lecture = null) {
   }
 }
 
+export async function loadCourseSubmissions(courseId) {
+  if (!courseId) {
+    state.submissions = [];
+    state.isLoadingSubmissions = false;
+    renderSubmissions();
+    return;
+  }
+
+  state.isLoadingSubmissions = true;
+  renderSubmissions();
+
+  try {
+    const res = await assignmentService.listCourseSubmissions(courseId);
+    state.submissions = res?.data?.submissions || [];
+  } catch (err) {
+    console.warn("Could not load submissions for course:", err);
+    state.submissions = [];
+  } finally {
+    state.isLoadingSubmissions = false;
+    renderSubmissions();
+  }
+}
+
 async function loadActiveCourseDetails(courseId) {
   if (!courseId) return;
+
+  // Trigger submission fetch for active course in parallel
+  loadCourseSubmissions(courseId);
 
   try {
     const [modRes, quizRes, assignRes] = await Promise.all([
@@ -348,6 +379,67 @@ export function render() {
   const hasCourse = Boolean(course);
   const totalCourses = state.instructorCourses.length;
 
+  // KPI Metrics Calculation across all instructor courses
+  const approvedCourses = state.instructorCourses.filter((c) => String(c.status).toLowerCase() === "approved").length;
+  const pendingCourses = state.instructorCourses.filter((c) => {
+    const s = String(c.status || "pending").toLowerCase();
+    return s === "pending" || (!s && s !== "approved" && s !== "rejected");
+  }).length;
+  const rejectedCourses = state.instructorCourses.filter((c) => String(c.status).toLowerCase() === "rejected").length;
+  const totalEnrolled = state.instructorCourses.reduce((sum, c) => sum + (Number(c.enrolledStudentsCount) || 0), 0);
+
+  const kpiTotal = $("#kpi-total-courses");
+  if (kpiTotal) kpiTotal.textContent = totalCourses;
+  const kpiApproved = $("#kpi-approved-courses");
+  if (kpiApproved) kpiApproved.textContent = approvedCourses;
+  const kpiPending = $("#kpi-pending-courses");
+  if (kpiPending) kpiPending.textContent = pendingCourses;
+  const kpiRejected = $("#kpi-rejected-courses");
+  if (kpiRejected) kpiRejected.textContent = rejectedCourses;
+  const kpiEnrolled = $("#kpi-total-enrolled");
+  if (kpiEnrolled) kpiEnrolled.textContent = totalEnrolled;
+
+  // Active Course Spotlight Banner
+  const spotlight = $("#active-course-spotlight");
+  if (spotlight) {
+    if (course) {
+      spotlight.hidden = false;
+      const titleEl = $("#spotlight-course-title");
+      if (titleEl) titleEl.textContent = course.title || "Untitled Course";
+      const descEl = $("#spotlight-course-desc");
+      if (descEl) descEl.textContent = course.description || "No description provided.";
+      const statusEl = $("#spotlight-course-status");
+      if (statusEl) {
+        statusEl.textContent = escapeHtml(course.status || "pending");
+        statusEl.className = `status ${getCourseStatusClass(course)}`;
+      }
+      const enrolledCount = course.enrolledStudentsCount || 0;
+      const enrolledBtnCount = $("#spotlight-enrolled-count");
+      if (enrolledBtnCount) enrolledBtnCount.textContent = enrolledCount;
+      const enrolledNum = $("#spotlight-enrolled-num");
+      if (enrolledNum) enrolledNum.textContent = enrolledCount;
+
+      const modCount = $("#spotlight-modules-count");
+      if (modCount) modCount.textContent = state.workflow.modules.length;
+      const lecCount = $("#spotlight-lectures-count");
+      if (lecCount) lecCount.textContent = state.workflow.lectures.length;
+
+      const liveQuizzes = state.workflow.quizzes.filter((q) => q.isPublished).length;
+      const draftQuizzes = state.workflow.quizzes.length - liveQuizzes;
+      const liveEl = $("#spotlight-quizzes-live");
+      if (liveEl) liveEl.textContent = liveQuizzes;
+      const draftEl = $("#spotlight-quizzes-draft");
+      if (draftEl) draftEl.textContent = draftQuizzes;
+      const totalQuizEl = $("#spotlight-quizzes-total");
+      if (totalQuizEl) totalQuizEl.textContent = state.workflow.quizzes.length;
+
+      const assignCount = $("#spotlight-assignments-count");
+      if (assignCount) assignCount.textContent = state.workflow.assignments.length;
+    } else {
+      spotlight.hidden = true;
+    }
+  }
+
   const courseCount = $("#course-count");
   if (courseCount) {
     if (state.isLoadingCourses && totalCourses === 0) {
@@ -490,6 +582,265 @@ export function render() {
     assignmentList.innerHTML = state.workflow.assignments.length
       ? state.workflow.assignments.map(renderAssignmentItem).join("")
       : '<p style="color:var(--muted); font-size:0.8rem; margin-top:0.5rem;">No assignments created yet.</p>';
+  }
+
+  // Render Student Submissions & Grading table
+  renderSubmissions();
+}
+
+export function renderSubmissions() {
+  const course = activeCourse();
+  const activeCourseName = $("#submissions-active-course-name");
+  if (activeCourseName) {
+    activeCourseName.textContent = course ? `"${course.title}"` : "the selected course";
+  }
+
+  const countPill = $("#submissions-count-pill");
+  const loading = $("#submissions-loading");
+  const empty = $("#submissions-empty");
+  const emptyText = $("#submissions-empty-text");
+  const wrapper = $("#submissions-table-wrapper");
+  const tbody = $("#submissions-table-body");
+
+  if (!course) {
+    if (loading) loading.hidden = true;
+    if (wrapper) wrapper.hidden = true;
+    if (empty) empty.hidden = false;
+    if (emptyText) emptyText.textContent = "Select an active course above to view and grade student submissions.";
+    if (countPill) countPill.textContent = "No course selected";
+    return;
+  }
+
+  if (state.isLoadingSubmissions) {
+    if (loading) loading.hidden = false;
+    if (empty) empty.hidden = true;
+    if (wrapper) wrapper.hidden = true;
+    if (countPill) countPill.textContent = "Loading…";
+    return;
+  }
+
+  if (loading) loading.hidden = true;
+
+  const submissions = state.submissions || [];
+  const pendingCount = submissions.filter((s) => s.grade === null || s.grade === undefined).length;
+
+  if (countPill) {
+    countPill.textContent = submissions.length === 0
+      ? "0 submissions"
+      : `${submissions.length} submission${submissions.length === 1 ? "" : "s"} (${pendingCount} pending)`;
+  }
+
+  if (submissions.length === 0) {
+    if (empty) empty.hidden = false;
+    if (emptyText) emptyText.textContent = `No student submissions found for "${course.title}".`;
+    if (wrapper) wrapper.hidden = true;
+    return;
+  }
+
+  if (empty) empty.hidden = true;
+  if (wrapper) wrapper.hidden = false;
+
+  if (tbody) {
+    tbody.innerHTML = submissions
+      .map((sub) => {
+        const student = sub.userId || {};
+        const studentName = student.fullName || student.name || "Anonymous Student";
+        const studentEmail = student.email || "No email";
+        const studentAvatar = student.avatarUrl
+          ? `<img src="${escapeHtml(student.avatarUrl)}" alt="${escapeHtml(studentName)}" />`
+          : initials(studentName);
+
+        const assignment = sub.assignmentId || {};
+        const assignmentTitle = assignment.title || "Assignment";
+
+        const submittedDate = sub.submittedAt
+          ? formatDate(sub.submittedAt)
+          : sub.createdAt
+          ? formatDate(sub.createdAt)
+          : "Recently";
+
+        const isGraded = sub.grade !== null && sub.grade !== undefined;
+        const statusBadge = isGraded
+          ? `<span class="status-badge-graded">✓ Graded: ${sub.grade}/100</span>`
+          : `<span class="status-badge-pending">⏳ Pending Review</span>`;
+
+        const workLink = sub.fileUrl
+          ? `<a href="${escapeHtml(sub.fileUrl)}" target="_blank" rel="noopener noreferrer" class="work-link">📎 View Work ↗</a>`
+          : `<span style="color:var(--muted); font-size:0.8rem;">No link provided</span>`;
+
+        return `
+          <tr data-submission-id="${escapeHtml(sub._id)}">
+            <td>
+              <div class="student-cell">
+                <div class="student-avatar">${studentAvatar}</div>
+                <div class="student-info">
+                  <span class="student-name">${escapeHtml(studentName)}</span>
+                  <span class="student-email">${escapeHtml(studentEmail)}</span>
+                </div>
+              </div>
+            </td>
+            <td>
+              <strong style="color:#f1f5f9;">${escapeHtml(assignmentTitle)}</strong>
+            </td>
+            <td>
+              <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted);">${submittedDate}</span>
+            </td>
+            <td>${statusBadge}</td>
+            <td>${workLink}</td>
+            <td style="text-align:right;">
+              <button class="button ${isGraded ? "button-secondary" : "button-primary"} mini-button" type="button" data-grade-submission="${escapeHtml(sub._id)}">
+                ${isGraded ? "Update Grade" : "Grade Submission"}
+              </button>
+            </td>
+          </tr>
+        `;
+      })
+      .join("");
+  }
+}
+
+export async function handleOpenGradeModal(submissionId) {
+  const sub = state.submissions.find((s) => s._id === submissionId);
+  if (!sub) return;
+
+  const student = sub.userId || {};
+  const studentName = student.fullName || student.name || "Student";
+  const assignment = sub.assignmentId || {};
+  const assignmentTitle = assignment.title || "Assignment";
+  const currentGrade = sub.grade !== null && sub.grade !== undefined ? sub.grade : "";
+  const currentFeedback = sub.feedback || "";
+
+  const contentHtml = `
+    <div style="margin-bottom:1.25rem; padding:0.9rem; background:rgba(255,255,255,0.03); border:1px solid var(--line); border-radius:0.6rem;">
+      <p style="margin:0 0 0.35rem; font-size:0.85rem;"><strong style="color:var(--muted);">Student:</strong> <span style="color:#fff;">${escapeHtml(studentName)}</span> (${escapeHtml(student.email || "")})</p>
+      <p style="margin:0 0 0.35rem; font-size:0.85rem;"><strong style="color:var(--muted);">Assignment:</strong> <span style="color:#fff;">${escapeHtml(assignmentTitle)}</span></p>
+      ${sub.fileUrl ? `<p style="margin:0; font-size:0.85rem;"><strong style="color:var(--muted);">Submitted Work:</strong> <a href="${escapeHtml(sub.fileUrl)}" target="_blank" rel="noopener noreferrer" class="work-link" style="display:inline-flex; margin-left:0.35rem;">📎 Open link ↗</a></p>` : ""}
+    </div>
+    <form id="submission-grade-form" onsubmit="return false;">
+      <div class="grade-form-group">
+        <label for="grade-input">Grade (0 - 100) *</label>
+        <input type="number" id="grade-input" name="grade" min="0" max="100" value="${escapeHtml(String(currentGrade))}" placeholder="e.g. 95" required />
+      </div>
+      <div class="grade-form-group">
+        <label for="feedback-input">Feedback / Instructor Notes (optional)</label>
+        <textarea id="feedback-input" name="feedback" rows="4" placeholder="Great submission! Highlight key observations or areas for improvement...">${escapeHtml(currentFeedback)}</textarea>
+      </div>
+    </form>
+  `;
+
+  openModal({
+    title: `Grade Submission: ${assignmentTitle}`,
+    contentHtml,
+    confirmText: "Submit Grade",
+    onConfirm: async (backdrop, close) => {
+      const gradeInput = backdrop.querySelector("#grade-input");
+      const feedbackInput = backdrop.querySelector("#feedback-input");
+      const gradeVal = Number(gradeInput?.value);
+
+      if (isNaN(gradeVal) || gradeVal < 0 || gradeVal > 100) {
+        toast("Please enter a valid grade between 0 and 100.", "error");
+        gradeInput?.focus();
+        return;
+      }
+
+      const feedbackVal = feedbackInput?.value?.trim() || "";
+
+      const confirmBtn = backdrop.querySelector(".modal-confirm");
+      if (confirmBtn) setBusy(confirmBtn, true, "Saving…");
+
+      try {
+        const res = await assignmentService.gradeSubmission(sub._id, {
+          grade: gradeVal,
+          feedback: feedbackVal
+        });
+
+        // Update local state
+        const updatedSub = res?.data?.submission;
+        if (updatedSub) {
+          const idx = state.submissions.findIndex((s) => s._id === sub._id);
+          if (idx !== -1) {
+            state.submissions[idx] = {
+              ...state.submissions[idx],
+              ...updatedSub,
+              userId: updatedSub.userId || state.submissions[idx].userId,
+              assignmentId: updatedSub.assignmentId || state.submissions[idx].assignmentId
+            };
+          }
+        } else {
+          sub.grade = gradeVal;
+          sub.feedback = feedbackVal;
+        }
+
+        renderSubmissions();
+        toast("Grade submitted successfully! ✓");
+        close();
+      } catch (err) {
+        toast(`Grading failed: ${errorText(err)}`, "error");
+        if (confirmBtn) setBusy(confirmBtn, false);
+      }
+    }
+  });
+}
+
+export async function handleViewCourseEnrollments() {
+  const course = activeCourse();
+  if (!course) {
+    toast("No active course selected.", "error");
+    return;
+  }
+
+  const btn = $("#btn-view-course-enrollments");
+  if (btn) setBusy(btn, true, "Loading…");
+
+  try {
+    const res = await enrollmentService.getCourseEnrollments(course._id);
+    const enrollments = res?.data?.enrollments || [];
+
+    const enrolledListHtml = enrollments.length === 0
+      ? `<div style="text-align:center; padding:2rem 1rem; color:var(--muted);">
+           <p style="font-size:1.5rem; margin-bottom:0.5rem;">👥</p>
+           <p style="margin:0;">No students have enrolled in "${escapeHtml(course.title)}" yet.</p>
+         </div>`
+      : `<div style="max-height:400px; overflow-y:auto;">
+           ${enrollments.map((enr) => {
+             const student = enr.userId || {};
+             const studentName = student.fullName || student.name || "Student";
+             const studentEmail = student.email || "No email";
+             const studentAvatar = student.avatarUrl
+               ? `<img src="${escapeHtml(student.avatarUrl)}" alt="${escapeHtml(studentName)}" />`
+               : initials(studentName);
+             const enrolledDate = enr.enrolledAt ? formatDate(enr.enrolledAt) : (enr.createdAt ? formatDate(enr.createdAt) : "Unknown date");
+             const completedLectures = Array.isArray(enr.completedLectures) ? enr.completedLectures.length : 0;
+             const progressPct = enr.progress !== undefined ? enr.progress : 0;
+
+             return `
+               <div class="enrolled-student-row">
+                 <div class="student-cell">
+                   <div class="student-avatar">${studentAvatar}</div>
+                   <div class="student-info">
+                     <span class="student-name">${escapeHtml(studentName)}</span>
+                     <span class="student-email">${escapeHtml(studentEmail)}</span>
+                   </div>
+                 </div>
+                 <div class="enrolled-student-progress">
+                   <span class="progress-pill">${progressPct}% progress</span>
+                   <span style="color:var(--muted); font-size:0.7rem;">${completedLectures} lectures • Joined ${enrolledDate}</span>
+                 </div>
+               </div>
+             `;
+           }).join("")}
+         </div>`;
+
+    openModal({
+      title: `Enrolled Students (${enrollments.length}) - ${course.title}`,
+      contentHtml: enrolledListHtml,
+      confirmText: "Done",
+      onConfirm: (backdrop, close) => close()
+    });
+  } catch (err) {
+    toast(`Could not load enrollments: ${errorText(err)}`, "error");
+  } finally {
+    if (btn) setBusy(btn, false);
   }
 }
 
@@ -1299,6 +1650,53 @@ function bindGlobalClickHandlers() {
       if (panel) {
         panel.hidden = !panel.hidden;
       }
+      return;
+    }
+
+    const refreshCoursesBtn = event.target.closest('[data-action="refresh-courses-btn"]');
+    if (refreshCoursesBtn) {
+      event.preventDefault();
+      setBusy(refreshCoursesBtn, true, "Refreshing…");
+      try {
+        await refreshInstructorCourses();
+        toast("Courses and metrics refreshed! ✓");
+      } catch (err) {
+        toast(`Failed to refresh courses: ${errorText(err)}`, "error");
+      } finally {
+        setBusy(refreshCoursesBtn, false);
+      }
+      return;
+    }
+
+    const refreshSubsBtn = event.target.closest("#btn-refresh-submissions");
+    if (refreshSubsBtn) {
+      event.preventDefault();
+      if (activeCourse()) {
+        setBusy(refreshSubsBtn, true);
+        try {
+          await loadCourseSubmissions(activeCourse()._id);
+          toast("Submissions refreshed! ✓");
+        } catch (err) {
+          toast(`Failed to refresh submissions: ${errorText(err)}`, "error");
+        } finally {
+          setBusy(refreshSubsBtn, false);
+        }
+      }
+      return;
+    }
+
+    const viewEnrollmentsBtn = event.target.closest("#btn-view-course-enrollments");
+    if (viewEnrollmentsBtn) {
+      event.preventDefault();
+      await handleViewCourseEnrollments();
+      return;
+    }
+
+    const gradeBtn = event.target.closest("[data-grade-submission]");
+    if (gradeBtn) {
+      event.preventDefault();
+      const submissionId = gradeBtn.dataset.gradeSubmission;
+      await handleOpenGradeModal(submissionId);
       return;
     }
 

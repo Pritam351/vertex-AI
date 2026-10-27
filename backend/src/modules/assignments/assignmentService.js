@@ -158,12 +158,41 @@ const gradeSubmission = async (submissionId, data, user) => {
   submission.gradedAt = new Date();
 
   await submission.save();
-  return submission;
+
+  return Submission.findById(submission._id)
+    .populate("userId", "fullName email")
+    .populate("assignmentId", "title dueDate")
+    .lean();
 };
 
 const getMySubmissions = async (userId) => {
   return Submission.find({ userId })
     .populate("assignmentId", "title courseId dueDate")
+    .sort({ submittedAt: -1 })
+    .lean();
+};
+
+const listCourseSubmissions = async (courseId, user) => {
+  if (!validId(courseId)) fail(400, "Invalid course ID");
+
+  const course = await Course.findById(courseId);
+  if (!course) fail(404, "Course not found");
+
+  if (
+    user.role !== "admin" &&
+    course.instructorId.toString() !== user._id.toString()
+  ) {
+    fail(403, "You cannot view submissions for another instructor's course");
+  }
+
+  const assignments = await Assignment.find({ courseId })
+    .select("_id title dueDate")
+    .lean();
+  const assignmentIds = assignments.map((a) => a._id);
+
+  return Submission.find({ assignmentId: { $in: assignmentIds } })
+    .populate("userId", "fullName email")
+    .populate("assignmentId", "title dueDate")
     .sort({ submittedAt: -1 })
     .lean();
 };
@@ -174,4 +203,5 @@ module.exports = {
   submitAssignment,
   gradeSubmission,
   getMySubmissions,
+  listCourseSubmissions,
 };
