@@ -43,6 +43,15 @@ export async function mountStudentDashboard(container) {
             const percent = Math.min(100, Math.max(0, Math.round(enrollment.progressPercent || 0)));
             return `
               <article class="course-card-item">
+                ${
+                  course.thumbnailUrl
+                    ? `
+                  <div class="course-card-thumb">
+                    <img src="${escapeHtml(course.thumbnailUrl)}" alt="${escapeHtml(course.title || "Course")}" loading="lazy" onerror="this.onerror=null; this.parentElement.style.display='none';" />
+                  </div>
+                `
+                    : ""
+                }
                 <div class="course-card-main">
                   <div class="course-badges-row">
                     <span class="course-badge">${escapeHtml(course.category || "General")}</span>

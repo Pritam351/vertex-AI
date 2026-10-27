@@ -243,6 +243,15 @@ export function render() {
             ${courseOptions}
           </select>
         </div>
+        ${
+          course.thumbnailUrl
+            ? `
+          <div style="margin-bottom:0.75rem; border-radius:0.5rem; overflow:hidden; border:1px solid var(--line); aspect-ratio:16/9; max-height:130px; background:#0d1527;">
+            <img src="${escapeHtml(course.thumbnailUrl)}" alt="${escapeHtml(course.title)}" style="width:100%; height:100%; object-fit:cover; display:block;" onerror="this.parentElement.style.display='none';" />
+          </div>
+        `
+            : ""
+        }
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.5rem;">
           <span class="status ${statusClass}">${statusText}</span>
           <small style="color:var(--muted);">${statusLabel}</small>
@@ -606,6 +615,9 @@ function bindWorkspaceEventListeners() {
     const button = form.querySelector("button");
     const raw = Object.fromEntries(new FormData(form));
     const body = { ...raw, price: Number(raw.price || 0) };
+    if (typeof body.thumbnailUrl === "string") {
+      body.thumbnailUrl = body.thumbnailUrl.trim();
+    }
     Object.keys(body).forEach((key) => {
       if (body[key] === "") delete body[key];
     });

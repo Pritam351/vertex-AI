@@ -41,6 +41,15 @@ export async function mountCourseCatalog(container) {
 
             return `
               <article class="course-card-item">
+                ${
+                  c.thumbnailUrl
+                    ? `
+                  <div class="course-card-thumb">
+                    <img src="${escapeHtml(c.thumbnailUrl)}" alt="${escapeHtml(c.title)}" loading="lazy" onerror="this.onerror=null; this.parentElement.style.display='none';" />
+                  </div>
+                `
+                    : ""
+                }
                 <div class="course-card-main">
                   <div class="course-badges-row">
                     <span class="course-badge">${escapeHtml(c.category || "General")}</span>

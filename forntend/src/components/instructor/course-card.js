@@ -20,6 +20,15 @@ export function renderInstructorCourseCard(course, isSelected = false) {
 
   return `
     <article class="course-card-item ${isSelected ? "is-active-card" : ""}">
+      ${
+        course?.thumbnailUrl
+          ? `
+        <div class="course-card-thumb">
+          <img src="${escapeHtml(course.thumbnailUrl)}" alt="${escapeHtml(course.title)}" loading="lazy" onerror="this.onerror=null; this.parentElement.style.display='none';" />
+        </div>
+      `
+          : ""
+      }
       <div class="course-card-main">
         <div class="course-badges-row">
           <span class="course-badge">${escapeHtml(course.category || "General")}</span>
