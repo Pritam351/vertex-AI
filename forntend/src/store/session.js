@@ -1,6 +1,7 @@
 const SESSION_KEY = "vertexlearn.session";
 const LEGACY_KEY = "vertexlearn.instructor.session";
 const WORKFLOW_KEY = "vertexlearn.instructor.workflow";
+const COURSES_KEY = "vertexlearn.instructor.courses";
 
 export function getSession() {
   try {
@@ -21,7 +22,21 @@ export function saveSession(session) {
 export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
   localStorage.removeItem(LEGACY_KEY);
+  localStorage.removeItem(COURSES_KEY);
   sessionStorage.removeItem(WORKFLOW_KEY);
+}
+
+export function getCachedInstructorCourses() {
+  try {
+    return JSON.parse(localStorage.getItem(COURSES_KEY) || "null");
+  } catch {
+    return null;
+  }
+}
+
+export function saveCachedInstructorCourses(courses) {
+  if (!courses) return;
+  localStorage.setItem(COURSES_KEY, JSON.stringify(courses));
 }
 
 export function getUser() {

@@ -251,3 +251,14 @@
   overflow-y: auto;
   font-family: inherit;
 }
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  display: inline-block;
+  box-sizing: border-box;
+}

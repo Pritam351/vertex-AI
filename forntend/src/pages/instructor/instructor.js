@@ -1,5 +1,12 @@
 import { api, ApiError } from "../../services/apiClient.js";
-import { clearSession, getSession, getWorkflow, saveWorkflow } from "../../store/session.js";
+import {
+  clearSession,
+  getSession,
+  getWorkflow,
+  saveWorkflow,
+  getCachedInstructorCourses,
+  saveCachedInstructorCourses
+} from "../../store/session.js";
 import { $, escapeHtml, message } from "../../utils/dom.js";
 import { formatDate, initials } from "../../utils/formatters.js";
 import { errorText } from "../../utils/validation.js";
@@ -22,6 +29,7 @@ import {
 const state = {
   session: null,
   instructorCourses: [],
+  isLoadingCourses: false,
   workflow: { course: null, modules: [], lectures: [], quizzes: [], assignments: [] },
   isInitialized: false
 };
@@ -183,9 +191,22 @@ async function loadActiveCourseDetails(courseId) {
   if (!courseId) return;
 
   try {
-    const modRes = await api(`/courses/${courseId}/modules`);
-    const modules = modRes?.data?.modules || [];
+    const [modRes, quizRes, assignRes] = await Promise.all([
+      api(`/courses/${courseId}/modules`).catch((err) => {
+        console.warn("Could not load modules:", err);
+        return null;
+      }),
+      api(`/courses/${courseId}/quizzes`).catch((err) => {
+        console.warn("Could not load quizzes:", err);
+        return null;
+      }),
+      api(`/courses/${courseId}/assignments`).catch((err) => {
+        console.warn("Could not load assignments:", err);
+        return null;
+      })
+    ]);
 
+    const modules = modRes?.data?.modules || [];
     const lectures = [];
     modules.forEach((mod) => {
       (mod.lectures || []).forEach((lec) => {
@@ -199,20 +220,8 @@ async function loadActiveCourseDetails(courseId) {
 
     state.workflow.modules = modules;
     state.workflow.lectures = lectures;
-
-    try {
-      const quizRes = await api(`/courses/${courseId}/quizzes`);
-      state.workflow.quizzes = quizRes?.data?.quizzes || [];
-    } catch {
-      state.workflow.quizzes = [];
-    }
-
-    try {
-      const assignRes = await api(`/courses/${courseId}/assignments`);
-      state.workflow.assignments = assignRes?.data?.assignments || [];
-    } catch {
-      state.workflow.assignments = [];
-    }
+    state.workflow.quizzes = quizRes?.data?.quizzes || [];
+    state.workflow.assignments = assignRes?.data?.assignments || [];
 
     saveWorkflow(state.workflow);
     render();
@@ -242,9 +251,16 @@ export async function selectActiveCourse(courseId, navigateToBuilder = false) {
 
 export async function refreshInstructorCourses() {
   try {
+    if (!state.instructorCourses.length) {
+      state.isLoadingCourses = true;
+      render();
+    }
+
     const payload = await api("/courses/mine");
     const courses = payload?.data?.courses || [];
     state.instructorCourses = courses;
+    saveCachedInstructorCourses(courses);
+    state.isLoadingCourses = false;
 
     let targetCourse = null;
     if (state.workflow.course) {
@@ -257,7 +273,6 @@ export async function refreshInstructorCourses() {
     if (targetCourse) {
       state.workflow.course = targetCourse;
       setCourseFormMode("edit", targetCourse);
-      await loadActiveCourseDetails(targetCourse._id);
     } else {
       state.workflow.course = null;
       state.workflow.modules = [];
@@ -265,10 +280,19 @@ export async function refreshInstructorCourses() {
       state.workflow.quizzes = [];
       state.workflow.assignments = [];
       setCourseFormMode("create");
-      saveWorkflow(state.workflow);
-      render();
+    }
+
+    // Render immediately so Overview displays all courses without waiting for curriculum sub-calls!
+    saveWorkflow(state.workflow);
+    render();
+
+    // Now fetch active course curriculum details in background
+    if (targetCourse) {
+      await loadActiveCourseDetails(targetCourse._id);
     }
   } catch (error) {
+    state.isLoadingCourses = false;
+    render();
     toast(`Could not refresh courses: ${errorText(error)}`, "error");
   }
 }
@@ -326,17 +350,32 @@ export function render() {
 
   const courseCount = $("#course-count");
   if (courseCount) {
-    courseCount.textContent = totalCourses === 1 ? "1 course" : `${totalCourses} courses`;
+    if (state.isLoadingCourses && totalCourses === 0) {
+      courseCount.textContent = "Loading…";
+    } else {
+      courseCount.textContent = totalCourses === 1 ? "1 course" : `${totalCourses} courses`;
+    }
   }
 
   const courseEmpty = $("#course-empty");
-  if (courseEmpty) courseEmpty.hidden = totalCourses > 0;
+  if (courseEmpty) {
+    courseEmpty.hidden = state.isLoadingCourses || totalCourses > 0;
+  }
 
   const listContainer = $("#courses-list-container");
   if (listContainer) {
-    listContainer.innerHTML = state.instructorCourses
-      .map((c) => renderInstructorCourseCard(c, course?._id === c._id))
-      .join("");
+    if (state.isLoadingCourses && totalCourses === 0) {
+      listContainer.innerHTML = `
+        <div class="courses-loading-state" style="padding:2.5rem; text-align:center; color:var(--muted); background:var(--surface); border:1px solid var(--line); border-radius:0.75rem;">
+          <div class="spinner" style="margin:0 auto 0.75rem auto; width:28px; height:28px; border:3px solid rgba(124, 58, 237, 0.2); border-top-color:var(--violet); border-radius:50%; animation:spin 0.8s linear infinite;"></div>
+          <p style="margin:0; font-size:0.9rem; font-weight:500;">Loading your courses…</p>
+        </div>
+      `;
+    } else {
+      listContainer.innerHTML = state.instructorCourses
+        .map((c) => renderInstructorCourseCard(c, course?._id === c._id))
+        .join("");
+    }
   }
 
   const curriculumTools = $("#curriculum-tools");
@@ -1286,6 +1325,17 @@ export async function mountInstructorWorkspace(container, initialSection = "over
     quizzes: [],
     assignments: []
   };
+
+  const cachedCourses = getCachedInstructorCourses();
+  if (Array.isArray(cachedCourses) && cachedCourses.length > 0) {
+    state.instructorCourses = cachedCourses;
+    state.isLoadingCourses = false;
+    if (!state.workflow.course) {
+      state.workflow.course = cachedCourses[0];
+    }
+  } else {
+    state.isLoadingCourses = true;
+  }
 
   await loadInstructorFragments(container);
 
