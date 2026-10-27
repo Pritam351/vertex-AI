@@ -265,10 +265,85 @@ async function loadActiveCourseDetails(courseId) {
   }
 }
 
+export function startNewCourse() {
+  state.workflow.course = null;
+  state.workflow.modules = [];
+  state.workflow.lectures = [];
+  state.workflow.quizzes = [];
+  state.workflow.assignments = [];
+  state.workflow.isCreatingNew = true;
+  state.submissions = [];
+
+  // Reset course form to create mode and clear all inputs
+  setCourseFormMode("create");
+  const courseForm = $("#course-form");
+  if (courseForm) {
+    courseForm.reset();
+    const idInput = $("#course-form-id");
+    if (idInput) idInput.value = "";
+    const msgEl = courseForm.querySelector('[data-message="course"]');
+    if (msgEl) message(msgEl);
+  }
+
+  // Reset module form to create mode and clear all inputs
+  setModuleFormMode("create");
+  const moduleForm = $("#module-form");
+  if (moduleForm) {
+    moduleForm.reset();
+    const modIdInput = $("#module-form-id");
+    if (modIdInput) modIdInput.value = "";
+    const msgEl = moduleForm.querySelector('[data-message="module"]');
+    if (msgEl) message(msgEl);
+  }
+
+  // Reset lecture form to create mode and clear all inputs
+  setLectureFormMode("create");
+  const lectureForm = $("#lecture-form");
+  if (lectureForm) {
+    lectureForm.reset();
+    const lecIdInput = $("#lecture-form-id");
+    if (lecIdInput) lecIdInput.value = "";
+    const msgEl = lectureForm.querySelector('[data-message="lecture"]');
+    if (msgEl) message(msgEl);
+  }
+
+  // Reset quiz form and builder
+  const quizForm = $("#quiz-form");
+  if (quizForm) {
+    quizForm.reset();
+    const msgEl = quizForm.querySelector('[data-message="quiz"]');
+    if (msgEl) message(msgEl);
+  }
+  quizQuestions = [createDefaultQuestion("mcq")];
+  editingQuizId = null;
+  renderQuizQuestions();
+
+  // Reset assignment form
+  const assignForm = $("#assignment-form");
+  if (assignForm) {
+    assignForm.reset();
+    const msgEl = assignForm.querySelector('[data-message="assignment"]');
+    if (msgEl) message(msgEl);
+  }
+
+  saveWorkflow(state.workflow);
+  render();
+  showView("course-builder");
+
+  const titleInput = $("#course-form input[name='title']");
+  if (titleInput) {
+    $("#course-form")?.scrollIntoView({ behavior: "smooth" });
+    titleInput.focus();
+  }
+
+  toast("Started fresh course outline. Enter course info to begin.");
+}
+
 export async function selectActiveCourse(courseId, navigateToBuilder = false) {
   const found = state.instructorCourses.find((c) => c._id === courseId);
   if (!found) return;
 
+  state.workflow.isCreatingNew = false;
   state.workflow.course = found;
   saveWorkflow(state.workflow);
   render();
@@ -298,8 +373,7 @@ export async function refreshInstructorCourses() {
     let targetCourse = null;
     if (state.workflow.course) {
       targetCourse = courses.find((course) => course._id === state.workflow.course._id);
-    }
-    if (!targetCourse && courses.length > 0) {
+    } else if (!state.workflow.isCreatingNew && courses.length > 0) {
       targetCourse = courses[0];
     }
 
@@ -490,12 +564,13 @@ export function render() {
     if (activeContext) {
       activeContext.hidden = false;
 
-      const courseOptions = state.instructorCourses
-        .map(
+      const courseOptions = [
+        ...state.instructorCourses.map(
           (c) =>
             `<option value="${escapeHtml(c._id)}" ${c._id === course._id ? "selected" : ""}>${escapeHtml(c.title)} (${getCourseStatusLabel(c)})</option>`
-        )
-        .join("");
+        ),
+        `<option value="__new__">＋ Create new course...</option>`
+      ].join("");
 
       activeContext.innerHTML = `
         <div class="course-switcher-wrapper">
@@ -526,10 +601,13 @@ export function render() {
         </dl>
         <div class="active-course-actions" style="margin-top:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
           <button class="mini-button button-secondary" type="button" data-action="edit-active-course" style="flex:1;">
-            ✏️ Edit Course Info
+            ✏️ Edit Info
           </button>
           <button class="mini-button button-subtle" type="button" data-action="reload-curriculum" style="flex:1;">
-            ↻ Reload Curriculum
+            ↻ Reload
+          </button>
+          <button class="mini-button button-primary" type="button" data-action="new-course" style="flex:1;">
+            ＋ New Course
           </button>
         </div>
       `;
@@ -1266,7 +1344,8 @@ function bindWorkspaceEventListeners() {
           modules: [],
           lectures: [],
           quizzes: [],
-          assignments: []
+          assignments: [],
+          isCreatingNew: false
         };
         save();
         setCourseFormMode("edit", newCourse);
@@ -1284,12 +1363,12 @@ function bindWorkspaceEventListeners() {
     }
   });
 
-  $("#btn-create-mode-switch")?.addEventListener("click", () => setCourseFormMode("create"));
+  $("#btn-create-mode-switch")?.addEventListener("click", () => startNewCourse());
   $("#course-cancel-edit-btn")?.addEventListener("click", () => {
     if (activeCourse()) {
       setCourseFormMode("edit", activeCourse());
     } else {
-      setCourseFormMode("create");
+      startNewCourse();
     }
   });
 
@@ -1954,6 +2033,13 @@ function bindGlobalClickHandlers() {
       return;
     }
 
+    const newCourseBtn = event.target.closest('[data-action="new-course"]');
+    if (newCourseBtn) {
+      event.preventDefault();
+      startNewCourse();
+      return;
+    }
+
     const target = event.target.closest("[data-go], [data-section]");
     if (target) {
       event.preventDefault();
@@ -1963,7 +2049,11 @@ function bindGlobalClickHandlers() {
 
   document.addEventListener("change", (event) => {
     if (event.target.id === "course-switcher-select") {
-      selectActiveCourse(event.target.value, false);
+      if (event.target.value === "__new__") {
+        startNewCourse();
+      } else {
+        selectActiveCourse(event.target.value, false);
+      }
     }
   });
 }
@@ -1982,7 +2072,7 @@ export async function mountInstructorWorkspace(container, initialSection = "over
   if (Array.isArray(cachedCourses) && cachedCourses.length > 0) {
     state.instructorCourses = cachedCourses;
     state.isLoadingCourses = false;
-    if (!state.workflow.course) {
+    if (!state.workflow.course && !state.workflow.isCreatingNew) {
       state.workflow.course = cachedCourses[0];
     }
   } else {
