@@ -19,6 +19,11 @@ const moduleSchema = z.object({
   orderIndex: z.number().int().min(1).optional(),
 });
 
+const updateModuleSchema = z.object({
+  title: z.string().trim().min(2).max(200).optional(),
+  orderIndex: z.number().int().min(1).optional(),
+});
+
 const lectureSchema = z.object({
   title: z.string().trim().min(2).max(200),
   videoUrl: safeUrl.optional(),
@@ -28,4 +33,11 @@ const lectureSchema = z.object({
   resourceUrls: z.array(safeUrl).max(20).optional(),
 });
 
-module.exports = { moduleSchema, lectureSchema };
+const updateLectureSchema = lectureSchema.partial();
+
+module.exports = {
+  moduleSchema,
+  updateModuleSchema,
+  lectureSchema,
+  updateLectureSchema,
+};

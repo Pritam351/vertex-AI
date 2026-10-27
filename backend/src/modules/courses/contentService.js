@@ -78,7 +78,6 @@ const listModules = async (courseId, user) => {
     moduleId: { $in: moduleIds },
   })
     .sort({ orderIndex: 1 })
-    .select("-transcript")
     .lean();
 
   return modules.map((item) => ({
@@ -87,6 +86,29 @@ const listModules = async (courseId, user) => {
       (lecture) => lecture.moduleId.toString() === item._id.toString()
     ),
   }));
+};
+
+const updateModule = async (moduleId, data, user) => {
+  const module = await getModuleForEditor(moduleId, user);
+
+  if (data.title !== undefined) {
+    module.title = data.title;
+  }
+  if (data.orderIndex !== undefined) {
+    module.orderIndex = data.orderIndex;
+  }
+
+  await module.save();
+  return module;
+};
+
+const deleteModule = async (moduleId, user) => {
+  const module = await getModuleForEditor(moduleId, user);
+
+  await Lecture.deleteMany({ moduleId: module._id });
+  await module.deleteOne();
+
+  return { success: true };
 };
 
 const createLecture = async (moduleId, data, user) => {
@@ -107,6 +129,26 @@ const createLecture = async (moduleId, data, user) => {
   });
 };
 
+const updateLecture = async (lectureId, data, user) => {
+  const lecture = await getLectureForEditor(lectureId, user);
+
+  if (data.title !== undefined) lecture.title = data.title;
+  if (data.videoUrl !== undefined) lecture.videoUrl = data.videoUrl;
+  if (data.transcript !== undefined) lecture.transcript = data.transcript;
+  if (data.durationSeconds !== undefined) lecture.durationSeconds = data.durationSeconds;
+  if (data.orderIndex !== undefined) lecture.orderIndex = data.orderIndex;
+  if (data.resourceUrls !== undefined) lecture.resourceUrls = data.resourceUrls;
+
+  await lecture.save();
+  return lecture;
+};
+
+const deleteLecture = async (lectureId, user) => {
+  const lecture = await getLectureForEditor(lectureId, user);
+  await lecture.deleteOne();
+  return { success: true };
+};
+
 const listLectures = async (moduleId) => {
   if (!validId(moduleId)) fail(400, "Invalid module ID");
 
@@ -122,7 +164,6 @@ const listLectures = async (moduleId) => {
 
   return Lecture.find({ moduleId })
     .sort({ orderIndex: 1 })
-    .select("-transcript")
     .lean();
 };
 
@@ -137,9 +178,15 @@ const getLectureForEditor = async (lectureId, user) => {
 };
 
 module.exports = {
+  getCourseForEditor,
+  getModuleForEditor,
+  getLectureForEditor,
   createModule,
+  updateModule,
+  deleteModule,
   listModules,
   createLecture,
+  updateLecture,
+  deleteLecture,
   listLectures,
-  getLectureForEditor,
 };

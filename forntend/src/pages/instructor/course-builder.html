@@ -6,13 +6,19 @@
             this backend does not accept file uploads.</p>
     </div>
     <div class="builder-grid">
-        <form class="panel form-panel" id="course-form" novalidate>
+        <form class="panel form-panel" id="course-form" novalidate data-mode="create">
             <div class="panel-title"><span class="step-number">01</span>
                 <div>
-                    <h3>Create course</h3>
-                    <p>Courses are submitted as pending for approval.</p>
+                    <h3 id="course-form-heading">Create course</h3>
+                    <p id="course-form-subheading">Courses are submitted as pending for approval.</p>
                 </div>
-            </div><label>Course title<input name="title" required minlength="3" maxlength="200"
+                <div class="form-mode-switch" style="margin-left:auto; display:flex; align-items:center; gap:0.5rem;">
+                    <span id="course-mode-badge" class="badge">Create Mode</span>
+                    <button type="button" id="btn-create-mode-switch" class="mini-button button-subtle" style="display:none;">＋ Create new course</button>
+                </div>
+            </div>
+            <input type="hidden" name="courseId" id="course-form-id" value="" />
+            <label>Course title<input name="title" required minlength="3" maxlength="200"
                     placeholder="e.g. Applied Prompt Engineering" /></label><label>Short description<textarea
                     name="description" maxlength="5000"
                     placeholder="What will learners be able to do?"></textarea></label>
@@ -23,10 +29,17 @@
                         <option value="advanced">Advanced</option>
                     </select></label></div>
             <div class="form-row"><label>Thumbnail URL <input name="thumbnailUrl" type="url" maxlength="2048"
-                        placeholder="https://..." /></label><label>Price <input name="price" type="number" min="0"
+                        placeholder="https://..." /></label><label>Price (₹)<input name="price" type="number" min="0"
                         step="0.01" value="0" /></label></div>
-            <p class="form-message" data-message="course" role="alert" aria-live="polite"></p><button
-                class="button button-primary" type="submit">Create course <span aria-hidden="true">→</span></button>
+            <p class="form-message" data-message="course" role="alert" aria-live="polite"></p>
+            <div style="display:flex; gap:0.5rem; align-items:center;">
+                <button class="button button-primary" id="course-submit-btn" type="submit">
+                    <span id="course-submit-label">Create course</span> <span aria-hidden="true">→</span>
+                </button>
+                <button type="button" class="button button-secondary" id="course-cancel-edit-btn" style="display:none;">
+                    Cancel Edit
+                </button>
+            </div>
         </form>
         <section class="panel builder-status" aria-live="polite">
             <div class="panel-title"><span class="step-number">02</span>
@@ -42,26 +55,32 @@
         </section>
     </div>
     <div class="authoring-grid" id="curriculum-tools" aria-disabled="true">
-        <form class="panel form-panel subdued" id="module-form" novalidate>
+        <form class="panel form-panel subdued" id="module-form" novalidate data-mode="create">
             <div class="panel-title"><span class="step-number">03</span>
                 <div>
-                    <h3>Add module</h3>
-                    <p>Group lessons into a clear sequence.</p>
+                    <h3 id="module-form-heading">Add module</h3>
+                    <p id="module-form-subheading">Group lessons into a clear sequence.</p>
                 </div>
-            </div><label>Module title<input name="title" required minlength="2" maxlength="200"
+                <button type="button" id="btn-cancel-module-edit" class="mini-button button-subtle" style="margin-left:auto; display:none;">✕ Cancel</button>
+            </div>
+            <input type="hidden" name="moduleId" id="module-form-id" value="" />
+            <label>Module title<input name="title" required minlength="2" maxlength="200"
                     placeholder="e.g. Foundations" /></label><label>Position <input name="orderIndex" type="number"
                     min="1" placeholder="Auto" /></label>
-            <p class="form-message" data-message="module" role="alert" aria-live="polite"></p><button
-                class="button button-secondary" type="submit">Add module</button>
+            <p class="form-message" data-message="module" role="alert" aria-live="polite"></p>
+            <button class="button button-secondary" id="module-submit-btn" type="submit">Add module</button>
             <div class="created-list" id="module-list"></div>
         </form>
-        <form class="panel form-panel subdued" id="lecture-form" novalidate>
+        <form class="panel form-panel subdued" id="lecture-form" novalidate data-mode="create">
             <div class="panel-title"><span class="step-number">04</span>
                 <div>
-                    <h3>Add lecture</h3>
-                    <p>Use hosted resource links; uploads are not supported.</p>
+                    <h3 id="lecture-form-heading">Add lecture</h3>
+                    <p id="lecture-form-subheading">Use hosted resource links; uploads are not supported.</p>
                 </div>
-            </div><label>Module<select name="moduleId" id="lecture-module" required disabled>
+                <button type="button" id="btn-cancel-lecture-edit" class="mini-button button-subtle" style="margin-left:auto; display:none;">✕ Cancel</button>
+            </div>
+            <input type="hidden" name="lectureId" id="lecture-form-id" value="" />
+            <label>Module<select name="moduleId" id="lecture-module" required disabled>
                     <option value="">Add a module first</option>
                 </select></label><label>Lecture title<input name="title" required minlength="2" maxlength="200"
                     placeholder="e.g. Designing useful prompts" /></label>
@@ -72,8 +91,8 @@
                     placeholder="https://example.com/worksheet.pdf"></textarea></label><label>Transcript
                 <small>Optional, used by AI features</small><textarea name="transcript" maxlength="100000"
                     placeholder="Paste lecture transcript text"></textarea></label>
-            <p class="form-message" data-message="lecture" role="alert" aria-live="polite"></p><button
-                class="button button-secondary" type="submit">Add lecture</button>
+            <p class="form-message" data-message="lecture" role="alert" aria-live="polite"></p>
+            <button class="button button-secondary" id="lecture-submit-btn" type="submit">Add lecture</button>
             <div class="created-list" id="lecture-list"></div>
         </form>
     </div>

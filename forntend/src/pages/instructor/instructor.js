@@ -55,6 +55,130 @@ function activeCourse() {
   return state.workflow.course;
 }
 
+export function setCourseFormMode(mode, course = null) {
+  const form = $("#course-form");
+  if (!form) return;
+  form.dataset.mode = mode;
+
+  const heading = $("#course-form-heading");
+  const subheading = $("#course-form-subheading");
+  const badge = $("#course-mode-badge");
+  const btnCreateSwitch = $("#btn-create-mode-switch");
+  const btnCancel = $("#course-cancel-edit-btn");
+  const submitLabel = $("#course-submit-label");
+  const hiddenId = $("#course-form-id");
+
+  if (mode === "edit" && course) {
+    if (heading) heading.textContent = "Edit course";
+    if (subheading) subheading.textContent = `Update info for "${course.title}"`;
+    if (badge) {
+      badge.textContent = "Editing Mode";
+      badge.className = "badge active-pill";
+    }
+    if (btnCreateSwitch) btnCreateSwitch.style.display = "inline-flex";
+    if (btnCancel) btnCancel.style.display = "inline-flex";
+    if (submitLabel) submitLabel.textContent = "Save changes";
+    if (hiddenId) hiddenId.value = course._id;
+
+    const titleInput = form.querySelector('[name="title"]');
+    if (titleInput) titleInput.value = course.title || "";
+    const descInput = form.querySelector('[name="description"]');
+    if (descInput) descInput.value = course.description || "";
+    const catInput = form.querySelector('[name="category"]');
+    if (catInput) catInput.value = course.category || "";
+    const diffSelect = form.querySelector('[name="difficulty"]');
+    if (diffSelect) diffSelect.value = course.difficulty || "beginner";
+    const thumbInput = form.querySelector('[name="thumbnailUrl"]');
+    if (thumbInput) thumbInput.value = course.thumbnailUrl || "";
+    const priceInput = form.querySelector('[name="price"]');
+    if (priceInput) priceInput.value = course.price !== undefined ? course.price : 0;
+  } else {
+    if (heading) heading.textContent = "Create course";
+    if (subheading) subheading.textContent = "Courses are submitted as pending for approval.";
+    if (badge) {
+      badge.textContent = "Create Mode";
+      badge.className = "badge";
+    }
+    if (btnCreateSwitch) btnCreateSwitch.style.display = "none";
+    if (btnCancel) btnCancel.style.display = "none";
+    if (submitLabel) submitLabel.textContent = "Create course";
+    if (hiddenId) hiddenId.value = "";
+    form.reset();
+  }
+}
+
+export function setModuleFormMode(mode, module = null) {
+  const form = $("#module-form");
+  if (!form) return;
+  form.dataset.mode = mode;
+
+  const heading = $("#module-form-heading");
+  const subheading = $("#module-form-subheading");
+  const btnCancel = $("#btn-cancel-module-edit");
+  const submitBtn = $("#module-submit-btn");
+  const hiddenId = $("#module-form-id");
+
+  if (mode === "edit" && module) {
+    if (heading) heading.textContent = "Edit module";
+    if (subheading) subheading.textContent = `Rename or reorder "${module.title}"`;
+    if (btnCancel) btnCancel.style.display = "inline-flex";
+    if (submitBtn) submitBtn.textContent = "Save module";
+    if (hiddenId) hiddenId.value = module._id;
+
+    const titleInput = form.querySelector('[name="title"]');
+    if (titleInput) titleInput.value = module.title || "";
+    const orderInput = form.querySelector('[name="orderIndex"]');
+    if (orderInput) orderInput.value = module.orderIndex || 1;
+  } else {
+    if (heading) heading.textContent = "Add module";
+    if (subheading) subheading.textContent = "Group lessons into a clear sequence.";
+    if (btnCancel) btnCancel.style.display = "none";
+    if (submitBtn) submitBtn.textContent = "Add module";
+    if (hiddenId) hiddenId.value = "";
+    form.reset();
+  }
+}
+
+export function setLectureFormMode(mode, lecture = null) {
+  const form = $("#lecture-form");
+  if (!form) return;
+  form.dataset.mode = mode;
+
+  const heading = $("#lecture-form-heading");
+  const subheading = $("#lecture-form-subheading");
+  const btnCancel = $("#btn-cancel-lecture-edit");
+  const submitBtn = $("#lecture-submit-btn");
+  const hiddenId = $("#lecture-form-id");
+
+  if (mode === "edit" && lecture) {
+    if (heading) heading.textContent = "Edit lecture";
+    if (subheading) subheading.textContent = `Update video, duration or transcript for "${lecture.title}"`;
+    if (btnCancel) btnCancel.style.display = "inline-flex";
+    if (submitBtn) submitBtn.textContent = "Save lecture";
+    if (hiddenId) hiddenId.value = lecture._id;
+
+    const modSelect = form.querySelector('[name="moduleId"]');
+    if (modSelect) modSelect.value = lecture.moduleId || "";
+    const titleInput = form.querySelector('[name="title"]');
+    if (titleInput) titleInput.value = lecture.title || "";
+    const vidInput = form.querySelector('[name="videoUrl"]');
+    if (vidInput) vidInput.value = lecture.videoUrl || "";
+    const durInput = form.querySelector('[name="durationSeconds"]');
+    if (durInput) durInput.value = lecture.durationSeconds || "";
+    const resInput = form.querySelector('[name="resourceUrls"]');
+    if (resInput) resInput.value = Array.isArray(lecture.resourceUrls) ? lecture.resourceUrls.join("\n") : "";
+    const trInput = form.querySelector('[name="transcript"]');
+    if (trInput) trInput.value = lecture.transcript || "";
+  } else {
+    if (heading) heading.textContent = "Add lecture";
+    if (subheading) subheading.textContent = "Use hosted resource links; uploads are not supported.";
+    if (btnCancel) btnCancel.style.display = "none";
+    if (submitBtn) submitBtn.textContent = "Add lecture";
+    if (hiddenId) hiddenId.value = "";
+    form.reset();
+  }
+}
+
 async function loadActiveCourseDetails(courseId) {
   if (!courseId) return;
 
@@ -107,6 +231,8 @@ export async function selectActiveCourse(courseId, navigateToBuilder = false) {
   saveWorkflow(state.workflow);
   render();
 
+  setCourseFormMode("edit", found);
+
   await loadActiveCourseDetails(courseId);
 
   if (navigateToBuilder) {
@@ -130,6 +256,7 @@ export async function refreshInstructorCourses() {
 
     if (targetCourse) {
       state.workflow.course = targetCourse;
+      setCourseFormMode("edit", targetCourse);
       await loadActiveCourseDetails(targetCourse._id);
     } else {
       state.workflow.course = null;
@@ -137,6 +264,7 @@ export async function refreshInstructorCourses() {
       state.workflow.lectures = [];
       state.workflow.quizzes = [];
       state.workflow.assignments = [];
+      setCourseFormMode("create");
       saveWorkflow(state.workflow);
       render();
     }
@@ -263,6 +391,14 @@ export function render() {
           <div><dt>Lectures</dt><dd>${state.workflow.lectures.length}</dd></div>
           <div><dt>Assessments</dt><dd>${state.workflow.quizzes.length + state.workflow.assignments.length}</dd></div>
         </dl>
+        <div class="active-course-actions" style="margin-top:0.75rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+          <button class="mini-button button-secondary" type="button" data-action="edit-active-course" style="flex:1;">
+            ✏️ Edit Course Info
+          </button>
+          <button class="mini-button button-subtle" type="button" data-action="reload-curriculum" style="flex:1;">
+            ↻ Reload Curriculum
+          </button>
+        </div>
       `;
     }
   } else {
@@ -612,18 +748,27 @@ function bindWorkspaceEventListeners() {
   $("#course-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
-    const button = form.querySelector("button");
+    const button = form.querySelector("#course-submit-btn") || form.querySelector("button");
     const raw = Object.fromEntries(new FormData(form));
-    const body = { ...raw, price: Number(raw.price || 0) };
-    if (typeof body.thumbnailUrl === "string") {
-      body.thumbnailUrl = body.thumbnailUrl.trim();
+    const mode = form.dataset.mode || "create";
+    const courseId = raw.courseId || $("#course-form-id")?.value;
+
+    const body = {
+      title: (raw.title || "").trim(),
+      description: (raw.description || "").trim(),
+      category: (raw.category || "").trim(),
+      difficulty: raw.difficulty,
+      price: Number(raw.price || 0)
+    };
+    if (typeof raw.thumbnailUrl === "string" && raw.thumbnailUrl.trim()) {
+      body.thumbnailUrl = raw.thumbnailUrl.trim();
     }
     Object.keys(body).forEach((key) => {
-      if (body[key] === "") delete body[key];
+      if (body[key] === "" || body[key] === undefined) delete body[key];
     });
     message(form.querySelector('[data-message="course"]'));
 
-    if ((body.title || "").trim().length < 3) {
+    if (!body.title || body.title.length < 3) {
       return message(
         form.querySelector('[data-message="course"]'),
         "Course title must be at least 3 characters.",
@@ -633,24 +778,46 @@ function bindWorkspaceEventListeners() {
 
     setBusy(button, true);
     try {
-      const payload = await api("/courses", { method: "POST", body });
-      const newCourse = payload.data.course;
-      state.instructorCourses.unshift(newCourse);
-      state.workflow = {
-        course: newCourse,
-        modules: [],
-        lectures: [],
-        quizzes: [],
-        assignments: []
-      };
-      save();
-      form.reset();
-      toast(payload.message || "Course created and submitted for approval.");
-      message(
-        form.querySelector('[data-message="course"]'),
-        "Course created. Continue with its curriculum below.",
-        "success"
-      );
+      if (mode === "edit" && courseId) {
+        const payload = await api(`/courses/${courseId}`, {
+          method: "PUT",
+          body
+        });
+        const updatedCourse = payload.data.course;
+        const idx = state.instructorCourses.findIndex((c) => c._id === updatedCourse._id);
+        if (idx !== -1) {
+          state.instructorCourses[idx] = updatedCourse;
+        }
+        if (state.workflow.course?._id === updatedCourse._id) {
+          state.workflow.course = updatedCourse;
+        }
+        save();
+        toast("Course updated successfully.");
+        message(
+          form.querySelector('[data-message="course"]'),
+          "Course updated successfully.",
+          "success"
+        );
+      } else {
+        const payload = await api("/courses", { method: "POST", body });
+        const newCourse = payload.data.course;
+        state.instructorCourses.unshift(newCourse);
+        state.workflow = {
+          course: newCourse,
+          modules: [],
+          lectures: [],
+          quizzes: [],
+          assignments: []
+        };
+        save();
+        setCourseFormMode("edit", newCourse);
+        toast(payload.message || "Course created and submitted for approval.");
+        message(
+          form.querySelector('[data-message="course"]'),
+          "Course created! You can continue editing it or build its curriculum below.",
+          "success"
+        );
+      }
     } catch (error) {
       message(form.querySelector('[data-message="course"]'), errorText(error), "error");
     } finally {
@@ -658,26 +825,61 @@ function bindWorkspaceEventListeners() {
     }
   });
 
+  $("#btn-create-mode-switch")?.addEventListener("click", () => setCourseFormMode("create"));
+  $("#course-cancel-edit-btn")?.addEventListener("click", () => {
+    if (activeCourse()) {
+      setCourseFormMode("edit", activeCourse());
+    } else {
+      setCourseFormMode("create");
+    }
+  });
+
   $("#module-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     if (!requireCourse(form, "module")) return;
-    const button = form.querySelector("button");
+    const button = form.querySelector("#module-submit-btn") || form.querySelector("button");
     const raw = Object.fromEntries(new FormData(form));
+    const mode = form.dataset.mode || "create";
+    const moduleId = raw.moduleId || $("#module-form-id")?.value;
+
     const body = {
       title: raw.title,
       ...(raw.orderIndex ? { orderIndex: Number(raw.orderIndex) } : {})
     };
     setBusy(button, true);
     try {
-      const payload = await api(`/courses/${activeCourse()._id}/modules`, {
-        method: "POST",
-        body
-      });
-      state.workflow.modules.push(payload.data.module);
-      save();
-      form.reset();
-      toast("Module added.");
+      if (mode === "edit" && moduleId) {
+        const payload = await api(`/modules/${moduleId}`, {
+          method: "PUT",
+          body
+        });
+        const updatedModule = payload.data.module;
+        const modIdx = state.workflow.modules.findIndex((m) => m._id === moduleId);
+        if (modIdx !== -1) {
+          state.workflow.modules[modIdx] = {
+            ...state.workflow.modules[modIdx],
+            ...updatedModule
+          };
+        }
+        state.workflow.lectures.forEach((lec) => {
+          if (lec.moduleId === moduleId) {
+            lec.moduleTitle = updatedModule.title;
+          }
+        });
+        save();
+        setModuleFormMode("create");
+        toast("Module updated successfully.");
+      } else {
+        const payload = await api(`/courses/${activeCourse()._id}/modules`, {
+          method: "POST",
+          body
+        });
+        state.workflow.modules.push(payload.data.module);
+        save();
+        form.reset();
+        toast("Module added.");
+      }
     } catch (error) {
       message(form.querySelector('[data-message="module"]'), errorText(error), "error");
     } finally {
@@ -685,41 +887,78 @@ function bindWorkspaceEventListeners() {
     }
   });
 
+  $("#btn-cancel-module-edit")?.addEventListener("click", () => setModuleFormMode("create"));
+
   $("#lecture-form")?.addEventListener("submit", async (event) => {
     event.preventDefault();
     const form = event.currentTarget;
     if (!requireCourse(form, "lecture")) return;
-    const button = form.querySelector("button");
+    const button = form.querySelector("#lecture-submit-btn") || form.querySelector("button");
     const raw = Object.fromEntries(new FormData(form));
+    const mode = form.dataset.mode || "create";
+    const lectureId = raw.lectureId || $("#lecture-form-id")?.value;
+
     const resourceUrls = (raw.resourceUrls || "")
       .split("\n")
       .map((url) => url.trim())
       .filter(Boolean);
     const body = {
       title: raw.title,
-      ...(raw.videoUrl ? { videoUrl: raw.videoUrl } : {}),
-      ...(raw.durationSeconds ? { durationSeconds: Number(raw.durationSeconds) } : {}),
-      ...(raw.transcript ? { transcript: raw.transcript } : {}),
+      ...(raw.videoUrl !== undefined ? { videoUrl: raw.videoUrl } : {}),
+      ...(raw.durationSeconds !== undefined ? { durationSeconds: Number(raw.durationSeconds || 0) } : {}),
+      ...(raw.transcript !== undefined ? { transcript: raw.transcript } : {}),
       ...(resourceUrls.length ? { resourceUrls } : {})
     };
     setBusy(button, true);
     try {
-      const payload = await api(`/modules/${raw.moduleId}/lectures`, {
-        method: "POST",
-        body
-      });
-      const moduleTitle =
-        state.workflow.modules.find((item) => item._id === raw.moduleId)?.title || "Module";
-      state.workflow.lectures.push({ ...payload.data.lecture, moduleTitle });
-      save();
-      form.reset();
-      toast("Lecture added.");
+      if (mode === "edit" && lectureId) {
+        const payload = await api(`/lectures/${lectureId}`, {
+          method: "PUT",
+          body
+        });
+        const updatedLecture = payload.data.lecture;
+        const moduleTitle =
+          state.workflow.modules.find((item) => item._id === (raw.moduleId || updatedLecture.moduleId))?.title || "Module";
+        const lecIdx = state.workflow.lectures.findIndex((l) => l._id === lectureId);
+        if (lecIdx !== -1) {
+          state.workflow.lectures[lecIdx] = { ...updatedLecture, moduleTitle };
+        }
+        state.workflow.modules.forEach((mod) => {
+          if (Array.isArray(mod.lectures)) {
+            const mIdx = mod.lectures.findIndex((l) => l._id === lectureId);
+            if (mIdx !== -1) {
+              mod.lectures[mIdx] = { ...updatedLecture, moduleTitle };
+            }
+          }
+        });
+        save();
+        setLectureFormMode("create");
+        toast("Lecture updated successfully.");
+      } else {
+        const payload = await api(`/modules/${raw.moduleId}/lectures`, {
+          method: "POST",
+          body
+        });
+        const moduleTitle =
+          state.workflow.modules.find((item) => item._id === raw.moduleId)?.title || "Module";
+        state.workflow.lectures.push({ ...payload.data.lecture, moduleTitle });
+        const targetMod = state.workflow.modules.find((m) => m._id === raw.moduleId);
+        if (targetMod) {
+          if (!Array.isArray(targetMod.lectures)) targetMod.lectures = [];
+          targetMod.lectures.push({ ...payload.data.lecture, moduleTitle });
+        }
+        save();
+        form.reset();
+        toast("Lecture added.");
+      }
     } catch (error) {
       message(form.querySelector('[data-message="lecture"]'), errorText(error), "error");
     } finally {
       setBusy(button, false);
     }
   });
+
+  $("#btn-cancel-lecture-edit")?.addEventListener("click", () => setLectureFormMode("create"));
 
   // Quiz submission
   $("#quiz-form")?.addEventListener("submit", async (event) => {
@@ -901,11 +1140,126 @@ function bindWorkspaceEventListeners() {
 }
 
 function bindGlobalClickHandlers() {
-  document.addEventListener("click", (event) => {
+  document.addEventListener("click", async (event) => {
     const switchBtn = event.target.closest("[data-switch-course]");
     if (switchBtn) {
       event.preventDefault();
       selectActiveCourse(switchBtn.dataset.switchCourse, true);
+      return;
+    }
+
+    const editCourseBtn = event.target.closest('[data-action="edit-active-course"]');
+    if (editCourseBtn) {
+      event.preventDefault();
+      if (activeCourse()) {
+        setCourseFormMode("edit", activeCourse());
+        $("#course-form")?.scrollIntoView({ behavior: "smooth" });
+        $("#course-form input[name='title']")?.focus();
+      }
+      return;
+    }
+
+    const reloadBtn = event.target.closest('[data-action="reload-curriculum"]');
+    if (reloadBtn) {
+      event.preventDefault();
+      if (activeCourse()) {
+        setBusy(reloadBtn, true, "Reloading…");
+        try {
+          await loadActiveCourseDetails(activeCourse()._id);
+          toast("Curriculum reloaded and verified from database! ✓");
+        } catch (err) {
+          toast(`Failed to reload curriculum: ${errorText(err)}`, "error");
+        } finally {
+          setBusy(reloadBtn, false);
+        }
+      }
+      return;
+    }
+
+    const renameModBtn = event.target.closest("[data-rename-module]");
+    if (renameModBtn) {
+      event.preventDefault();
+      const modId = renameModBtn.dataset.renameModule;
+      const found = state.workflow.modules.find((m) => m._id === modId);
+      if (found) {
+        setModuleFormMode("edit", found);
+        $("#module-form")?.scrollIntoView({ behavior: "smooth" });
+        $("#module-form input[name='title']")?.focus();
+      }
+      return;
+    }
+
+    const delModBtn = event.target.closest("[data-delete-module]");
+    if (delModBtn) {
+      event.preventDefault();
+      const modId = delModBtn.dataset.deleteModule;
+      const mod = state.workflow.modules.find((m) => m._id === modId);
+      if (!mod) return;
+      if (!confirm(`Are you sure you want to delete module "${mod.title}" and its lectures?`)) return;
+      setBusy(delModBtn, true);
+      try {
+        await api(`/modules/${modId}`, { method: "DELETE" });
+        state.workflow.modules = state.workflow.modules.filter((m) => m._id !== modId);
+        state.workflow.lectures = state.workflow.lectures.filter((l) => l.moduleId !== modId);
+        setModuleFormMode("create");
+        save();
+        toast("Module deleted successfully.");
+      } catch (err) {
+        toast(`Failed to delete module: ${errorText(err)}`, "error");
+      } finally {
+        setBusy(delModBtn, false);
+      }
+      return;
+    }
+
+    const editLecBtn = event.target.closest("[data-edit-lecture]");
+    if (editLecBtn) {
+      event.preventDefault();
+      const lecId = editLecBtn.dataset.editLecture;
+      const found = state.workflow.lectures.find((l) => l._id === lecId);
+      if (found) {
+        setLectureFormMode("edit", found);
+        $("#lecture-form")?.scrollIntoView({ behavior: "smooth" });
+        $("#lecture-form input[name='title']")?.focus();
+      }
+      return;
+    }
+
+    const delLecBtn = event.target.closest("[data-delete-lecture]");
+    if (delLecBtn) {
+      event.preventDefault();
+      const lecId = delLecBtn.dataset.deleteLecture;
+      const lec = state.workflow.lectures.find((l) => l._id === lecId);
+      if (!lec) return;
+      if (!confirm(`Are you sure you want to delete lecture "${lec.title}"?`)) return;
+      setBusy(delLecBtn, true);
+      try {
+        await api(`/lectures/${lecId}`, { method: "DELETE" });
+        state.workflow.lectures = state.workflow.lectures.filter((l) => l._id !== lecId);
+        state.workflow.modules.forEach((mod) => {
+          if (Array.isArray(mod.lectures)) {
+            mod.lectures = mod.lectures.filter((l) => l._id !== lecId);
+          }
+        });
+        setLectureFormMode("create");
+        save();
+        toast("Lecture deleted successfully.");
+      } catch (err) {
+        toast(`Failed to delete lecture: ${errorText(err)}`, "error");
+      } finally {
+        setBusy(delLecBtn, false);
+      }
+      return;
+    }
+
+    const toggleTrBtn = event.target.closest("[data-toggle-transcript]");
+    if (toggleTrBtn) {
+      event.preventDefault();
+      const lecId = toggleTrBtn.dataset.toggleTranscript;
+      const panel = $(`#transcript-preview-${lecId}`);
+      if (panel) {
+        panel.hidden = !panel.hidden;
+      }
       return;
     }
 

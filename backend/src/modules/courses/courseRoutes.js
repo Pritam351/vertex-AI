@@ -2,6 +2,7 @@ const express = require("express");
 
 const authMiddleware = require("../../middleware/authMiddleware");
 const requireRole = require("../../middleware/roleMiddleware");
+const optionalAuthMiddleware = require("../../middleware/optionalAuthMiddleware");
 
 const {
   createCourse,
@@ -24,7 +25,7 @@ router.get(
   listMyCourses
 );
 
-router.get("/:id", getCourseById);
+router.get("/:id", optionalAuthMiddleware, getCourseById);
 
 // Instructor/admin actions
 router.post(

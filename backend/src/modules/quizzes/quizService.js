@@ -78,14 +78,12 @@ const createQuiz = async (data, user) => {
 const listCourseQuizzes = async (courseId, user) => {
   if (!validId(courseId)) fail(400, "Invalid course ID");
 
-  const course = await Course.findOne({
-    _id: courseId,
-    status: "approved",
-  });
-
-  if (!course) fail(404, "Approved course not found");
+  const course = await Course.findById(courseId);
+  if (!course) fail(404, "Course not found");
 
   if (user.role === "student") {
+    if (course.status !== "approved") fail(404, "Course not found");
+
     const enrolled = await Enrollment.exists({
       userId: user._id,
       courseId: course._id,

@@ -7,8 +7,12 @@ const optionalAuthMiddleware = require("../../middleware/optionalAuthMiddleware"
 
 const {
   createModule,
+  updateModule,
+  deleteModule,
   listModules,
   createLecture,
+  updateLecture,
+  deleteLecture,
   listLectures,
 } = require("./contentController");
 
@@ -26,11 +30,39 @@ router.post(
   createModule
 );
 
+router.put(
+  "/modules/:moduleId",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  updateModule
+);
+
+router.delete(
+  "/modules/:moduleId",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  deleteModule
+);
+
 router.post(
   "/modules/:moduleId/lectures",
   authMiddleware,
   requireRole("instructor", "admin"),
   createLecture
+);
+
+router.put(
+  "/lectures/:lectureId",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  updateLecture
+);
+
+router.delete(
+  "/lectures/:lectureId",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  deleteLecture
 );
 
 module.exports = router;

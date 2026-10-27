@@ -57,22 +57,34 @@ const listInstructorCourses = async (user) => {
 };
 
 
-const getCourseById = async (id) => {
+const getCourseById = async (id, user) => {
   if (!mongoose.isValidObjectId(id)) {
     const error = new Error("Invalid course ID");
     error.statusCode = 400;
     throw error;
   }
 
-  const course = await Course.findOne({
-    _id: id,
-    status: "approved",
-  }).populate("instructorId", "fullName");
+  const course = await Course.findById(id).populate("instructorId", "fullName");
 
   if (!course) {
     const error = new Error("Course not found");
     error.statusCode = 404;
     throw error;
+  }
+
+  if (course.status !== "approved") {
+    const isOwner =
+      user &&
+      course.instructorId &&
+      (course.instructorId._id || course.instructorId).toString() ===
+        user._id.toString();
+    const isAdmin = user && user.role === "admin";
+
+    if (!isOwner && !isAdmin) {
+      const error = new Error("Course not found");
+      error.statusCode = 404;
+      throw error;
+    }
   }
 
   return course;
