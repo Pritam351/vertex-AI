@@ -167,7 +167,11 @@ const gradeSubmission = async (submissionId, data, user) => {
 
 const getMySubmissions = async (userId) => {
   return Submission.find({ userId })
-    .populate("assignmentId", "title courseId dueDate")
+    .populate({
+      path: "assignmentId",
+      select: "title courseId dueDate maxScore instructions",
+      populate: { path: "courseId", select: "title category" },
+    })
     .sort({ submittedAt: -1 })
     .lean();
 };

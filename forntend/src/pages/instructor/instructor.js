@@ -652,6 +652,7 @@ export function renderSubmissions() {
 
         const assignment = sub.assignmentId || {};
         const assignmentTitle = assignment.title || "Assignment";
+        const dueDateDisplay = assignment.dueDate ? formatDate(assignment.dueDate) : "No deadline";
 
         const submittedDate = sub.submittedAt
           ? formatDate(sub.submittedAt)
@@ -683,7 +684,10 @@ export function renderSubmissions() {
               <strong style="color:#f1f5f9;">${escapeHtml(assignmentTitle)}</strong>
             </td>
             <td>
-              <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted);">${submittedDate}</span>
+              <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:#fca5a5;">📅 ${dueDateDisplay}</span>
+            </td>
+            <td>
+              <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted);">🕒 ${submittedDate}</span>
             </td>
             <td>${statusBadge}</td>
             <td>${workLink}</td>

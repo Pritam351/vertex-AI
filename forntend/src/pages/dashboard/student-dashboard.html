@@ -45,4 +45,41 @@
 
     <div id="enrolled-list-container" class="courses-list-grid"></div>
   </section>
+
+  <!-- Student Submissions & Work Section -->
+  <section class="submissions-review-section" aria-labelledby="student-submissions-heading" style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--line);">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">MY ASSIGNMENTS</p>
+        <h3 id="student-submissions-heading">My Submitted Work & Grades</h3>
+        <p style="margin:0.25rem 0 0 0; font-size:0.85rem; color:var(--muted);">
+          Track your assignment deadlines (last date), submission dates, instructor grading status, and submitted work links.
+        </p>
+      </div>
+      <span class="count-pill" id="student-submissions-count">0 submitted</span>
+    </div>
+
+    <div id="student-submissions-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">📝</div>
+      <h3>No assignment submissions yet</h3>
+      <p>Go to your enrolled courses in the player to find assignments and submit your projects.</p>
+    </div>
+
+    <div class="table-responsive-wrapper" id="student-submissions-wrapper" hidden>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Assignment & Course</th>
+            <th>Last Date (Deadline)</th>
+            <th>Submitted Date</th>
+            <th>Status / Grade</th>
+            <th>Submitted Work</th>
+            <th>Instructor Feedback</th>
+          </tr>
+        </thead>
+        <tbody id="student-submissions-tbody">
+        </tbody>
+      </table>
+    </div>
+  </section>
 </section>

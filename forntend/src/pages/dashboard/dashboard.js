@@ -1,6 +1,8 @@
 import { enrollmentService } from "../../services/enrollmentService.js";
+import { assignmentService } from "../../services/assignmentService.js";
 import { getUser } from "../../store/session.js";
 import { $, escapeHtml } from "../../utils/dom.js";
+import { formatDate } from "../../utils/formatters.js";
 import { toast } from "../../components/common/toast.js";
 import { errorText } from "../../utils/validation.js";
 
@@ -17,6 +19,11 @@ export async function mountStudentDashboard(container) {
   const statEnrolled = $("#stat-enrolled", container);
   const statActive = $("#stat-active", container);
   const statCompleted = $("#stat-completed", container);
+
+  const subsCount = $("#student-submissions-count", container);
+  const subsEmpty = $("#student-submissions-empty", container);
+  const subsWrapper = $("#student-submissions-wrapper", container);
+  const subsTbody = $("#student-submissions-tbody", container);
 
   try {
     const payload = await enrollmentService.getMyEnrollments();
@@ -47,7 +54,7 @@ export async function mountStudentDashboard(container) {
                   course.thumbnailUrl
                     ? `
                   <div class="course-card-thumb">
-                    <img src="${escapeHtml(course.thumbnailUrl)}" alt="${escapeHtml(course.title || "Course")}" loading="lazy" onerror="this.onerror=null; this.parentElement.style.display='none';" />
+                    <img src="${escapeHtml(course.thumbnailUrl)}" alt="${escapeHtml(course.title || "Course")}" loading="lazy" onerror="this.parentElement.style.display='none';" />
                   </div>
                 `
                     : ""
@@ -82,5 +89,76 @@ export async function mountStudentDashboard(container) {
     }
   } catch (error) {
     toast(`Failed to load enrollments: ${errorText(error)}`, "error");
+  }
+
+  // Load and render student's assignment submissions
+  try {
+    const subPayload = await assignmentService.getMySubmissions();
+    const submissions = subPayload?.data?.submissions || [];
+
+    if (subsCount) {
+      subsCount.textContent = `${submissions.length} submitted`;
+    }
+
+    if (submissions.length === 0) {
+      if (subsEmpty) subsEmpty.hidden = false;
+      if (subsWrapper) subsWrapper.hidden = true;
+    } else {
+      if (subsEmpty) subsEmpty.hidden = true;
+      if (subsWrapper) subsWrapper.hidden = false;
+
+      if (subsTbody) {
+        subsTbody.innerHTML = submissions
+          .map((sub) => {
+            const assignment = sub.assignmentId || {};
+            const course = assignment.courseId || {};
+            const assignmentTitle = assignment.title || "Assignment";
+            const courseTitle = course.title || "Enrolled Course";
+            const dueDateDisplay = assignment.dueDate ? formatDate(assignment.dueDate) : "No deadline";
+
+            const submittedDate = sub.submittedAt
+              ? formatDate(sub.submittedAt)
+              : sub.createdAt
+              ? formatDate(sub.createdAt)
+              : "Recently";
+
+            const isGraded = sub.grade !== null && sub.grade !== undefined;
+            const statusBadge = isGraded
+              ? `<span class="status-badge-graded">✓ Graded: ${sub.grade}/100</span>`
+              : `<span class="status-badge-pending">⏳ Pending Review</span>`;
+
+            const workLink = sub.fileUrl
+              ? `<a href="${escapeHtml(sub.fileUrl)}" target="_blank" rel="noopener noreferrer" class="work-link">📎 View Work ↗</a>`
+              : `<span style="color:var(--muted); font-size:0.8rem;">No link</span>`;
+
+            const feedbackDisplay = sub.feedback
+              ? `<span style="color:#e2e8f0; font-size:0.85rem;">“${escapeHtml(sub.feedback)}”</span>`
+              : `<span style="color:var(--muted); font-size:0.8rem;">Awaiting instructor feedback</span>`;
+
+            return `
+              <tr>
+                <td>
+                  <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                    <strong style="color:#f8fafc;">${escapeHtml(assignmentTitle)}</strong>
+                    <span style="font-size:0.75rem; color:var(--violet-light);">${escapeHtml(courseTitle)}</span>
+                  </div>
+                </td>
+                <td>
+                  <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:#fca5a5;">📅 ${dueDateDisplay}</span>
+                </td>
+                <td>
+                  <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted);">🕒 ${submittedDate}</span>
+                </td>
+                <td>${statusBadge}</td>
+                <td>${workLink}</td>
+                <td>${feedbackDisplay}</td>
+              </tr>
+            `;
+          })
+          .join("");
+      }
+    }
+  } catch (err) {
+    console.warn("Could not load student submissions:", err);
   }
 }
