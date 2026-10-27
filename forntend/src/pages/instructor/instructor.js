@@ -28,6 +28,8 @@ import {
 import { openModal } from "../../components/common/modal.js";
 import { assignmentService } from "../../services/assignmentService.js";
 import { enrollmentService } from "../../services/enrollmentService.js";
+import { aiService } from "../../services/aiService.js";
+import { quizService } from "../../services/quizService.js";
 
 const state = {
   session: null,
@@ -570,6 +572,30 @@ export function render() {
       : '<p style="color:var(--muted); font-size:0.8rem; margin-top:0.5rem;">No lectures added yet.</p>';
   }
 
+  const aiLectureSelect = $("#ai-lecture-select");
+  if (aiLectureSelect) {
+    const lectures = state.workflow.lectures || [];
+    if (!lectures.length) {
+      aiLectureSelect.innerHTML = '<option value="">No lectures in active course</option>';
+      aiLectureSelect.disabled = true;
+    } else {
+      aiLectureSelect.disabled = false;
+      const prevVal = aiLectureSelect.value;
+      aiLectureSelect.innerHTML = `
+        <option value="">Choose a lecture with transcript...</option>
+        ${lectures
+          .map((l) => {
+            const hasTranscript = Boolean(l.transcript && l.transcript.trim());
+            const len = hasTranscript ? l.transcript.trim().length : 0;
+            const badge = hasTranscript ? `✓ (${len.toLocaleString()} chars)` : `(No transcript)`;
+            return `<option value="${l._id}" data-has-transcript="${hasTranscript}" data-len="${len}">${escapeHtml(l.title)} ${badge}</option>`;
+          })
+          .join("")}
+      `;
+      if (prevVal) aiLectureSelect.value = prevVal;
+    }
+  }
+
   const quizList = $("#quiz-list");
   if (quizList) {
     quizList.innerHTML = state.workflow.quizzes.length
@@ -877,6 +903,45 @@ function createDefaultQuestion(type = "mcq") {
     ],
     correctAnswer: ""
   };
+}
+
+let editingQuizId = null;
+
+function loadQuizForEditing(quiz) {
+  if (!quiz) return;
+  editingQuizId = quiz._id;
+  const form = $("#quiz-form");
+  if (!form) return;
+
+  const titleInput = form.querySelector('input[name="title"]');
+  const instructionsInput = form.querySelector('textarea[name="instructions"]');
+  const passingScoreInput = form.querySelector('input[name="passingScore"]');
+  const timeLimitInput = form.querySelector('input[name="timeLimitMinutes"]');
+
+  if (titleInput) titleInput.value = quiz.title || "";
+  if (instructionsInput) instructionsInput.value = quiz.instructions || "";
+  if (passingScoreInput) passingScoreInput.value = quiz.passingScore ?? 50;
+  if (timeLimitInput) timeLimitInput.value = quiz.timeLimitMinutes ?? 30;
+
+  if (quiz.questions && quiz.questions.length > 0) {
+    quizQuestions = quiz.questions.map((q, idx) => ({
+      id: q._id || "q_" + Date.now() + "_" + idx,
+      type: q.type || "mcq",
+      text: q.text || "",
+      points: q.points || 1,
+      options: (q.options || []).map((opt) => ({
+        text: opt.text || "",
+        isCorrect: Boolean(opt.isCorrect)
+      })),
+      correctAnswer: q.correctAnswer || ""
+    }));
+  } else {
+    quizQuestions = [createDefaultQuestion("mcq")];
+  }
+
+  renderQuizQuestions();
+  form.scrollIntoView({ behavior: "smooth" });
+  toast(`Loaded "${quiz.title}" for editing.`);
 }
 
 function initQuizBuilder() {
@@ -1354,12 +1419,11 @@ function bindWorkspaceEventListeners() {
 
   $("#btn-cancel-lecture-edit")?.addEventListener("click", () => setLectureFormMode("create"));
 
-  // Quiz submission
-  $("#quiz-form")?.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const form = event.currentTarget;
+  // Helper for saving or saving & publishing quiz
+  async function handleQuizSave({ publish = false, button }) {
+    const form = $("#quiz-form");
+    if (!form) return;
     if (!requireCourse(form, "quiz")) return;
-    const button = form.querySelector("button[type='submit']");
     const raw = Object.fromEntries(new FormData(form));
     const msgEl = form.querySelector('[data-message="quiz"]');
     message(msgEl);
@@ -1461,17 +1525,221 @@ function bindWorkspaceEventListeners() {
 
     setBusy(button, true);
     try {
-      const payload = await api("/quizzes", { method: "POST", body });
-      state.workflow.quizzes.push(payload.data.quiz);
+      let savedQuiz;
+      if (editingQuizId) {
+        const payload = await quizService.updateQuiz(editingQuizId, body);
+        savedQuiz = payload.data.quiz;
+        const idx = state.workflow.quizzes.findIndex((q) => q._id === editingQuizId);
+        if (idx !== -1) {
+          state.workflow.quizzes[idx] = savedQuiz;
+        } else {
+          state.workflow.quizzes.push(savedQuiz);
+        }
+      } else {
+        const payload = await quizService.createQuiz(body);
+        savedQuiz = payload.data.quiz;
+        state.workflow.quizzes.push(savedQuiz);
+      }
+
+      if (publish && savedQuiz?._id) {
+        const pubPayload = await quizService.publishQuiz(savedQuiz._id);
+        savedQuiz.isPublished = pubPayload?.data?.quiz?.isPublished ?? true;
+        const idx = state.workflow.quizzes.findIndex((q) => q._id === savedQuiz._id);
+        if (idx !== -1) state.workflow.quizzes[idx] = savedQuiz;
+        toast("Quiz saved and published successfully! 🚀 Available for enrolled students.");
+      } else {
+        toast(editingQuizId ? "Quiz updated successfully." : "Quiz saved as a draft.");
+      }
+
+      editingQuizId = null;
       save();
       form.reset();
       quizQuestions = [createDefaultQuestion("mcq")];
       renderQuizQuestions();
-      toast("Quiz created as a draft.");
+      render();
     } catch (error) {
       message(msgEl, errorText(error), "error");
     } finally {
       setBusy(button, false);
+    }
+  }
+
+  // AI Lecture select preview update
+  $("#ai-lecture-select")?.addEventListener("change", (e) => {
+    const selectedOpt = e.target.selectedOptions[0];
+    const preview = $("#ai-transcript-preview");
+    const statusText = $("#ai-transcript-status-text");
+    if (!preview || !statusText) return;
+    if (!e.target.value) {
+      preview.style.display = "none";
+      return;
+    }
+    const hasTranscript = selectedOpt?.dataset.hasTranscript === "true";
+    const charLen = Number(selectedOpt?.dataset.len || 0);
+    preview.style.display = "flex";
+    if (hasTranscript) {
+      statusText.innerHTML = `<strong>Transcript ready:</strong> ${charLen.toLocaleString()} characters available for Gemini AI generation`;
+      statusText.style.color = "#86efac";
+    } else {
+      statusText.innerHTML = `<strong>No transcript:</strong> Add transcript text to this lecture in the Course Builder first.`;
+      statusText.style.color = "#fca5a5";
+    }
+  });
+
+  // AI Ingest & Embed button
+  $("#btn-ingest-transcript")?.addEventListener("click", async (e) => {
+    const course = activeCourse();
+    if (!course) {
+      toast("Please select an active course first.", "error");
+      return;
+    }
+    const lectureId = $("#ai-lecture-select")?.value;
+    if (!lectureId) {
+      toast("Please select a lecture from the dropdown first.", "error");
+      return;
+    }
+    const lecture = state.workflow.lectures.find((l) => l._id === lectureId);
+    if (!lecture || !lecture.transcript || !lecture.transcript.trim()) {
+      toast("The selected lecture has no transcript text to ingest.", "error");
+      return;
+    }
+
+    const btn = e.currentTarget;
+    setBusy(btn, true, "Ingesting...");
+    try {
+      await aiService.ingestLecture(lectureId);
+      try {
+        await aiService.embedLecture(lectureId, course._id);
+      } catch (embErr) {
+        console.warn("Embedding notice:", embErr);
+      }
+      toast("⚡ Transcript ingested and chunked for AI processing!");
+    } catch (err) {
+      toast(`Ingestion failed: ${errorText(err)}`, "error");
+    } finally {
+      setBusy(btn, false);
+    }
+  });
+
+  // AI Generate Quiz button
+  $("#btn-generate-ai-quiz")?.addEventListener("click", async (e) => {
+    const course = activeCourse();
+    if (!course) {
+      toast("Please select an active course first.", "error");
+      return;
+    }
+    const lectureId = $("#ai-lecture-select")?.value;
+    if (!lectureId) {
+      toast("Please select a lecture with transcript content.", "error");
+      return;
+    }
+    const lecture = state.workflow.lectures.find((l) => l._id === lectureId);
+    if (!lecture || !lecture.transcript || !lecture.transcript.trim()) {
+      toast("The selected lecture has no transcript text. Add transcript content in Course Builder first.", "error");
+      return;
+    }
+
+    const count = Math.min(10, Math.max(5, Number($("#ai-question-count")?.value) || 5));
+    const btn = e.currentTarget;
+    setBusy(btn, true, `Generating ${count} questions with Gemini AI...`);
+
+    try {
+      const res = await aiService.generateLectureQuiz(lectureId, { questionCount: count });
+      const data = res.data;
+      const questions = (data?.quiz?.questions || data?.questions || []);
+
+      if (!questions.length) {
+        throw new Error("No questions were generated by the AI model. Please try again.");
+      }
+
+      // Pre-fill quiz title and instructions in form
+      const form = $("#quiz-form");
+      if (form) {
+        const titleInput = form.querySelector('input[name="title"]');
+        const instructionsInput = form.querySelector('textarea[name="instructions"]');
+        if (titleInput) {
+          titleInput.value = data.title || data?.quiz?.title || `AI Quiz: ${lecture.title}`;
+        }
+        if (instructionsInput && !instructionsInput.value) {
+          instructionsInput.value = `Knowledge check generated from lecture "${lecture.title}". Review each question carefully.`;
+        }
+      }
+
+      // Load questions into quizQuestions for interactive review and editing
+      quizQuestions = questions.map((q, idx) => ({
+        id: q._id || "q_" + Date.now() + "_" + idx,
+        type: q.type || "mcq",
+        text: q.text || "",
+        points: q.points || 1,
+        options: (q.options || []).map((opt) => ({
+          text: opt.text || "",
+          isCorrect: Boolean(opt.isCorrect)
+        })),
+        correctAnswer: q.correctAnswer || ""
+      }));
+
+      editingQuizId = data.quizId || data.quiz?._id || null;
+
+      // If backend created a draft quiz, add/update in state workflow
+      if (data.quiz) {
+        const existingIdx = state.workflow.quizzes.findIndex((q) => q._id === data.quiz._id);
+        if (existingIdx !== -1) {
+          state.workflow.quizzes[existingIdx] = data.quiz;
+        } else {
+          state.workflow.quizzes.push(data.quiz);
+        }
+        save();
+        render();
+      }
+
+      renderQuizQuestions();
+      $("#quiz-questions-list")?.scrollIntoView({ behavior: "smooth" });
+      toast(`✨ ${quizQuestions.length} questions generated by Gemini AI! Review and edit them below before saving or publishing.`);
+    } catch (err) {
+      toast(`AI Quiz Generation failed: ${errorText(err)}`, "error");
+    } finally {
+      setBusy(btn, false);
+    }
+  });
+
+  // Save Quiz Draft submit
+  $("#quiz-form")?.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const btn = $("#btn-save-quiz-draft") || e.currentTarget.querySelector("button[type='submit']");
+    handleQuizSave({ publish: false, button: btn });
+  });
+
+  // Save & Publish button click
+  $("#btn-save-and-publish-quiz")?.addEventListener("click", (e) => {
+    e.preventDefault();
+    handleQuizSave({ publish: true, button: e.currentTarget });
+  });
+
+  // Quiz publish and edit click delegation
+  $("#quiz-list")?.addEventListener("click", async (event) => {
+    const editBtn = event.target.closest("[data-edit-quiz]");
+    if (editBtn) {
+      const quizId = editBtn.dataset.editQuiz;
+      const quiz = state.workflow.quizzes.find((item) => item._id === quizId);
+      if (quiz) loadQuizForEditing(quiz);
+      return;
+    }
+
+    const pubBtn = event.target.closest("[data-publish]");
+    if (pubBtn) {
+      const quizId = pubBtn.dataset.publish;
+      setBusy(pubBtn, true);
+      try {
+        const payload = await quizService.publishQuiz(quizId);
+        const quiz = state.workflow.quizzes.find((item) => item._id === quizId);
+        if (quiz) quiz.isPublished = payload.data.quiz.isPublished;
+        save();
+        render();
+        toast("Quiz published! Available for enrolled students.");
+      } catch (error) {
+        toast(errorText(error), "error");
+        setBusy(pubBtn, false);
+      }
     }
   });
 
@@ -1505,29 +1773,11 @@ function bindWorkspaceEventListeners() {
       state.workflow.assignments.push(payload.data.assignment);
       save();
       form.reset();
+      render();
       toast("Assignment created.");
     } catch (error) {
       message(form.querySelector('[data-message="assignment"]'), errorText(error), "error");
     } finally {
-      setBusy(button, false);
-    }
-  });
-
-  // Quiz publish button click delegation
-  $("#quiz-list")?.addEventListener("click", async (event) => {
-    const button = event.target.closest("[data-publish]");
-    if (!button) return;
-    setBusy(button, true);
-    try {
-      const payload = await api(`/quizzes/${button.dataset.publish}/publish`, {
-        method: "PATCH"
-      });
-      const quiz = state.workflow.quizzes.find((item) => item._id === button.dataset.publish);
-      if (quiz) quiz.isPublished = payload.data.quiz.isPublished;
-      save();
-      toast("Quiz published.");
-    } catch (error) {
-      toast(errorText(error), "error");
       setBusy(button, false);
     }
   });

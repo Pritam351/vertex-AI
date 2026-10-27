@@ -1,5 +1,9 @@
 
+const path = require("path");
 require("dotenv").config();
+if (!process.env.GEMINI_API_KEY) {
+  require("dotenv").config({ path: path.resolve(__dirname, "../../.env") });
+}
 
 const { GoogleGenAI } = require("@google/genai");
 

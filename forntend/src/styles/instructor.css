@@ -740,3 +740,70 @@
   color: #6ce5b6;
 }
 
+/* AI Quiz Generator Card */
+.ai-quiz-generator-box {
+  background: linear-gradient(135deg, rgba(124, 58, 237, 0.12) 0%, rgba(30, 41, 69, 0.6) 100%);
+  border: 1px solid rgba(167, 139, 250, 0.35);
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+
+.ai-box-badge {
+  display: inline-block;
+  background: linear-gradient(90deg, #8b5cf6, #d946ef);
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.2rem 0.6rem;
+  border-radius: 999px;
+  margin-bottom: 0.5rem;
+}
+
+.ai-box-header h4 {
+  margin: 0.25rem 0 0.5rem;
+  font-size: 1.05rem;
+  color: #f8fafc;
+  font-weight: 600;
+}
+
+.ai-box-header p {
+  color: #94a3b8;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  margin: 0 0 1rem;
+}
+
+.ai-transcript-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 0.4rem;
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin: 0.75rem 0;
+}
+
+.transcript-status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 6px #10b981;
+}
+
+.ai-box-actions {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 0.85rem;
+}
+

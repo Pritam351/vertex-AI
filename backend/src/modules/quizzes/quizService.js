@@ -322,9 +322,72 @@ const publishQuiz = async (quizId, user) => {
   };
 };
 
+const updateQuiz = async (quizId, data, user) => {
+  if (!validId(quizId)) fail(400, "Invalid quiz ID");
+
+  const quiz = await Quiz.findById(quizId);
+  if (!quiz) fail(404, "Quiz not found");
+
+  const course = await Course.findById(quiz.courseId);
+  if (!course) fail(404, "Course not found");
+
+  if (
+    user.role !== "admin" &&
+    course.instructorId.toString() !== user._id.toString()
+  ) {
+    fail(403, "You cannot edit quizzes for another instructor's course");
+  }
+
+  if (data.title) quiz.title = data.title;
+  if (data.instructions !== undefined) quiz.instructions = data.instructions;
+  if (data.passingScore !== undefined) quiz.passingScore = data.passingScore;
+  if (data.timeLimitMinutes !== undefined) quiz.timeLimitMinutes = data.timeLimitMinutes;
+  if (data.isPublished !== undefined) quiz.isPublished = data.isPublished;
+
+  if (Array.isArray(data.questions) && data.questions.length > 0) {
+    quiz.questions = data.questions.map((question, index) => {
+      const options = question.options || [];
+
+      if (question.type === "mcq") {
+        if (options.length < 2) {
+          fail(400, "MCQ questions require at least two options");
+        }
+        if (options.filter((option) => option.isCorrect === true).length !== 1) {
+          fail(400, "MCQ questions must have exactly one correct option");
+        }
+      }
+
+      if (question.type === "multi_select") {
+        if (options.length < 2) {
+          fail(400, "Multi-select questions require at least two options");
+        }
+        if (!options.some((option) => option.isCorrect === true)) {
+          fail(400, "Multi-select questions need a correct option");
+        }
+      }
+
+      if (
+        question.type === "short_answer" &&
+        !question.correctAnswer?.trim()
+      ) {
+        fail(400, "Short-answer questions require a correct answer");
+      }
+
+      return {
+        ...question,
+        options,
+        orderIndex: question.orderIndex ?? index,
+      };
+    });
+  }
+
+  await quiz.save();
+  return quiz;
+};
 
 module.exports = {
   createQuiz,
+  updateQuiz,
   listCourseQuizzes,
   startAttempt,
   submitAttempt,

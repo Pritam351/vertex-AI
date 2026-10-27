@@ -14,6 +14,13 @@ export const quizService = {
     });
   },
 
+  async updateQuiz(quizId, data) {
+    return api(`/quizzes/${quizId}`, {
+      method: "PUT",
+      body: data
+    });
+  },
+
   async listCourseQuizzes(courseId) {
     return api(`/courses/${courseId}/quizzes`);
   },

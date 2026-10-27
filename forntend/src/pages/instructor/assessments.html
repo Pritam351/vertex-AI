@@ -17,6 +17,47 @@
                     <p>Build quizzes with single-choice MCQs, multi-select questions, and short answers.</p>
                 </div>
             </div>
+
+            <!-- AI Quiz Generator Card -->
+            <div class="ai-quiz-generator-box" id="ai-quiz-generator-panel">
+                <div class="ai-box-header">
+                    <span class="ai-box-badge">✨ AI-Powered</span>
+                    <h4>Generate Quiz from Lecture Transcript</h4>
+                    <p>Select any lecture that has a transcript, choose 5–10 questions, and let Gemini generate curriculum-aligned questions for your review and editing.</p>
+                </div>
+                <div class="ai-box-controls">
+                    <div class="form-row">
+                        <label style="flex: 2;">Select Lecture with Transcript
+                            <select id="ai-lecture-select" class="generator-select">
+                                <option value="">Choose a lecture...</option>
+                            </select>
+                        </label>
+                        <label style="flex: 1;">Question Count
+                            <select id="ai-question-count" class="generator-select">
+                                <option value="5" selected>5 Questions</option>
+                                <option value="6">6 Questions</option>
+                                <option value="7">7 Questions</option>
+                                <option value="8">8 Questions</option>
+                                <option value="9">9 Questions</option>
+                                <option value="10">10 Questions</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div id="ai-transcript-preview" class="ai-transcript-info" style="display: none;">
+                        <span class="transcript-status-dot"></span>
+                        <span id="ai-transcript-status-text">Transcript ready</span>
+                    </div>
+                    <div class="ai-box-actions">
+                        <button type="button" class="button button-primary" id="btn-generate-ai-quiz">
+                            ✨ Generate with AI
+                        </button>
+                        <button type="button" class="button button-subtle" id="btn-ingest-transcript" title="Split into chunks and vectorize transcript embeddings">
+                            ⚡ Ingest & Embed
+                        </button>
+                    </div>
+                </div>
+            </div>
+
             <label>Quiz title<input name="title" required minlength="3" maxlength="200"
                     placeholder="Module 1 knowledge check" /></label>
             <label>Instructions<textarea name="instructions" maxlength="5000"
@@ -68,8 +109,15 @@
             </div>
 
             <p class="form-message" data-message="quiz" role="alert" aria-live="polite"></p>
-            <button class="button button-secondary" type="submit">Create quiz</button>
-            <div class="created-list" id="quiz-list"></div>
+            <div class="quiz-submit-actions" style="display:flex; gap:0.75rem; flex-wrap:wrap; margin-top:1rem;">
+                <button class="button button-secondary" type="submit" id="btn-save-quiz-draft" style="flex:1;">
+                    💾 Save Quiz as Draft
+                </button>
+                <button class="button button-primary" type="button" id="btn-save-and-publish-quiz" style="flex:1;">
+                    🚀 Save & Publish Quiz
+                </button>
+            </div>
+            <div class="created-list" id="quiz-list" style="margin-top:1.5rem;"></div>
         </form>
         <form class="panel form-panel subdued" id="assignment-form" novalidate>
             <div class="panel-title"><span class="step-number">06</span>

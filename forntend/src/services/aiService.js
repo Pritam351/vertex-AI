@@ -22,9 +22,30 @@ export const aiService = {
     });
   },
 
-  async generateLectureQuiz(lectureId) {
+  async generateLectureQuiz(lectureId, data = {}) {
     return api(`/ai/lectures/${lectureId}/generate-quiz`, {
+      method: "POST",
+      body: data
+    });
+  },
+
+  async ingestLecture(lectureId) {
+    return api(`/ai/lectures/${lectureId}/ingest`, {
       method: "POST"
+    });
+  },
+
+  async embedLecture(lectureId, courseId) {
+    return api(`/ai/lectures/${lectureId}/embed`, {
+      method: "POST",
+      body: { courseId }
+    });
+  },
+
+  async retrieveCourseContext(courseId, question) {
+    return api(`/ai/courses/${courseId}/retrieve`, {
+      method: "POST",
+      body: { question }
     });
   },
 

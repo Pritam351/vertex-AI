@@ -5,6 +5,7 @@ const requireRole = require("../../middleware/roleMiddleware");
 
 const {
   createQuiz,
+  updateQuiz,
   listCourseQuizzes,
   startAttempt,
   submitAttempt,
@@ -19,6 +20,13 @@ router.post(
   authMiddleware,
   requireRole("instructor", "admin"),
   createQuiz
+);
+
+router.put(
+  "/quizzes/:id",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  updateQuiz
 );
 
 

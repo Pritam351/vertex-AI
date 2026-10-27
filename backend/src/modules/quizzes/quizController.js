@@ -40,6 +40,20 @@ const createQuiz = async (req, res, next) => {
   }
 };
 
+const updateQuiz = async (req, res, next) => {
+  try {
+    const quiz = await quizService.updateQuiz(req.params.id, req.body, req.user);
+
+    res.status(200).json({
+      success: true,
+      message: "Quiz updated successfully",
+      data: { quiz },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const listCourseQuizzes = async (req, res, next) => {
   try {
     const quizzes = await quizService.listCourseQuizzes(
@@ -127,6 +141,7 @@ const publishQuiz = async (req, res, next) => {
 
 module.exports = {
   createQuiz,
+  updateQuiz,
   listCourseQuizzes,
   startAttempt,
   submitAttempt,

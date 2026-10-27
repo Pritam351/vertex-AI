@@ -84,28 +84,45 @@ async function retrieveCourseContext(req, res, next) {
       });
     }
 
-    const course = await Course.findOne({
-      _id: courseId,
-      status: "approved",
-    });
+    const course = await Course.findById(courseId);
 
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Approved course not found",
+        message: "Course not found",
       });
     }
 
-    const enrollment = await Enrollment.exists({
-      userId: req.user._id,
-      courseId: course._id,
-    });
+    const isCourseInstructor =
+      (req.user.role === "instructor" || req.user.role === "admin") &&
+      (req.user.role === "admin" || course.instructorId.toString() === req.user._id.toString());
 
-    if (!enrollment && req.user.role !== "admin") {
-      return res.status(403).json({
-        success: false,
-        message: "Enroll in this course to use its AI tutor",
+    if (!isCourseInstructor) {
+      if (req.user.role === "instructor") {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have permission to access context for another instructor's course",
+        });
+      }
+
+      if (course.status !== "approved") {
+        return res.status(404).json({
+          success: false,
+          message: "Approved course not found",
+        });
+      }
+
+      const enrollment = await Enrollment.exists({
+        userId: req.user._id,
+        courseId: course._id,
       });
+
+      if (!enrollment) {
+        return res.status(403).json({
+          success: false,
+          message: "Enroll in this course to use its AI tutor",
+        });
+      }
     }
 
     const chunks = await searchCourseTranscript(course._id, question);
@@ -373,39 +390,48 @@ async function generateLectureQuiz(req, res, next) {
       });
     }
 
-    const course = await Course.findOne({
-      _id: courseModule.courseId,
-      status: "approved",
-    }).lean();
+    const course = await Course.findById(courseModule.courseId).lean();
 
     if (!course) {
       return res.status(404).json({
         success: false,
-        message: "Approved course not found",
+        message: "Course not found",
       });
     }
-
-    const enrollment = await Enrollment.exists({
-      userId: req.user._id,
-      courseId: course._id,
-    });
 
     const isCourseInstructor =
-      req.user.role === "instructor" &&
-      course.instructorId.toString() === req.user._id.toString();
+      (req.user.role === "instructor" || req.user.role === "admin") &&
+      (req.user.role === "admin" || course.instructorId.toString() === req.user._id.toString());
 
-    if (
-      !enrollment &&
-      req.user.role !== "admin" &&
-      !isCourseInstructor
-    ) {
-      return res.status(403).json({
-        success: false,
-        message: "You do not have access to generate a quiz for this course",
+    if (!isCourseInstructor) {
+      if (req.user.role === "instructor") {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have permission to generate quizzes for another instructor's course",
+        });
+      }
+
+      if (course.status !== "approved") {
+        return res.status(404).json({
+          success: false,
+          message: "Approved course not found",
+        });
+      }
+
+      const enrollment = await Enrollment.exists({
+        userId: req.user._id,
+        courseId: course._id,
       });
+
+      if (!enrollment) {
+        return res.status(403).json({
+          success: false,
+          message: "You do not have access to generate a quiz for this course",
+        });
+      }
     }
 
-    const chunks = await TranscriptChunk.find({
+    let chunks = await TranscriptChunk.find({
       lectureId: lecture._id,
       courseId: course._id,
     })
@@ -413,15 +439,19 @@ async function generateLectureQuiz(req, res, next) {
       .sort({ chunkIndex: 1 })
       .lean();
 
-    const transcript = chunks
+    let transcript = chunks
       .map((chunk) => chunk.text)
       .filter((text) => typeof text === "string" && text.trim())
       .join("\n\n");
 
+    if (!transcript.trim() && lecture.transcript && typeof lecture.transcript === "string") {
+      transcript = lecture.transcript.trim();
+    }
+
     if (!transcript.trim()) {
       return res.status(404).json({
         success: false,
-        message: "No usable transcript found for this lecture",
+        message: "No usable transcript found for this lecture. Please add or ingest transcript content first.",
       });
     }
 
@@ -557,9 +587,11 @@ ${transcript}
         success: true,
         message: "AI quiz generated and saved as a draft",
         quizId: savedQuiz._id,
+        quiz: savedQuiz,
         title: savedQuiz.title,
         questionCount: savedQuiz.questions.length,
         isPublished: savedQuiz.isPublished,
+        questions: savedQuiz.questions,
       });
     }
 

@@ -5,6 +5,26 @@
     <p>Test your retention, earn certificates, and challenge your understanding.</p>
   </div>
 
+  <!-- Available Quizzes Section -->
+  <section aria-labelledby="available-quizzes-heading" style="margin-bottom: 2.5rem;">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">ACTIVE CURRICULUM</p>
+        <h3 id="available-quizzes-heading">Available Course Quizzes</h3>
+      </div>
+      <span class="count-pill" id="available-quizzes-count">0 quizzes</span>
+    </div>
+
+    <div id="available-quizzes-empty" class="empty-state">
+      <div class="empty-icon" aria-hidden="true">🎯</div>
+      <h3>No quizzes published yet</h3>
+      <p>Enroll in courses to take published quizzes created by your instructors.</p>
+      <a class="button button-secondary" href="#/student/dashboard">Explore Courses</a>
+    </div>
+
+    <div id="available-quizzes-list-container" class="courses-list-grid"></div>
+  </section>
+
   <section aria-labelledby="attempts-heading">
     <div class="section-heading">
       <div>
@@ -17,8 +37,7 @@
     <div id="attempts-empty" class="empty-state">
       <div class="empty-icon" aria-hidden="true">◇</div>
       <h3>No quiz attempts yet</h3>
-      <p>Enroll in a course and complete modules to unlock curriculum quizzes.</p>
-      <a class="button button-secondary" href="#/student/dashboard">Go to My Courses</a>
+      <p>Take one of your available course quizzes above to see your scores recorded here.</p>
     </div>
 
     <div id="attempts-list-container" class="courses-list-grid"></div>
