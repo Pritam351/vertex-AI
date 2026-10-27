@@ -11,6 +11,8 @@ const {
   getCourseById,
   updateCourse,
   deleteCourse,
+  getCourseAnalytics,
+  getMyCoursesAnalytics,
 } = require("./courseController");
 
 const router = express.Router();
@@ -21,8 +23,22 @@ router.get("/", listCourses);
 router.get(
   "/mine",
   authMiddleware,
-  requireRole("instructor"),
+  requireRole("instructor", "admin"),
   listMyCourses
+);
+
+router.get(
+  "/mine/analytics",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  getMyCoursesAnalytics
+);
+
+router.get(
+  "/:id/analytics",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  getCourseAnalytics
 );
 
 router.get("/:id", optionalAuthMiddleware, getCourseById);

@@ -108,6 +108,39 @@ const deleteCourse = async (req, res, next) => {
   }
 };
 
+const courseAnalyticsService = require("./courseAnalyticsService");
+
+const getCourseAnalytics = async (req, res, next) => {
+  try {
+    const analytics = await courseAnalyticsService.getCourseAnalytics(
+      req.params.id,
+      req.user
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: analytics,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getMyCoursesAnalytics = async (req, res, next) => {
+  try {
+    const analytics = await courseAnalyticsService.getInstructorCoursesAnalytics(
+      req.user
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: analytics,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createCourse,
   listCourses,
@@ -115,4 +148,6 @@ module.exports = {
   getCourseById,
   updateCourse,
   deleteCourse,
+  getCourseAnalytics,
+  getMyCoursesAnalytics,
 };

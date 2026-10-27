@@ -7,14 +7,16 @@ export function renderInstructorLayout(user, activeSection = "overview") {
     items: [
       { id: "overview", href: "#/instructor/overview", label: "Overview", icon: "◈", isActive: activeSection === "overview" },
       { id: "course-builder", href: "#/instructor/course-builder", label: "Course builder", icon: "▣", isActive: activeSection === "course-builder" },
-      { id: "assessments", href: "#/instructor/assessments", label: "Assessments", icon: "◇", isActive: activeSection === "assessments" }
+      { id: "assessments", href: "#/instructor/assessments", label: "Assessments", icon: "◇", isActive: activeSection === "assessments" },
+      { id: "analytics", href: "#/instructor/analytics", label: "Analytics", icon: "📊", isActive: activeSection === "analytics" }
     ]
   });
 
   const sectionTitles = {
     overview: "Overview",
     "course-builder": "Course builder",
-    assessments: "Assessments"
+    assessments: "Assessments",
+    analytics: "Detailed Analytics"
   };
 
   const topbarHtml = renderNavbar({

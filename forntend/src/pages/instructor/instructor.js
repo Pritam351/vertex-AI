@@ -30,6 +30,7 @@ import { assignmentService } from "../../services/assignmentService.js";
 import { enrollmentService } from "../../services/enrollmentService.js";
 import { aiService } from "../../services/aiService.js";
 import { quizService } from "../../services/quizService.js";
+import { courseService } from "../../services/courseService.js";
 
 const state = {
   session: null,
@@ -44,7 +45,8 @@ const state = {
 const instructorPages = [
   new URL("./overview.html", import.meta.url),
   new URL("./course-builder.html", import.meta.url),
-  new URL("./assessments.html", import.meta.url)
+  new URL("./assessments.html", import.meta.url),
+  new URL("./analytics.html", import.meta.url)
 ];
 
 export async function loadInstructorFragments(container) {
@@ -419,6 +421,311 @@ function save() {
   render();
 }
 
+function formatAnalyticsTime(totalSeconds) {
+  const seconds = Math.max(0, Math.round(Number(totalSeconds) || 0));
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remSec = seconds % 60;
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  if (minutes > 0) {
+    return `${minutes}m ${remSec}s`;
+  }
+  return `${seconds}s`;
+}
+
+function renderAnalyticsEmpty() {
+  const loading = $("#analytics-loading");
+  const empty = $("#analytics-empty");
+  const content = $("#analytics-content");
+  if (loading) loading.hidden = true;
+  if (empty) empty.hidden = false;
+  if (content) content.hidden = true;
+}
+
+export function renderAnalyticsData(data) {
+  const empty = $("#analytics-empty");
+  const content = $("#analytics-content");
+  if (empty) empty.hidden = true;
+  if (content) content.hidden = false;
+
+  const { course, overview, progressDistribution, quizBreakdown, lectureBreakdown, recentEnrollments } = data;
+
+  // 1. Banner
+  const titleEl = $("#an-course-title");
+  if (titleEl) titleEl.textContent = course?.title || "Course Analytics";
+
+  const statusEl = $("#an-course-status");
+  if (statusEl) {
+    const s = String(course?.status || "pending").toLowerCase();
+    statusEl.textContent = s.toUpperCase();
+    statusEl.className = `status ${s === "approved" ? "published" : s === "rejected" ? "rejected" : "pending"}`;
+  }
+
+  const catEl = $("#an-course-category");
+  if (catEl) catEl.textContent = course?.category || "General";
+
+  const lvlEl = $("#an-course-level");
+  if (lvlEl) lvlEl.textContent = course?.level || "All Levels";
+
+  const metaEl = $("#an-course-meta");
+  if (metaEl) {
+    metaEl.textContent = `Modules: ${overview?.totalModules || 0} • Lectures: ${overview?.totalLectures || 0} • Quizzes: ${overview?.totalQuizzes || 0}`;
+  }
+
+  // 2. Core KPIs
+  // Enrollment & Completion Rates
+  const totalEnrolled = overview?.totalEnrolled || 0;
+  const completedCount = overview?.completedCount || 0;
+  const inProgressCount = overview?.inProgressCount || 0;
+  const notStartedCount = overview?.notStartedCount || 0;
+  const completionRate = overview?.completionRate || 0;
+
+  const enrolledEl = $("#an-total-enrolled");
+  if (enrolledEl) enrolledEl.textContent = totalEnrolled;
+
+  const compBadge = $("#an-completion-rate-badge");
+  if (compBadge) compBadge.textContent = `${completionRate}% Completion`;
+
+  const compSub = $("#an-completion-sub");
+  if (compSub) compSub.textContent = `${completedCount} completed • ${inProgressCount} in progress • ${notStartedCount} not started`;
+
+  // Average Course Progress
+  const avgProgress = overview?.averageProgress || 0;
+  const avgProgEl = $("#an-avg-progress");
+  if (avgProgEl) avgProgEl.textContent = `${avgProgress}%`;
+
+  const progFill = $("#an-progress-meter-fill");
+  if (progFill) progFill.style.width = `${Math.min(100, Math.max(0, avgProgress))}%`;
+
+  const progSub = $("#an-progress-sub");
+  if (progSub) progSub.textContent = `Mean curriculum completion across ${totalEnrolled} ${totalEnrolled === 1 ? "student" : "students"}`;
+
+  // Average Quiz Score
+  const avgQuizScore = overview?.averageQuizScore || 0;
+  const quizPassRate = overview?.quizPassRate || 0;
+  const totalQuizAttempts = overview?.totalQuizAttempts || 0;
+
+  const quizScoreEl = $("#an-avg-quiz-score");
+  if (quizScoreEl) quizScoreEl.textContent = `${avgQuizScore}%`;
+
+  const quizPassBadge = $("#an-quiz-pass-badge");
+  if (quizPassBadge) quizPassBadge.textContent = `${quizPassRate}% Pass Rate`;
+
+  const quizSub = $("#an-quiz-sub");
+  if (quizSub) quizSub.textContent = `From ${totalQuizAttempts} submitted ${totalQuizAttempts === 1 ? "attempt" : "attempts"}`;
+
+  // Time-on-task
+  const totalWatchedSeconds = overview?.totalWatchedSeconds || 0;
+  const avgTimePerStudentSeconds = overview?.avgTimePerStudentSeconds || 0;
+
+  const timeEl = $("#an-total-time");
+  if (timeEl) timeEl.textContent = formatAnalyticsTime(totalWatchedSeconds);
+
+  const timeBadge = $("#an-avg-time-badge");
+  if (timeBadge) timeBadge.textContent = `${formatAnalyticsTime(avgTimePerStudentSeconds)} avg`;
+
+  const timeSub = $("#an-time-sub");
+  if (timeSub) timeSub.textContent = `Avg ${formatAnalyticsTime(avgTimePerStudentSeconds)} per enrolled learner`;
+
+  // Active learners (7 days)
+  const activeLearners = overview?.activeStudentsLast7Days || 0;
+  const activeRate = totalEnrolled > 0 ? Math.round((activeLearners / totalEnrolled) * 100) : 0;
+
+  const activeEl = $("#an-active-learners");
+  if (activeEl) activeEl.textContent = activeLearners;
+
+  const activeBadge = $("#an-active-rate-badge");
+  if (activeBadge) activeBadge.textContent = `${activeRate}% Active`;
+
+  // 3. Learner Progress Distribution
+  const distContainer = $("#an-distribution-container");
+  if (distContainer) {
+    const dist = progressDistribution || { notStarted: 0, low: 0, medium: 0, high: 0, advanced: 0, completed: 0 };
+    const stages = [
+      { label: "Not Started (0%)", count: dist.notStarted || 0, color: "#94a3b8" },
+      { label: "Early (1–25%)", count: dist.low || 0, color: "#38bdf8" },
+      { label: "In-Progress (26–50%)", count: dist.medium || 0, color: "#818cf8" },
+      { label: "Advanced (51–75%)", count: dist.high || 0, color: "#c084fc" },
+      { label: "Near Finish (76–99%)", count: dist.advanced || 0, color: "#f472b6" },
+      { label: "Completed (100%)", count: dist.completed || 0, color: "#34d399" }
+    ];
+
+    distContainer.innerHTML = stages.map((st) => {
+      const pct = totalEnrolled > 0 ? Math.round((st.count / totalEnrolled) * 100) : 0;
+      return `
+        <div class="an-dist-card">
+          <div class="an-dist-title" style="color:${st.color};">${st.label}</div>
+          <div style="display:flex; align-items:baseline; margin:0.25rem 0;">
+            <span class="an-dist-count">${st.count}</span>
+            <span class="an-dist-pct">(${pct}%)</span>
+          </div>
+          <div class="an-meter-track" style="margin-top:0.4rem;">
+            <div class="an-meter-fill" style="width:${pct}%; background:${st.color};"></div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // 4. Lecture Retention & Drop-Off
+  const dropoffTbody = $("#an-lecture-dropoff-tbody");
+  if (dropoffTbody) {
+    const lectures = lectureBreakdown || [];
+    if (!lectures.length) {
+      dropoffTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.75rem; color:var(--muted);">No lectures added to this course yet.</td></tr>`;
+    } else {
+      dropoffTbody.innerHTML = lectures.map((lec, idx) => {
+        const dropBadge = lec.dropOffRate > 25
+          ? `<span class="an-badge-dropoff high">▼ ${lec.dropOffRate}%</span>`
+          : lec.dropOffRate > 0
+          ? `<span class="an-badge-dropoff med">▼ ${lec.dropOffRate}%</span>`
+          : `<span class="an-badge-dropoff zero">0%</span>`;
+
+        return `
+          <tr>
+            <td style="color:var(--muted); font-weight:600;">#${idx + 1}</td>
+            <td>
+              <div style="font-weight:600; color:#f8fafc;">${escapeHtml(lec.title)}</div>
+              <small style="color:var(--muted); font-size:0.75rem;">📁 ${escapeHtml(lec.moduleTitle || "Module")}</small>
+            </td>
+            <td>${formatAnalyticsTime(lec.durationSeconds)}</td>
+            <td>
+              <div><strong>${lec.startedCount}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${lec.startedRate}%)</span></div>
+              <div class="an-meter-track" style="height:4px; margin-top:3px;"><div class="an-meter-fill" style="width:${lec.startedRate}%; background:#38bdf8;"></div></div>
+            </td>
+            <td>
+              <div><strong>${lec.completedCount}</strong> <span style="font-size:0.75rem; color:var(--muted);">(${lec.completionRate}%)</span></div>
+              <div class="an-meter-track" style="height:4px; margin-top:3px;"><div class="an-meter-fill" style="width:${lec.completionRate}%; background:#34d399;"></div></div>
+            </td>
+            <td>${dropBadge}</td>
+            <td style="font-family:monospace; font-size:0.85rem;">${formatAnalyticsTime(lec.avgSecondsWatched)}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  // 5. Quiz Performance Breakdown
+  const quizzesTbody = $("#an-quizzes-tbody");
+  if (quizzesTbody) {
+    const quizzes = quizBreakdown || [];
+    if (!quizzes.length) {
+      quizzesTbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:1.75rem; color:var(--muted);">No quizzes created for this course.</td></tr>`;
+    } else {
+      quizzesTbody.innerHTML = quizzes.map((q) => {
+        const statusBadge = q.isPublished
+          ? `<span class="badge" style="background:rgba(16,185,129,0.15); color:#34d399; border:1px solid rgba(16,185,129,0.3);">Published</span>`
+          : `<span class="badge" style="background:rgba(148,163,184,0.15); color:#94a3b8; border:1px solid rgba(148,163,184,0.3);">Draft</span>`;
+
+        const scoreColor = q.averageScore >= (q.passingScore || 50) ? "#34d399" : "#fbbf24";
+
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:600; color:#f8fafc;">${escapeHtml(q.title)}</div>
+            </td>
+            <td>${statusBadge}</td>
+            <td>${q.questionsCount} Qs</td>
+            <td><strong>${q.passingScore}%</strong></td>
+            <td><strong>${q.attemptsCount}</strong></td>
+            <td>
+              <span style="font-weight:700; color:${scoreColor};">${q.averageScore}%</span>
+            </td>
+            <td>
+              <div style="display:flex; align-items:center; gap:0.4rem;">
+                <span style="font-weight:600; color:#cbd5e1;">${q.passRate}%</span>
+                <small style="color:var(--muted); font-size:0.75rem;">(${q.passedCount}/${q.attemptsCount})</small>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+
+  // 6. Enrolled Students Roster
+  const learnersTbody = $("#an-learners-tbody");
+  if (learnersTbody) {
+    const learners = recentEnrollments || [];
+    if (!learners.length) {
+      learnersTbody.innerHTML = `<tr><td colspan="4" style="text-align:center; padding:1.75rem; color:var(--muted);">No students have enrolled in this course yet.</td></tr>`;
+    } else {
+      learnersTbody.innerHTML = learners.map((stu) => {
+        const prog = stu.progressPercent || 0;
+        const statusLabel = prog >= 100
+          ? `<span class="badge" style="background:rgba(16,185,129,0.15); color:#34d399;">Completed</span>`
+          : prog > 0
+          ? `<span class="badge" style="background:rgba(59,130,246,0.15); color:#60a5fa;">In Progress</span>`
+          : `<span class="badge" style="background:rgba(148,163,184,0.15); color:#94a3b8;">Not Started</span>`;
+
+        return `
+          <tr>
+            <td>
+              <div class="an-user-cell">
+                <div class="an-user-avatar">
+                  ${stu.avatarUrl ? `<img src="${escapeHtml(stu.avatarUrl)}" alt="${escapeHtml(stu.fullName)}" />` : initials(stu.fullName)}
+                </div>
+                <div>
+                  <div style="font-weight:600; color:#f8fafc;">${escapeHtml(stu.fullName)}</div>
+                  <div style="font-size:0.75rem; color:var(--muted);">${escapeHtml(stu.email)}</div>
+                </div>
+              </div>
+            </td>
+            <td style="color:var(--muted); font-size:0.82rem;">${formatDate(stu.enrolledAt)}</td>
+            <td>
+              <div style="display:flex; justify-content:space-between; margin-bottom:3px; font-size:0.8rem;">
+                <span style="color:#cbd5e1; font-weight:600;">${prog}%</span>
+              </div>
+              <div class="an-meter-track" style="height:5px;">
+                <div class="an-meter-fill" style="width:${prog}%; background:${prog >= 100 ? "#10b981" : "#7c3aed"};"></div>
+              </div>
+            </td>
+            <td style="text-align:right;">${statusLabel}</td>
+          </tr>
+        `;
+      }).join("");
+    }
+  }
+}
+
+export async function loadCourseAnalytics(courseId) {
+  if (!courseId) {
+    renderAnalyticsEmpty();
+    return;
+  }
+
+  const loading = $("#analytics-loading");
+  const empty = $("#analytics-empty");
+  const content = $("#analytics-content");
+  const select = $("#analytics-course-select");
+  if (select && select.value !== courseId) {
+    select.value = courseId;
+  }
+
+  if (loading) loading.hidden = false;
+  if (empty) empty.hidden = true;
+  if (content) content.hidden = true;
+
+  try {
+    const res = await courseService.getCourseAnalytics(courseId);
+    const data = res?.data;
+    if (!data) {
+      renderAnalyticsEmpty();
+      return;
+    }
+
+    renderAnalyticsData(data);
+  } catch (err) {
+    console.error("Failed to load course analytics:", err);
+    toast(`Failed to load analytics: ${errorText(err)}`, "error");
+    renderAnalyticsEmpty();
+  } finally {
+    if (loading) loading.hidden = true;
+  }
+}
+
 export function showView(id) {
   document.querySelectorAll("[data-view]").forEach((view) => {
     const active = view.id === id;
@@ -433,7 +740,8 @@ export function showView(id) {
   const titles = {
     overview: "Overview",
     "course-builder": "Course builder",
-    assessments: "Assessments"
+    assessments: "Assessments",
+    analytics: "Detailed Analytics"
   };
 
   const pageTitle = $("#page-title");
@@ -447,6 +755,16 @@ export function showView(id) {
 
   if (window.location.hash.startsWith("#/instructor")) {
     window.location.hash = `#/instructor/${id}`;
+  }
+
+  if (id === "analytics") {
+    const select = $("#analytics-course-select");
+    const selectedCourseId = select?.value || activeCourse()?._id || state.instructorCourses[0]?._id;
+    if (selectedCourseId) {
+      loadCourseAnalytics(selectedCourseId);
+    } else {
+      renderAnalyticsEmpty();
+    }
   }
 }
 
@@ -686,6 +1004,24 @@ export function render() {
     assignmentList.innerHTML = state.workflow.assignments.length
       ? state.workflow.assignments.map(renderAssignmentItem).join("")
       : '<p style="color:var(--muted); font-size:0.8rem; margin-top:0.5rem;">No assignments created yet.</p>';
+  }
+
+  // Populate Analytics Course Selector
+  const analyticsCourseSelect = $("#analytics-course-select");
+  if (analyticsCourseSelect) {
+    if (!state.instructorCourses.length) {
+      analyticsCourseSelect.innerHTML = '<option value="">No courses created yet</option>';
+      analyticsCourseSelect.disabled = true;
+    } else {
+      analyticsCourseSelect.disabled = false;
+      const currentSelected = analyticsCourseSelect.value || course?._id || state.instructorCourses[0]._id;
+      analyticsCourseSelect.innerHTML = state.instructorCourses
+        .map(
+          (c) =>
+            `<option value="${escapeHtml(c._id)}" ${c._id === currentSelected ? "selected" : ""}>${escapeHtml(c.title)} (${getCourseStatusLabel(c)})</option>`
+        )
+        .join("");
+    }
   }
 
   // Render Student Submissions & Grading table
@@ -2040,6 +2376,38 @@ function bindGlobalClickHandlers() {
       return;
     }
 
+    const refreshAnalyticsBtn = event.target.closest("#btn-refresh-analytics");
+    if (refreshAnalyticsBtn) {
+      event.preventDefault();
+      const select = $("#analytics-course-select");
+      const courseId = select?.value || activeCourse()?._id || state.instructorCourses[0]?._id;
+      if (courseId) {
+        setBusy(refreshAnalyticsBtn, true);
+        try {
+          await loadCourseAnalytics(courseId);
+          toast("Analytics refreshed! ✓");
+        } catch (err) {
+          toast(`Failed to refresh analytics: ${errorText(err)}`, "error");
+        } finally {
+          setBusy(refreshAnalyticsBtn, false);
+        }
+      }
+      return;
+    }
+
+    const viewAnalyticsBtn = event.target.closest('[data-action="view-course-analytics"], [data-view-analytics]');
+    if (viewAnalyticsBtn) {
+      event.preventDefault();
+      const courseId = viewAnalyticsBtn.dataset.viewAnalytics || viewAnalyticsBtn.dataset.courseId || activeCourse()?._id;
+      showView("analytics");
+      if (courseId) {
+        const select = $("#analytics-course-select");
+        if (select) select.value = courseId;
+        await loadCourseAnalytics(courseId);
+      }
+      return;
+    }
+
     const target = event.target.closest("[data-go], [data-section]");
     if (target) {
       event.preventDefault();
@@ -2053,6 +2421,11 @@ function bindGlobalClickHandlers() {
         startNewCourse();
       } else {
         selectActiveCourse(event.target.value, false);
+      }
+    } else if (event.target.id === "analytics-course-select") {
+      const selectedId = event.target.value;
+      if (selectedId) {
+        loadCourseAnalytics(selectedId);
       }
     }
   });

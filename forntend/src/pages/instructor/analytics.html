@@ -1,0 +1,224 @@
+<section class="view" id="analytics" data-view hidden>
+  <div class="section-intro">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <p class="eyebrow">PERFORMANCE INSIGHTS</p>
+        <h2>Detailed Course Analytics</h2>
+        <p>Monitor retention, lecture drop-off patterns, average progress, quiz scores, and student time-on-task.</p>
+      </div>
+      <div class="analytics-toolbar">
+        <label for="analytics-course-select" class="analytics-select-label">Select Course:</label>
+        <select id="analytics-course-select" class="generator-select" style="min-width:260px;">
+          <option value="">Loading courses...</option>
+        </select>
+        <button class="button button-secondary" type="button" id="btn-refresh-analytics" style="padding:0.5rem 0.9rem;">
+          <span>↻ Refresh</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading State -->
+  <div id="analytics-loading" class="empty-state" style="padding: 2.5rem 1rem;">
+    <p>Loading analytics data...</p>
+  </div>
+
+  <!-- Empty / No Course State -->
+  <div id="analytics-empty" class="empty-state" hidden style="padding: 3rem 1rem;">
+    <div class="empty-icon" aria-hidden="true">📊</div>
+    <h3>No course selected or no enrollments yet</h3>
+    <p>Select a course with enrolled students to view real-time learning metrics and completion funnels.</p>
+  </div>
+
+  <!-- Analytics Content Container -->
+  <div id="analytics-content" hidden>
+    <!-- Selected Course Header Banner -->
+    <div class="analytics-course-banner" id="analytics-course-banner">
+      <div style="display:flex; align-items:center; gap:0.75rem; flex-wrap:wrap;">
+        <span class="status published" id="an-course-status">Approved</span>
+        <span class="badge" id="an-course-category">General</span>
+        <span class="badge" id="an-course-level">All Levels</span>
+      </div>
+      <h3 id="an-course-title" style="margin:0.5rem 0 0.25rem; font-size:1.35rem; color:#fff;">Course Title</h3>
+      <p id="an-course-meta" style="margin:0; font-size:0.85rem; color:var(--muted);">Modules: 0 • Lectures: 0 • Quizzes: 0</p>
+    </div>
+
+    <!-- 5 Core KPI Metrics Grid -->
+    <div class="analytics-kpi-grid">
+      <!-- 1. Enrollment and Completion Rates -->
+      <article class="an-kpi-card">
+        <div class="an-kpi-header">
+          <span class="an-kpi-icon" style="background:rgba(59,130,246,0.15); color:#60a5fa;">👥</span>
+          <span class="kpi-badge" id="an-completion-rate-badge">0% Completion</span>
+        </div>
+        <div class="an-kpi-body">
+          <span class="an-kpi-label">Enrollment & Completion</span>
+          <div class="an-kpi-main-val">
+            <strong id="an-total-enrolled">0</strong>
+            <span class="an-kpi-subval">Enrolled</span>
+          </div>
+          <p class="an-kpi-desc" id="an-completion-sub">0 completed • 0 in progress • 0 not started</p>
+        </div>
+      </article>
+
+      <!-- 2. Average Course Progress -->
+      <article class="an-kpi-card">
+        <div class="an-kpi-header">
+          <span class="an-kpi-icon" style="background:rgba(124,58,237,0.15); color:#a78bfa;">📈</span>
+          <span class="kpi-badge" id="an-progress-badge">Avg Progress</span>
+        </div>
+        <div class="an-kpi-body">
+          <span class="an-kpi-label">Average Course Progress</span>
+          <div class="an-kpi-main-val">
+            <strong id="an-avg-progress">0%</strong>
+          </div>
+          <div class="an-meter-track" style="margin-top:0.4rem;">
+            <div class="an-meter-fill" id="an-progress-meter-fill" style="width:0%;"></div>
+          </div>
+          <p class="an-kpi-desc" id="an-progress-sub">Mean curriculum completion rate</p>
+        </div>
+      </article>
+
+      <!-- 3. Average Quiz Score -->
+      <article class="an-kpi-card">
+        <div class="an-kpi-header">
+          <span class="an-kpi-icon" style="background:rgba(16,185,129,0.15); color:#34d399;">🎯</span>
+          <span class="kpi-badge" id="an-quiz-pass-badge">0% Pass Rate</span>
+        </div>
+        <div class="an-kpi-body">
+          <span class="an-kpi-label">Average Quiz Score</span>
+          <div class="an-kpi-main-val">
+            <strong id="an-avg-quiz-score">0%</strong>
+          </div>
+          <p class="an-kpi-desc" id="an-quiz-sub">From 0 submitted quiz attempts</p>
+        </div>
+      </article>
+
+      <!-- 4. Time-on-Task -->
+      <article class="an-kpi-card">
+        <div class="an-kpi-header">
+          <span class="an-kpi-icon" style="background:rgba(245,158,11,0.15); color:#fbbf24;">⏱</span>
+          <span class="kpi-badge" id="an-avg-time-badge">0m avg</span>
+        </div>
+        <div class="an-kpi-body">
+          <span class="an-kpi-label">Time-on-Task</span>
+          <div class="an-kpi-main-val">
+            <strong id="an-total-time">0h 0m</strong>
+            <span class="an-kpi-subval">Total Watch</span>
+          </div>
+          <p class="an-kpi-desc" id="an-time-sub">Avg 0 mins per enrolled student</p>
+        </div>
+      </article>
+
+      <!-- 5. Active Engagement (Last 7 Days) -->
+      <article class="an-kpi-card">
+        <div class="an-kpi-header">
+          <span class="an-kpi-icon" style="background:rgba(236,72,153,0.15); color:#f472b6;">⚡</span>
+          <span class="kpi-badge" id="an-active-rate-badge">0% Active</span>
+        </div>
+        <div class="an-kpi-body">
+          <span class="an-kpi-label">Active Learners (7 Days)</span>
+          <div class="an-kpi-main-val">
+            <strong id="an-active-learners">0</strong>
+            <span class="an-kpi-subval">Students</span>
+          </div>
+          <p class="an-kpi-desc">Engaged with curriculum in the past week</p>
+        </div>
+      </article>
+    </div>
+
+    <!-- Progress Distribution & Funnel -->
+    <section class="an-section-panel">
+      <div class="an-panel-header">
+        <div>
+          <h4>Learner Progress Distribution</h4>
+          <p>Breakdown of enrolled students across each stage of course completion.</p>
+        </div>
+      </div>
+      <div class="an-distribution-grid" id="an-distribution-container">
+        <!-- Injected via JavaScript -->
+      </div>
+    </section>
+
+    <!-- Lecture Progress & Drop-Off Funnel -->
+    <section class="an-section-panel">
+      <div class="an-panel-header">
+        <div>
+          <h4>Lecture Progress & Retention Drop-Off</h4>
+          <p>Analyze learner drop-off across the sequential curriculum to detect where students abandon lectures.</p>
+        </div>
+      </div>
+      <div class="an-table-wrapper">
+        <table class="an-data-table">
+          <thead>
+            <tr>
+              <th style="width:50px;">#</th>
+              <th>Lecture & Module</th>
+              <th style="width:100px;">Duration</th>
+              <th style="width:140px;">Started</th>
+              <th style="width:140px;">Completed</th>
+              <th style="width:150px;">Drop-off Rate</th>
+              <th style="width:140px;">Avg Watch Time</th>
+            </tr>
+          </thead>
+          <tbody id="an-lecture-dropoff-tbody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Quiz Performance Breakdown -->
+    <section class="an-section-panel">
+      <div class="an-panel-header">
+        <div>
+          <h4>Assessment & Quiz Mastery</h4>
+          <p>Average score, passing threshold, and pass rate from submitted attempts across all course quizzes.</p>
+        </div>
+      </div>
+      <div class="an-table-wrapper">
+        <table class="an-data-table">
+          <thead>
+            <tr>
+              <th>Quiz Title</th>
+              <th style="width:110px;">Status</th>
+              <th style="width:110px;">Questions</th>
+              <th style="width:120px;">Pass Mark</th>
+              <th style="width:110px;">Attempts</th>
+              <th style="width:130px;">Avg Score</th>
+              <th style="width:130px;">Pass Rate</th>
+            </tr>
+          </thead>
+          <tbody id="an-quizzes-tbody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Recent Enrolled Learners -->
+    <section class="an-section-panel">
+      <div class="an-panel-header">
+        <div>
+          <h4>Enrolled Students & Progress Roster</h4>
+          <p>Recent learners enrolled in this course and their current progress status.</p>
+        </div>
+      </div>
+      <div class="an-table-wrapper">
+        <table class="an-data-table">
+          <thead>
+            <tr>
+              <th>Student</th>
+              <th style="width:180px;">Enrolled On</th>
+              <th style="width:240px;">Curriculum Progress</th>
+              <th style="width:130px; text-align:right;">Status</th>
+            </tr>
+          </thead>
+          <tbody id="an-learners-tbody">
+            <!-- Injected via JavaScript -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+</section>

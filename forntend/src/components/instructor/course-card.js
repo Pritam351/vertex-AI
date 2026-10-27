@@ -43,6 +43,9 @@ export function renderInstructorCourseCard(course, isSelected = false) {
       </div>
       <div class="course-actions">
         <span class="course-price">${priceDisplay}</span>
+        <button class="button button-subtle mini-button" type="button" data-action="view-course-analytics" data-course-id="${escapeHtml(course._id)}" title="View detailed analytics">
+          📊 Analytics
+        </button>
         <button class="button ${isSelected ? "button-primary" : "button-secondary"} mini-button" type="button" data-switch-course="${escapeHtml(course._id)}">
           ${isSelected ? "Manage Course →" : "Select & Edit →"}
         </button>

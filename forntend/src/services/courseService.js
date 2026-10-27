@@ -102,5 +102,14 @@ export const courseService = {
       method: "POST",
       body: { decision }
     });
+  },
+
+  // Analytics
+  async getCourseAnalytics(courseId) {
+    return api(`/courses/${courseId}/analytics`);
+  },
+
+  async getMyCoursesAnalytics() {
+    return api("/courses/mine/analytics");
   }
 };
