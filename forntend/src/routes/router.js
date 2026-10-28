@@ -131,36 +131,38 @@ export async function navigate() {
     document.title = "Admin Panel | VertexLearn AI";
     const subSection = hash.split("/")[2] || "dashboard";
 
+    // Only rebuild the shell if we're switching from a different layout.
+    // When already in admin, we reuse the existing sidebar/navbar and only
+    // swap out the content pane — this is what was missing before.
     if (currentRenderedLayout !== "admin") {
-      // First time loading admin layout — render full shell
       activeAppContainer.innerHTML = renderAdminLayout(user, subSection);
       bindAdminLayoutEvents(activeAppContainer);
       currentRenderedLayout = "admin";
-
-      // Bind sidebar nav-link clicks to use hash navigation (prevent full page reload)
-      activeAppContainer.querySelectorAll("#sidebar .nav-link").forEach((link) => {
-        link.addEventListener("click", (e) => {
-          // Let the hashchange event drive navigation — no action needed here
-          // The hashchange listener on window already calls navigate()
-        });
-      });
     }
 
     const container = activeAppContainer.querySelector("#admin-page-container");
     if (!container) return;
 
-    // Load the subsection content
+    // Update sidebar active state for the current section
+    activeAppContainer.querySelectorAll("#sidebar .nav-link").forEach((link) => {
+      const linkSection = link.getAttribute("href")?.split("/")[2] || "";
+      link.classList.toggle("is-active", linkSection === subSection);
+    });
+
+    // Update topbar title
+    const sectionTitles = { dashboard: "Overview", courses: "Course Approvals", users: "User Directory" };
+    const pageTitleEl = activeAppContainer.querySelector("#page-title");
+    if (pageTitleEl) pageTitleEl.textContent = sectionTitles[subSection] || "Admin Panel";
+
+    // Always reload the content pane for every admin navigation
     if (subSection === "dashboard") {
       container.innerHTML = await fetchHtml(TEMPLATES.adminDashboard);
-      showAdminView("dashboard");
       await mountAdminDashboard(container);
     } else if (subSection === "courses") {
       container.innerHTML = await fetchHtml(TEMPLATES.adminCourses);
-      showAdminView("courses");
       await mountAdminCourses(container);
     } else if (subSection === "users") {
       container.innerHTML = await fetchHtml(TEMPLATES.adminUsers);
-      showAdminView("users");
       await mountAdminUsers(container);
     }
     return;

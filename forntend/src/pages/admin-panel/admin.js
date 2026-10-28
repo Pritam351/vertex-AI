@@ -45,14 +45,109 @@ export function showAdminView(sectionId) {
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 export async function mountAdminDashboard(container) {
-  const statPending = $("#admin-stat-pending", container);
-  try {
-    const payload = await courseService.getPendingCourses();
-    const count = payload?.data?.courses?.length || 0;
-    if (statPending) statPending.textContent = count;
-  } catch (error) {
-    console.error("Could not load admin stats:", error);
+  // ── Element refs ────────────────────────────────────────────────────────────
+  const statLive        = $("#dash-stat-live", container);
+  const statPending     = $("#admin-stat-pending", container);
+  const statRejected    = $("#dash-stat-rejected", container);
+  const statTotal       = $("#dash-stat-total-courses", container);
+  const statUsers       = $("#dash-stat-users", container);
+  const statStudents    = $("#dash-stat-students", container);
+  const statInstructors = $("#dash-stat-instructors", container);
+  const statAdmins      = $("#dash-stat-admins", container);
+
+  const loadingEl   = $("#dash-live-loading", container);
+  const emptyEl     = $("#dash-live-empty", container);
+  const errorEl     = $("#dash-live-error", container);
+  const errorMsgEl  = $("#dash-live-error-msg", container);
+  const tableWrap   = $("#dash-live-table-wrap", container);
+  const tbody       = $("#dash-live-tbody", container);
+  const retryBtn    = $("#dash-retry-btn", container);
+
+  function showState(state) {
+    if (loadingEl)  loadingEl.hidden  = state !== "loading";
+    if (emptyEl)    emptyEl.hidden    = state !== "empty";
+    if (errorEl)    errorEl.hidden    = state !== "error";
+    if (tableWrap)  tableWrap.hidden  = state !== "table";
   }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "—";
+    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function difficultyBadge(diff) {
+    const map = {
+      beginner:     "dash-diff-beginner",
+      intermediate: "dash-diff-intermediate",
+      advanced:     "dash-diff-advanced",
+    };
+    const cls = map[diff] || "";
+    return diff
+      ? `<span class="course-badge ${cls}">${escapeHtml(diff.charAt(0).toUpperCase() + diff.slice(1))}</span>`
+      : "—";
+  }
+
+  async function loadStats() {
+    showState("loading");
+    try {
+      const payload = await adminService.getDashboardStats();
+      const { courses = {}, users = {} } = payload?.data || {};
+
+      // ── Course stat cards ────────────────────────────────────────────────
+      if (statLive)        statLive.textContent        = courses.live      ?? "—";
+      if (statPending)     statPending.textContent     = courses.pending   ?? "—";
+      if (statRejected)    statRejected.textContent    = courses.rejected  ?? "—";
+      if (statTotal)       statTotal.textContent       = courses.total     ?? "—";
+
+      // ── User stat cards ──────────────────────────────────────────────────
+      if (statUsers)        statUsers.textContent        = users.total       ?? "—";
+      if (statStudents)     statStudents.textContent     = users.students    ?? "—";
+      if (statInstructors)  statInstructors.textContent  = users.instructors ?? "—";
+      if (statAdmins)       statAdmins.textContent       = users.admins      ?? "—";
+
+      // ── Live courses table ────────────────────────────────────────────────
+      const list = courses.liveCoursesList || [];
+      if (!list.length) {
+        showState("empty");
+        return;
+      }
+
+      if (tbody) {
+        tbody.innerHTML = list.map((c) => {
+          const instructorName  = c.instructorId?.fullName || "—";
+          const instructorEmail = c.instructorId?.email    || "—";
+          return `
+            <tr>
+              <td class="user-cell">
+                <span class="user-name">${escapeHtml(c.title)}</span>
+              </td>
+              <td><span class="course-badge">${escapeHtml(c.category || "General")}</span></td>
+              <td>
+                <div class="user-avatar-wrap">
+                  <span class="user-avatar" style="background:var(--violet);" aria-hidden="true">
+                    ${escapeHtml((instructorName[0] || "?").toUpperCase())}
+                  </span>
+                  <span class="user-name">${escapeHtml(instructorName)}</span>
+                </div>
+              </td>
+              <td class="date-cell">${escapeHtml(instructorEmail)}</td>
+              <td>${difficultyBadge(c.difficulty)}</td>
+              <td class="date-cell">${formatDate(c.updatedAt || c.createdAt)}</td>
+            </tr>
+          `;
+        }).join("");
+      }
+      showState("table");
+    } catch (error) {
+      if (errorMsgEl) errorMsgEl.textContent = errorText(error);
+      showState("error");
+    }
+  }
+
+  retryBtn?.addEventListener("click", loadStats);
+  await loadStats();
 }
 
 // ─── Pending Course Approvals ─────────────────────────────────────────────────

@@ -2,6 +2,54 @@ const mongoose = require("mongoose");
 const Course = require("../courses/courseModel");
 const User = require("../users/userModel");
 
+const getDashboardStats = async (req, res, next) => {
+  try {
+    // Parallel course counts by status
+    const [totalCourses, liveCourses, pendingCourses, rejectedCourses] = await Promise.all([
+      Course.countDocuments({}),
+      Course.countDocuments({ status: "approved" }),
+      Course.countDocuments({ status: "pending" }),
+      Course.countDocuments({ status: "rejected" }),
+    ]);
+
+    // Fetch live (approved) courses with instructor name + email
+    const liveCoursesData = await Course.find({ status: "approved" })
+      .sort({ updatedAt: -1 })
+      .limit(50)
+      .populate("instructorId", "fullName email")
+      .select("title category difficulty thumbnailUrl createdAt instructorId");
+
+    // User counts
+    const [totalUsers, studentCount, instructorCount, adminCount] = await Promise.all([
+      User.countDocuments({}),
+      User.countDocuments({ role: "student" }),
+      User.countDocuments({ role: "instructor" }),
+      User.countDocuments({ role: "admin" }),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        courses: {
+          total: totalCourses,
+          live: liveCourses,
+          pending: pendingCourses,
+          rejected: rejectedCourses,
+          liveCoursesList: liveCoursesData,
+        },
+        users: {
+          total: totalUsers,
+          students: studentCount,
+          instructors: instructorCount,
+          admins: adminCount,
+        },
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getPendingCourses = async (req, res, next) => {
   try {
     const courses = await Course.find({ status: "pending" })
@@ -256,6 +304,7 @@ const updateUserRole = async (req, res, next) => {
 };
 
 module.exports = {
+  getDashboardStats,
   getPendingCourses,
   reviewCourse,
   getAllUsers,

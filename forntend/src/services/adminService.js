@@ -2,6 +2,14 @@ import { api } from "./apiClient.js";
 
 export const adminService = {
   /**
+   * Fetch aggregated dashboard statistics: course counts by status,
+   * live courses list with instructor info, and user counts.
+   */
+  async getDashboardStats() {
+    return api("/admin/stats");
+  },
+
+  /**
    * Fetch all users with optional search, role filter, and status filter.
    * @param {Object} params - { search, role, status, page, limit }
    */

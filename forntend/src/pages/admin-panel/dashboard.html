@@ -2,31 +2,112 @@
   <div class="welcome-row">
     <div>
       <h2>Platform Overview</h2>
-      <p>Monitor platform courses, pending approvals, and user governance.</p>
+      <p>Monitor all courses, approvals, and platform health at a glance.</p>
     </div>
     <a class="button button-primary" href="#/admin/courses">
       <span>Review pending courses</span><span aria-hidden="true">→</span>
     </a>
   </div>
 
-  <section class="stats-overview" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem;">
-    <div class="panel" style="padding: 1.25rem;">
-      <p class="eyebrow">PENDING REVIEWS</p>
-      <h3 id="admin-stat-pending" style="font-size: 1.8rem; margin: 0.25rem 0;">0</h3>
-      <small style="color:var(--muted);">Courses awaiting admin approval</small>
+  <!-- ── Course Stats Row ───────────────────────────────────────────── -->
+  <div class="dash-stats-grid" id="dash-stats-grid">
+    <div class="dash-stat-card dash-stat-live">
+      <p class="eyebrow">LIVE COURSES</p>
+      <h3 id="dash-stat-live" class="dash-stat-num">—</h3>
+      <small>Published &amp; visible to students</small>
     </div>
-    <div class="panel" style="padding: 1.25rem;">
-      <p class="eyebrow">SYSTEM STATUS</p>
-      <h3 style="font-size: 1.8rem; margin: 0.25rem 0; color:var(--success);">Active</h3>
-      <small style="color:var(--muted);">API v1 running normally</small>
+    <div class="dash-stat-card dash-stat-pending-card">
+      <p class="eyebrow">PENDING REVIEW</p>
+      <h3 id="admin-stat-pending" class="dash-stat-num">—</h3>
+      <small>Awaiting admin approval</small>
     </div>
-  </section>
+    <div class="dash-stat-card dash-stat-rejected-card">
+      <p class="eyebrow">REJECTED</p>
+      <h3 id="dash-stat-rejected" class="dash-stat-num">—</h3>
+      <small>Declined by admin</small>
+    </div>
+    <div class="dash-stat-card dash-stat-total-card">
+      <p class="eyebrow">TOTAL COURSES</p>
+      <h3 id="dash-stat-total-courses" class="dash-stat-num">—</h3>
+      <small>All submissions ever</small>
+    </div>
+  </div>
 
-  <div class="panel" style="padding: 1.5rem;">
-    <h3 style="margin-top:0;">Administrative Quick Actions</h3>
+  <!-- ── User Stats Row ─────────────────────────────────────────────── -->
+  <div class="dash-user-stats-grid" id="dash-user-stats-grid">
+    <div class="dash-stat-card">
+      <p class="eyebrow">TOTAL USERS</p>
+      <h3 id="dash-stat-users" class="dash-stat-num">—</h3>
+    </div>
+    <div class="dash-stat-card">
+      <p class="eyebrow">STUDENTS</p>
+      <h3 id="dash-stat-students" class="dash-stat-num" style="color:var(--aqua);">—</h3>
+    </div>
+    <div class="dash-stat-card">
+      <p class="eyebrow">INSTRUCTORS</p>
+      <h3 id="dash-stat-instructors" class="dash-stat-num" style="color:var(--violet-light);">—</h3>
+    </div>
+    <div class="dash-stat-card">
+      <p class="eyebrow">ADMINS</p>
+      <h3 id="dash-stat-admins" class="dash-stat-num" style="color:#ffd166;">—</h3>
+    </div>
+  </div>
+
+  <!-- ── Live Courses Table ─────────────────────────────────────────── -->
+  <div class="panel dash-live-panel">
+    <div class="section-heading" style="padding:1.25rem 1.25rem 0;">
+      <div>
+        <p class="eyebrow">PUBLISHED CATALOG</p>
+        <h3 style="margin:0.2rem 0 0;">Live Courses</h3>
+      </div>
+      <a class="button button-secondary mini-button" href="#/admin/courses">Manage Approvals →</a>
+    </div>
+
+    <!-- Loading state -->
+    <div id="dash-live-loading" class="courses-loading-state">
+      <div class="courses-spinner" aria-hidden="true"></div>
+      <p>Loading live courses…</p>
+    </div>
+
+    <!-- Empty state -->
+    <div id="dash-live-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">📭</div>
+      <h3>No live courses yet</h3>
+      <p>Approved courses will appear here once an instructor submits and you approve one.</p>
+    </div>
+
+    <!-- Error state -->
+    <div id="dash-live-error" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true" style="color:var(--danger);">⚠</div>
+      <h3>Failed to load stats</h3>
+      <p id="dash-live-error-msg">An error occurred while fetching dashboard data.</p>
+      <button class="button button-secondary" id="dash-retry-btn" type="button" style="margin-top:1rem;">Retry</button>
+    </div>
+
+    <!-- Live courses table -->
+    <div id="dash-live-table-wrap" hidden>
+      <table class="users-table dash-live-table" aria-label="Live courses">
+        <thead>
+          <tr>
+            <th scope="col">Course</th>
+            <th scope="col">Category</th>
+            <th scope="col">Instructor</th>
+            <th scope="col">Email</th>
+            <th scope="col">Difficulty</th>
+            <th scope="col">Approved On</th>
+          </tr>
+        </thead>
+        <tbody id="dash-live-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── Quick Actions ──────────────────────────────────────────────── -->
+  <div class="panel dash-actions-panel">
+    <h3 style="margin-top:0;">Quick Actions</h3>
     <div style="display:flex; gap:1rem; flex-wrap:wrap; margin-top:1rem;">
       <a class="button button-secondary" href="#/admin/courses">Manage Pending Courses</a>
-      <a class="button button-secondary" href="#/admin/users">View User Management</a>
+      <a class="button button-secondary" href="#/admin/users">View User Directory</a>
       <a class="button button-secondary" href="#/instructor/overview">Go to Instructor Studio</a>
     </div>
   </div>

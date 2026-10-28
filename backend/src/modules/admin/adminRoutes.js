@@ -4,6 +4,7 @@ const authMiddleware = require("../../middleware/authMiddleware");
 const requireRole = require("../../middleware/roleMiddleware");
 
 const {
+  getDashboardStats,
   getPendingCourses,
   reviewCourse,
   getAllUsers,
@@ -15,6 +16,7 @@ const router = express.Router();
 
 router.use(authMiddleware, requireRole("admin"));
 
+router.get("/stats", getDashboardStats);
 router.get("/courses/pending", getPendingCourses);
 router.post("/courses/:id/approve", reviewCourse);
 

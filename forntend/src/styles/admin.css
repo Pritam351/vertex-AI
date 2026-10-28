@@ -6,6 +6,98 @@
   border-color: rgba(255, 193, 7, 0.3);
 }
 
+/* ─── Dashboard Stat Grids ───────────────────────────────────── */
+
+.dash-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.dash-user-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.dash-stat-card {
+  background: rgba(19, 26, 44, 0.94);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  padding: 1.1rem 1.25rem;
+  border-left: 3px solid var(--line);
+  transition: border-color 0.2s;
+}
+
+.dash-stat-card .eyebrow {
+  margin: 0 0 0.35rem;
+  font-size: 0.6rem;
+  letter-spacing: 0.12em;
+}
+
+.dash-stat-card small {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--muted);
+  margin-top: 0.3rem;
+}
+
+.dash-stat-num {
+  font-size: 2rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+/* Accent left-border colours per card type */
+.dash-stat-live          { border-left-color: var(--success); }
+.dash-stat-live .dash-stat-num { color: var(--success); }
+
+.dash-stat-pending-card  { border-left-color: #ffc107; }
+.dash-stat-pending-card .dash-stat-num { color: #ffc107; }
+
+.dash-stat-rejected-card { border-left-color: var(--danger); }
+.dash-stat-rejected-card .dash-stat-num { color: var(--danger); }
+
+.dash-stat-total-card    { border-left-color: var(--violet); }
+.dash-stat-total-card .dash-stat-num { color: var(--violet-light); }
+
+/* ─── Dashboard Live Courses Panel ──────────────────────────── */
+
+.dash-live-panel {
+  border-radius: 0.9rem;
+  overflow: hidden;
+  margin-bottom: 1.25rem;
+  padding: 0;
+}
+
+.dash-live-table {
+  margin-top: 0;
+}
+
+.dash-actions-panel {
+  padding: 1.5rem;
+  border-radius: 0.9rem;
+}
+
+/* Difficulty badge colour variants */
+.dash-diff-beginner     { background: rgba(82,216,194,0.1); color: var(--aqua); border-color: rgba(82,216,194,0.25); }
+.dash-diff-intermediate { background: rgba(255,193,7,0.1);  color: #ffc107;    border-color: rgba(255,193,7,0.25); }
+.dash-diff-advanced     { background: rgba(255,156,165,0.1);color: var(--danger); border-color: rgba(255,156,165,0.25); }
+
+/* Responsive */
+@media (max-width: 600px) {
+  .dash-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-user-stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .dash-live-table th:nth-child(4),
+  .dash-live-table td:nth-child(4),
+  .dash-live-table th:nth-child(5),
+  .dash-live-table td:nth-child(5) { display: none; }
+}
+
+
 /* ─── User Directory ─────────────────────────────────────────── */
 
 /* Stats grid */
