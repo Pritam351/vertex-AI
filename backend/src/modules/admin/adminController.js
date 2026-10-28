@@ -65,6 +65,93 @@ const getPendingCourses = async (req, res, next) => {
   }
 };
 
+const getPublishedCourses = async (req, res, next) => {
+  try {
+    const courses = await Course.find({ status: "approved" })
+      .sort({ updatedAt: -1 })
+      .populate("instructorId", "fullName email");
+
+    res.status(200).json({
+      success: true,
+      data: { courses },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const getArchivedCourses = async (req, res, next) => {
+  try {
+    const courses = await Course.find({ status: "archived" })
+      .sort({ updatedAt: -1 })
+      .populate("instructorId", "fullName email");
+
+    res.status(200).json({
+      success: true,
+      data: { courses },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+const toggleCoursePublish = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { action } = req.body; // "publish" | "unpublish"
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid course ID",
+      });
+    }
+
+    if (!["publish", "unpublish"].includes(action)) {
+      return res.status(400).json({
+        success: false,
+        message: "Action must be 'publish' or 'unpublish'",
+      });
+    }
+
+    const course = await Course.findById(id).populate("instructorId", "fullName email");
+    if (!course) {
+      return res.status(404).json({
+        success: false,
+        message: "Course not found",
+      });
+    }
+
+    if (action === "publish") {
+      if (course.status !== "archived") {
+        return res.status(409).json({
+          success: false,
+          message: "Only archived courses can be published",
+        });
+      }
+      course.status = "approved";
+    } else {
+      if (course.status !== "approved") {
+        return res.status(409).json({
+          success: false,
+          message: "Only approved (live) courses can be unpublished",
+        });
+      }
+      course.status = "archived";
+    }
+
+    await course.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `Course "${course.title}" has been ${action === "publish" ? "published" : "unpublished"} successfully`,
+      data: { course },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const reviewCourse = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -306,6 +393,9 @@ const updateUserRole = async (req, res, next) => {
 module.exports = {
   getDashboardStats,
   getPendingCourses,
+  getPublishedCourses,
+  getArchivedCourses,
+  toggleCoursePublish,
   reviewCourse,
   getAllUsers,
   updateUserStatus,

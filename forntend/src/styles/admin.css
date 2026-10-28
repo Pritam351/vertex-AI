@@ -723,3 +723,108 @@
   }
 }
 
+
+/* ─── Course Sections Separator ─────────────────────────────── */
+
+.courses-section {
+  margin-top: 2.5rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--line);
+}
+
+/* ─── Count Pills ────────────────────────────────────────────── */
+
+.count-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: rgba(255, 193, 7, 0.12);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.28);
+}
+
+.count-pill-live {
+  background: rgba(52, 199, 89, 0.1);
+  color: var(--success, #34c759);
+  border-color: rgba(52, 199, 89, 0.25);
+}
+
+.count-pill-archived {
+  background: rgba(142, 142, 147, 0.1);
+  color: var(--muted);
+  border-color: rgba(142, 142, 147, 0.25);
+}
+
+/* ─── Status Badge Variants ──────────────────────────────────── */
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  padding: 0.2em 0.65em;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+}
+
+.status-badge-active {
+  background: rgba(52, 199, 89, 0.12);
+  color: var(--success, #34c759);
+  border-color: rgba(52, 199, 89, 0.25);
+}
+
+.status-badge-archived {
+  background: rgba(142, 142, 147, 0.1);
+  color: var(--muted);
+  border-color: rgba(142, 142, 147, 0.22);
+}
+
+/* ─── Publish / Unpublish Action Buttons ─────────────────────── */
+
+.btn-unpublish {
+  background: rgba(255, 59, 48, 0.08);
+  color: #ff3b30;
+  border: 1px solid rgba(255, 59, 48, 0.25);
+  border-radius: 0.45rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+  white-space: nowrap;
+}
+
+.btn-unpublish:hover {
+  background: rgba(255, 59, 48, 0.18);
+  border-color: rgba(255, 59, 48, 0.5);
+}
+
+.btn-publish {
+  background: rgba(52, 199, 89, 0.08);
+  color: var(--success, #34c759);
+  border: 1px solid rgba(52, 199, 89, 0.25);
+  border-radius: 0.45rem;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s, border-color 0.18s;
+  white-space: nowrap;
+}
+
+.btn-publish:hover {
+  background: rgba(52, 199, 89, 0.18);
+  border-color: rgba(52, 199, 89, 0.5);
+}
+
+@media (max-width: 600px) {
+  .courses-section .section-heading {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

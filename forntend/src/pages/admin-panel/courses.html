@@ -2,14 +2,17 @@
   <div class="section-intro">
     <p class="eyebrow">MODERATION</p>
     <h2>Course Approvals</h2>
-    <p>Review submitted instructor courses before publishing them to the public student catalog.</p>
+    <p>Review submitted courses, manage live publications, and archive content from the catalog.</p>
   </div>
 
-  <section aria-labelledby="pending-courses-heading">
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 1 — PENDING (unchanged from before)                   -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section aria-labelledby="pending-courses-heading" class="courses-section">
     <div class="section-heading">
       <div>
         <p class="eyebrow">SUBMISSIONS</p>
-        <h3 id="pending-courses-heading">Pending Courses</h3>
+        <h3 id="pending-courses-heading">Pending Review</h3>
       </div>
       <div style="display:flex;align-items:center;gap:0.75rem;">
         <span class="count-pill" id="pending-count">0 pending</span>
@@ -19,27 +22,92 @@
       </div>
     </div>
 
-    <!-- Loading State -->
     <div id="pending-loading" class="courses-loading-state">
       <div class="courses-spinner" aria-hidden="true"></div>
       <p>Loading pending courses…</p>
     </div>
-
-    <!-- Error State -->
     <div id="pending-error" class="empty-state" hidden>
       <div class="empty-icon" aria-hidden="true" style="color:var(--danger);">⚠</div>
       <h3>Failed to load courses</h3>
       <p id="pending-error-message">An error occurred while fetching pending courses.</p>
       <button class="button button-secondary" id="pending-retry-btn" type="button" style="margin-top:1rem;">Retry</button>
     </div>
-
-    <!-- Empty State -->
     <div id="pending-empty" class="empty-state" hidden>
       <div class="empty-icon" aria-hidden="true">✓</div>
       <h3>All caught up</h3>
       <p>There are no courses currently waiting for administrative review.</p>
     </div>
-
     <div id="pending-list-container" class="courses-list-grid" hidden></div>
   </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 2 — PUBLISHED / LIVE                                   -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section aria-labelledby="published-courses-heading" class="courses-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">LIVE CATALOG</p>
+        <h3 id="published-courses-heading">Published Courses</h3>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span class="count-pill count-pill-live" id="published-count">0 live</span>
+        <button class="button button-secondary mini-button" id="published-refresh-btn" type="button" aria-label="Refresh published list" title="Refresh">
+          ↻ Refresh
+        </button>
+      </div>
+    </div>
+
+    <div id="published-loading" class="courses-loading-state">
+      <div class="courses-spinner" aria-hidden="true"></div>
+      <p>Loading published courses…</p>
+    </div>
+    <div id="published-error" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true" style="color:var(--danger);">⚠</div>
+      <h3>Failed to load published courses</h3>
+      <p id="published-error-message">An error occurred.</p>
+      <button class="button button-secondary" id="published-retry-btn" type="button" style="margin-top:1rem;">Retry</button>
+    </div>
+    <div id="published-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">📭</div>
+      <h3>No published courses</h3>
+      <p>Approved courses will appear here.</p>
+    </div>
+    <div id="published-list-container" class="courses-list-grid" hidden></div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <!-- SECTION 3 — ARCHIVED / UNPUBLISHED                            -->
+  <!-- ══════════════════════════════════════════════════════════════ -->
+  <section aria-labelledby="archived-courses-heading" class="courses-section">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">ARCHIVED</p>
+        <h3 id="archived-courses-heading">Unpublished Courses</h3>
+      </div>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span class="count-pill count-pill-archived" id="archived-count">0 archived</span>
+        <button class="button button-secondary mini-button" id="archived-refresh-btn" type="button" aria-label="Refresh archived list" title="Refresh">
+          ↻ Refresh
+        </button>
+      </div>
+    </div>
+
+    <div id="archived-loading" class="courses-loading-state">
+      <div class="courses-spinner" aria-hidden="true"></div>
+      <p>Loading archived courses…</p>
+    </div>
+    <div id="archived-error" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true" style="color:var(--danger);">⚠</div>
+      <h3>Failed to load archived courses</h3>
+      <p id="archived-error-message">An error occurred.</p>
+      <button class="button button-secondary" id="archived-retry-btn" type="button" style="margin-top:1rem;">Retry</button>
+    </div>
+    <div id="archived-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">🗂</div>
+      <h3>No archived courses</h3>
+      <p>Courses you unpublish will appear here and can be re-published at any time.</p>
+    </div>
+    <div id="archived-list-container" class="courses-list-grid" hidden></div>
+  </section>
+
 </section>

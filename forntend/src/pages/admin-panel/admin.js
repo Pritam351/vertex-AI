@@ -150,23 +150,10 @@ export async function mountAdminDashboard(container) {
   await loadStats();
 }
 
-// ─── Pending Course Approvals ─────────────────────────────────────────────────
+// ─── Pending Course Approvals + Published + Archived ─────────────────────────
 export async function mountAdminCourses(container) {
-  const listContainer = $("#pending-list-container", container);
-  const countEl = $("#pending-count", container);
-  const loadingEl = $("#pending-loading", container);
-  const emptyEl = $("#pending-empty", container);
-  const errorEl = $("#pending-error", container);
-  const errorMsgEl = $("#pending-error-message", container);
-  const retryBtn = $("#pending-retry-btn", container);
-  const refreshBtn = $("#pending-refresh-btn", container);
 
-  function showState(state) {
-    if (loadingEl) loadingEl.hidden = state !== "loading";
-    if (emptyEl) emptyEl.hidden = state !== "empty";
-    if (errorEl) errorEl.hidden = state !== "error";
-    if (listContainer) listContainer.hidden = state !== "list";
-  }
+  // ── Shared helpers ───────────────────────────────────────────────────────────
 
   function formatDate(dateStr) {
     if (!dateStr) return "—";
@@ -175,32 +162,62 @@ export async function mountAdminCourses(container) {
     return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
   }
 
-  function renderCourseCard(c) {
+  /** Build a course card HTML string.
+   *  context: "pending" | "published" | "archived"
+   */
+  function renderCourseCard(c, context) {
     const instructor = c.instructorId;
-    const instructorName = instructor?.fullName || "Unknown Instructor";
-    const instructorEmail = instructor?.email || "";
-    const submitted = formatDate(c.createdAt);
+    const instructorName  = instructor?.fullName || "Unknown Instructor";
+    const instructorEmail = instructor?.email    || "";
+    const dateLabel = context === "pending" ? "Submitted" : context === "published" ? "Published" : "Archived";
+    const dateValue = formatDate(c.updatedAt || c.createdAt);
+
+    let statusBadge = "";
+    let actionBtn   = "";
+
+    if (context === "pending") {
+      statusBadge = `<span class="status pending">Pending Approval</span>`;
+      // TWO buttons kept for pending (approve / reject — different outcomes)
+      actionBtn = `
+        <button class="button button-primary mini-button" type="button"
+          data-review-id="${c._id}" data-decision="approved">✓ Approve</button>
+        <button class="button mini-button btn-reject" type="button"
+          data-review-id="${c._id}" data-decision="rejected">✕ Reject</button>
+      `;
+    } else if (context === "published") {
+      statusBadge = `<span class="status-badge status-badge-active" style="font-size:0.72rem;">● Live</span>`;
+      // SINGLE button: Unpublish
+      actionBtn = `
+        <button class="button mini-button btn-unpublish" type="button"
+          data-toggle-publish="${c._id}" data-action="unpublish"
+          title="Remove from public catalog">⊘ Unpublish</button>
+      `;
+    } else {
+      statusBadge = `<span class="status-badge status-badge-archived" style="font-size:0.72rem;">◌ Archived</span>`;
+      // SINGLE button: Publish
+      actionBtn = `
+        <button class="button mini-button btn-publish" type="button"
+          data-toggle-publish="${c._id}" data-action="publish"
+          title="Restore to public catalog">▶ Publish</button>
+      `;
+    }
 
     return `
       <article class="course-card-item">
-        ${
-          c.thumbnailUrl
-            ? `
-          <div class="course-card-thumb">
-            <img src="${escapeHtml(c.thumbnailUrl)}" alt="${escapeHtml(c.title)}" loading="lazy" onerror="this.onerror=null; this.parentElement.style.display='none';" />
-          </div>
-        `
-            : ""
-        }
+        ${c.thumbnailUrl
+          ? `<div class="course-card-thumb">
+               <img src="${escapeHtml(c.thumbnailUrl)}" alt="${escapeHtml(c.title)}" loading="lazy"
+                    onerror="this.onerror=null;this.parentElement.style.display='none';" />
+             </div>`
+          : ""}
         <div class="course-card-main">
           <div class="course-badges-row">
             <span class="course-badge">${escapeHtml(c.category || "General")}</span>
             ${c.difficulty ? `<span class="course-badge course-badge-difficulty">${escapeHtml(c.difficulty)}</span>` : ""}
-            <span class="status pending">Pending Approval</span>
+            ${statusBadge}
           </div>
           <h3>${escapeHtml(c.title)}</h3>
           <p class="course-card-desc">${escapeHtml(c.description || "No description added.")}</p>
-
           <div class="course-card-meta">
             <div class="course-instructor-info">
               <span class="course-instructor-avatar" aria-hidden="true">${escapeHtml(instructorName.charAt(0).toUpperCase())}</span>
@@ -209,92 +226,244 @@ export async function mountAdminCourses(container) {
                 ${instructorEmail ? `<span class="course-instructor-email">${escapeHtml(instructorEmail)}</span>` : ""}
               </div>
             </div>
-            <span class="course-submitted-date">Submitted: <strong>${submitted}</strong></span>
+            <span class="course-submitted-date">${dateLabel}: <strong>${dateValue}</strong></span>
           </div>
         </div>
-        <div class="course-actions">
-          <button class="button button-primary mini-button" type="button" data-review-id="${c._id}" data-decision="approved">
-            ✓ Approve
-          </button>
-          <button class="button mini-button btn-reject" type="button" data-review-id="${c._id}" data-decision="rejected">
-            ✕ Reject
-          </button>
-        </div>
+        <div class="course-actions">${actionBtn}</div>
       </article>
     `;
   }
 
-  async function loadPending() {
-    showState("loading");
+  // ── Generic section builder ──────────────────────────────────────────────────
 
+  function makeSection({ listEl, loadingEl, emptyEl, errorEl, errorMsgEl, countEl }) {
+    function show(state) {
+      if (loadingEl) loadingEl.hidden = state !== "loading";
+      if (emptyEl)   emptyEl.hidden   = state !== "empty";
+      if (errorEl)   errorEl.hidden   = state !== "error";
+      if (listEl)    listEl.hidden    = state !== "list";
+    }
+    return { show };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════
+  // PENDING SECTION
+  // ═══════════════════════════════════════════════════════════════════
+
+  const pendingList       = $("#pending-list-container",  container);
+  const pendingCount      = $("#pending-count",           container);
+  const pendingLoading    = $("#pending-loading",         container);
+  const pendingEmpty      = $("#pending-empty",           container);
+  const pendingError      = $("#pending-error",           container);
+  const pendingErrorMsg   = $("#pending-error-message",   container);
+  const pendingRetry      = $("#pending-retry-btn",       container);
+  const pendingRefresh    = $("#pending-refresh-btn",     container);
+  const { show: showPending } = makeSection({
+    listEl: pendingList, loadingEl: pendingLoading, emptyEl: pendingEmpty,
+    errorEl: pendingError, errorMsgEl: pendingErrorMsg, countEl: pendingCount,
+  });
+
+  async function loadPending() {
+    showPending("loading");
     try {
       const payload = await courseService.getPendingCourses();
       const courses = payload?.data?.courses || [];
-
-      if (countEl) countEl.textContent = `${courses.length} pending`;
-
-      if (!courses.length) {
-        showState("empty");
-        return;
-      }
-
-      if (listContainer) {
-        listContainer.innerHTML = courses.map(renderCourseCard).join("");
-      }
-      showState("list");
-    } catch (error) {
-      if (errorMsgEl) errorMsgEl.textContent = errorText(error);
-      showState("error");
+      if (pendingCount) pendingCount.textContent = `${courses.length} pending`;
+      if (!courses.length) { showPending("empty"); return; }
+      if (pendingList) pendingList.innerHTML = courses.map((c) => renderCourseCard(c, "pending")).join("");
+      showPending("list");
+    } catch (err) {
+      if (pendingErrorMsg) pendingErrorMsg.textContent = errorText(err);
+      showPending("error");
     }
   }
 
-  // ── Action handler (approve / reject) ───────────────────────────────────────
-
-  listContainer?.addEventListener("click", async (e) => {
-    const button = e.target.closest("[data-review-id]");
-    if (!button) return;
-
-    const courseId = button.dataset.reviewId;
-    const decision = button.dataset.decision;
+  // Pending: approve / reject via confirm modal
+  pendingList?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-review-id]");
+    if (!btn) return;
+    const courseId = btn.dataset.reviewId;
+    const decision = btn.dataset.decision;
     const isApprove = decision === "approved";
-
-    const article = button.closest("article");
-    const title = article?.querySelector("h3")?.textContent || "this course";
+    const title = btn.closest("article")?.querySelector("h3")?.textContent || "this course";
 
     openModal({
       title: isApprove ? "Approve Course" : "Reject Course",
       contentHtml: `
         <p>Are you sure you want to <strong>${isApprove ? "approve" : "reject"}</strong> the course:</p>
         <p class="modal-course-title">"${escapeHtml(title)}"</p>
-        ${!isApprove ? `<p class="modal-warning">The instructor will not be notified with a reason. Rejected courses can be resubmitted.</p>` : ""}
+        ${!isApprove ? `<p class="modal-warning">Rejected courses can be resubmitted by the instructor.</p>` : ""}
       `,
       confirmText: isApprove ? "✓ Approve" : "✕ Reject",
-      onConfirm: async (_backdrop, close) => {
-        const confirmBtn = _backdrop.querySelector(".modal-confirm");
+      onConfirm: async (_bd, close) => {
+        const confirmBtn = _bd.querySelector(".modal-confirm");
         if (confirmBtn) confirmBtn.disabled = true;
         try {
           await courseService.reviewCourse(courseId, decision);
           close();
           toast(`Course ${decision} successfully.`, "success");
           await loadPending();
-        } catch (error) {
-          toast(errorText(error), "error");
+          // Refresh the published list too if approved
+          if (isApprove) await loadPublished();
+        } catch (err) {
+          toast(errorText(err), "error");
           if (confirmBtn) confirmBtn.disabled = false;
         }
       },
     });
   });
 
-  // ── Retry & Refresh ─────────────────────────────────────────────────────────
-  retryBtn?.addEventListener("click", loadPending);
-  refreshBtn?.addEventListener("click", async () => {
-    setBusy(refreshBtn, true, "↻ Refreshing…");
+  pendingRetry?.addEventListener("click", loadPending);
+  pendingRefresh?.addEventListener("click", async () => {
+    setBusy(pendingRefresh, true, "↻ Refreshing…");
     await loadPending();
-    setBusy(refreshBtn, false);
+    setBusy(pendingRefresh, false);
   });
 
-  await loadPending();
+  // ═══════════════════════════════════════════════════════════════════
+  // PUBLISHED SECTION
+  // ═══════════════════════════════════════════════════════════════════
+
+  const publishedList      = $("#published-list-container", container);
+  const publishedCount     = $("#published-count",          container);
+  const publishedLoading   = $("#published-loading",        container);
+  const publishedEmpty     = $("#published-empty",          container);
+  const publishedError     = $("#published-error",          container);
+  const publishedErrorMsg  = $("#published-error-message",  container);
+  const publishedRetry     = $("#published-retry-btn",      container);
+  const publishedRefresh   = $("#published-refresh-btn",    container);
+  const { show: showPublished } = makeSection({
+    listEl: publishedList, loadingEl: publishedLoading, emptyEl: publishedEmpty,
+    errorEl: publishedError, errorMsgEl: publishedErrorMsg, countEl: publishedCount,
+  });
+
+  async function loadPublished() {
+    showPublished("loading");
+    try {
+      const payload = await adminService.getPublishedCourses();
+      const courses = payload?.data?.courses || [];
+      if (publishedCount) publishedCount.textContent = `${courses.length} live`;
+      if (!courses.length) { showPublished("empty"); return; }
+      if (publishedList) publishedList.innerHTML = courses.map((c) => renderCourseCard(c, "published")).join("");
+      showPublished("list");
+    } catch (err) {
+      if (publishedErrorMsg) publishedErrorMsg.textContent = errorText(err);
+      showPublished("error");
+    }
+  }
+
+  // Published: single "Unpublish" button
+  publishedList?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-toggle-publish]");
+    if (!btn) return;
+    const courseId = btn.dataset.togglePublish;
+    const title = btn.closest("article")?.querySelector("h3")?.textContent || "this course";
+
+    openModal({
+      title: "Unpublish Course",
+      contentHtml: `
+        <p>Are you sure you want to <strong>unpublish</strong> this course?</p>
+        <p class="modal-course-title">"${escapeHtml(title)}"</p>
+        <p class="modal-warning">It will be removed from the student catalog immediately and moved to the Archived section.</p>
+      `,
+      confirmText: "⊘ Unpublish",
+      onConfirm: async (_bd, close) => {
+        const confirmBtn = _bd.querySelector(".modal-confirm");
+        if (confirmBtn) confirmBtn.disabled = true;
+        try {
+          const result = await adminService.toggleCoursePublish(courseId, "unpublish");
+          close();
+          toast(result?.message || "Course unpublished successfully.", "success");
+          await Promise.all([loadPublished(), loadArchived()]);
+        } catch (err) {
+          toast(errorText(err), "error");
+          if (confirmBtn) confirmBtn.disabled = false;
+        }
+      },
+    });
+  });
+
+  publishedRetry?.addEventListener("click", loadPublished);
+  publishedRefresh?.addEventListener("click", async () => {
+    setBusy(publishedRefresh, true, "↻ Refreshing…");
+    await loadPublished();
+    setBusy(publishedRefresh, false);
+  });
+
+  // ═══════════════════════════════════════════════════════════════════
+  // ARCHIVED SECTION
+  // ═══════════════════════════════════════════════════════════════════
+
+  const archivedList      = $("#archived-list-container", container);
+  const archivedCount     = $("#archived-count",          container);
+  const archivedLoading   = $("#archived-loading",        container);
+  const archivedEmpty     = $("#archived-empty",          container);
+  const archivedError     = $("#archived-error",          container);
+  const archivedErrorMsg  = $("#archived-error-message",  container);
+  const archivedRetry     = $("#archived-retry-btn",      container);
+  const archivedRefresh   = $("#archived-refresh-btn",    container);
+  const { show: showArchived } = makeSection({
+    listEl: archivedList, loadingEl: archivedLoading, emptyEl: archivedEmpty,
+    errorEl: archivedError, errorMsgEl: archivedErrorMsg, countEl: archivedCount,
+  });
+
+  async function loadArchived() {
+    showArchived("loading");
+    try {
+      const payload = await adminService.getArchivedCourses();
+      const courses = payload?.data?.courses || [];
+      if (archivedCount) archivedCount.textContent = `${courses.length} archived`;
+      if (!courses.length) { showArchived("empty"); return; }
+      if (archivedList) archivedList.innerHTML = courses.map((c) => renderCourseCard(c, "archived")).join("");
+      showArchived("list");
+    } catch (err) {
+      if (archivedErrorMsg) archivedErrorMsg.textContent = errorText(err);
+      showArchived("error");
+    }
+  }
+
+  // Archived: single "Publish" button
+  archivedList?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-toggle-publish]");
+    if (!btn) return;
+    const courseId = btn.dataset.togglePublish;
+    const title = btn.closest("article")?.querySelector("h3")?.textContent || "this course";
+
+    openModal({
+      title: "Re-publish Course",
+      contentHtml: `
+        <p>Are you sure you want to <strong>publish</strong> this course back to the live catalog?</p>
+        <p class="modal-course-title">"${escapeHtml(title)}"</p>
+        <p style="font-size:0.85rem;color:var(--muted);">Students will be able to see and enroll in it immediately.</p>
+      `,
+      confirmText: "▶ Publish",
+      onConfirm: async (_bd, close) => {
+        const confirmBtn = _bd.querySelector(".modal-confirm");
+        if (confirmBtn) confirmBtn.disabled = true;
+        try {
+          const result = await adminService.toggleCoursePublish(courseId, "publish");
+          close();
+          toast(result?.message || "Course published successfully.", "success");
+          await Promise.all([loadArchived(), loadPublished()]);
+        } catch (err) {
+          toast(errorText(err), "error");
+          if (confirmBtn) confirmBtn.disabled = false;
+        }
+      },
+    });
+  });
+
+  archivedRetry?.addEventListener("click", loadArchived);
+  archivedRefresh?.addEventListener("click", async () => {
+    setBusy(archivedRefresh, true, "↻ Refreshing…");
+    await loadArchived();
+    setBusy(archivedRefresh, false);
+  });
+
+  // ── Load all three sections in parallel ──────────────────────────────────────
+  await Promise.all([loadPending(), loadPublished(), loadArchived()]);
 }
+
 
 // ─── User Directory ───────────────────────────────────────────────────────────
 export async function mountAdminUsers(container) {
