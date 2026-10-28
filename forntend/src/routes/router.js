@@ -21,7 +21,7 @@ import { mountCoursePlayer } from "../pages/course-player/player.js";
 import { mountStudentQuizzes } from "../pages/quizzes/quiz.js";
 
 // Admin
-import { mountAdminDashboard, mountAdminCourses } from "../pages/admin-panel/admin.js";
+import { mountAdminDashboard, mountAdminCourses, mountAdminUsers, showAdminView } from "../pages/admin-panel/admin.js";
 
 // Export backward compatible loader
 export { loadInstructorFragments as loadInstructorPages };
@@ -132,22 +132,36 @@ export async function navigate() {
     const subSection = hash.split("/")[2] || "dashboard";
 
     if (currentRenderedLayout !== "admin") {
+      // First time loading admin layout — render full shell
       activeAppContainer.innerHTML = renderAdminLayout(user, subSection);
       bindAdminLayoutEvents(activeAppContainer);
       currentRenderedLayout = "admin";
+
+      // Bind sidebar nav-link clicks to use hash navigation (prevent full page reload)
+      activeAppContainer.querySelectorAll("#sidebar .nav-link").forEach((link) => {
+        link.addEventListener("click", (e) => {
+          // Let the hashchange event drive navigation — no action needed here
+          // The hashchange listener on window already calls navigate()
+        });
+      });
     }
 
     const container = activeAppContainer.querySelector("#admin-page-container");
     if (!container) return;
 
+    // Load the subsection content
     if (subSection === "dashboard") {
       container.innerHTML = await fetchHtml(TEMPLATES.adminDashboard);
+      showAdminView("dashboard");
       await mountAdminDashboard(container);
     } else if (subSection === "courses") {
       container.innerHTML = await fetchHtml(TEMPLATES.adminCourses);
+      showAdminView("courses");
       await mountAdminCourses(container);
     } else if (subSection === "users") {
       container.innerHTML = await fetchHtml(TEMPLATES.adminUsers);
+      showAdminView("users");
+      await mountAdminUsers(container);
     }
     return;
   }

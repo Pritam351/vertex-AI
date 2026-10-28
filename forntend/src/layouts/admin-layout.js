@@ -38,4 +38,14 @@ export function renderAdminLayout(user, activeSection = "dashboard") {
 
 export function bindAdminLayoutEvents(container = document) {
   bindNavbarEvents(container);
+
+  // Intercept sidebar link clicks: prevent default browser navigation,
+  // update active state immediately so the click feels snappy.
+  container.querySelectorAll("#sidebar .nav-link").forEach((link) => {
+    link.addEventListener("click", () => {
+      container.querySelectorAll("#sidebar .nav-link").forEach((l) => l.classList.remove("is-active"));
+      link.classList.add("is-active");
+    });
+  });
 }
+

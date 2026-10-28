@@ -8,7 +8,7 @@ export function renderInstructorLayout(user, activeSection = "overview") {
       { id: "overview", href: "#/instructor/overview", label: "Overview", icon: "◈", isActive: activeSection === "overview" },
       { id: "course-builder", href: "#/instructor/course-builder", label: "Course builder", icon: "▣", isActive: activeSection === "course-builder" },
       { id: "assessments", href: "#/instructor/assessments", label: "Assessments", icon: "◇", isActive: activeSection === "assessments" },
-      { id: "analytics", href: "#/instructor/analytics", label: "Analytics", icon: "📊", isActive: activeSection === "analytics" }
+      { id: "analytics", href: "#/instructor/analytics", label: "Analytics", icon: "Δ", isActive: activeSection === "analytics" }
     ]
   });
 

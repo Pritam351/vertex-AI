@@ -1,5 +1,6 @@
 @import "../../public/assets/css/app.css";
 @import "./instructor.css";
+@import "./admin.css";
 
 /* Additional multi-role utility classes */
 .is-active-card {

@@ -1,19 +1,117 @@
 <section class="view is-active" id="admin-users">
+  <!-- Section Header -->
   <div class="section-intro">
     <p class="eyebrow">GOVERNANCE</p>
     <h2>User Directory</h2>
-    <p>Manage accounts across student, instructor, and administrative tiers.</p>
+    <p>Search, filter, and manage accounts across all platform roles.</p>
   </div>
 
-  <div class="panel" style="padding: 1.5rem;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-      <h3 style="margin:0;">User Roles & Permissions</h3>
-      <span class="count-pill">RBAC Policy</span>
+  <!-- Stats Row -->
+  <div class="users-stats-grid" id="users-stats-grid">
+    <div class="stat-card">
+      <p class="eyebrow">TOTAL USERS</p>
+      <h3 id="stat-total">—</h3>
     </div>
-    <ul class="auth-points" style="margin-top:1rem;">
-      <li><strong>Students:</strong> Access course catalog, enroll, stream lectures, attempt quizzes, chat with AI course tutor.</li>
-      <li><strong>Instructors:</strong> Course creator studio, module & lecture authoring, quiz builder, assignment creation.</li>
-      <li><strong>Administrators:</strong> Platform moderation, approve/reject submitted courses, review workflows.</li>
-    </ul>
+    <div class="stat-card">
+      <p class="eyebrow">STUDENTS</p>
+      <h3 id="stat-students" style="color: var(--aqua);">—</h3>
+    </div>
+    <div class="stat-card">
+      <p class="eyebrow">INSTRUCTORS</p>
+      <h3 id="stat-instructors" style="color: var(--violet-light);">—</h3>
+    </div>
+    <div class="stat-card">
+      <p class="eyebrow">ADMINS</p>
+      <h3 id="stat-admins" style="color: #ffd166;">—</h3>
+    </div>
+    <div class="stat-card">
+      <p class="eyebrow">ACTIVE</p>
+      <h3 id="stat-active" style="color: var(--success);">—</h3>
+    </div>
+    <div class="stat-card">
+      <p class="eyebrow">SUSPENDED</p>
+      <h3 id="stat-suspended" style="color: var(--danger);">—</h3>
+    </div>
+  </div>
+
+  <!-- Controls Panel -->
+  <div class="panel users-controls-panel">
+    <div class="users-controls">
+      <!-- Search -->
+      <div class="users-search-wrap">
+        <span class="search-icon" aria-hidden="true">⌕</span>
+        <input
+          id="users-search"
+          class="users-search-input"
+          type="search"
+          placeholder="Search by name or email…"
+          autocomplete="off"
+          aria-label="Search users"
+        />
+      </div>
+
+      <!-- Role Filter -->
+      <div class="users-filter-group">
+        <label class="sr-only" for="users-role-filter">Filter by role</label>
+        <select id="users-role-filter" class="users-select" aria-label="Filter by role">
+          <option value="all">All Roles</option>
+          <option value="student">Student</option>
+          <option value="instructor">Instructor</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+
+      <!-- Status Filter -->
+      <div class="users-filter-group">
+        <label class="sr-only" for="users-status-filter">Filter by status</label>
+        <select id="users-status-filter" class="users-select" aria-label="Filter by status">
+          <option value="all">All Statuses</option>
+          <option value="active">Active</option>
+          <option value="suspended">Suspended</option>
+        </select>
+      </div>
+
+      <!-- Result Count -->
+      <span class="count-pill" id="users-result-count" aria-live="polite">Loading…</span>
+    </div>
+  </div>
+
+  <!-- User Table -->
+  <div class="panel users-table-panel">
+    <!-- Loading State -->
+    <div id="users-loading" class="users-loading-state">
+      <div class="users-spinner" aria-hidden="true"></div>
+      <p>Loading users…</p>
+    </div>
+
+    <!-- Empty State -->
+    <div id="users-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">◎</div>
+      <h3>No users found</h3>
+      <p>Try adjusting your search or filters.</p>
+    </div>
+
+    <!-- Table -->
+    <div id="users-table-wrap" hidden>
+      <table class="users-table" aria-label="User directory">
+        <thead>
+          <tr>
+            <th scope="col">User</th>
+            <th scope="col">Role</th>
+            <th scope="col">Status</th>
+            <th scope="col">Joined</th>
+            <th scope="col" class="text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="users-tbody"></tbody>
+      </table>
+
+      <!-- Pagination -->
+      <div class="users-pagination" id="users-pagination" hidden>
+        <button class="button button-secondary" id="users-prev-btn" type="button" aria-label="Previous page">← Prev</button>
+        <span id="users-page-info" class="users-page-info"></span>
+        <button class="button button-secondary" id="users-next-btn" type="button" aria-label="Next page">Next →</button>
+      </div>
+    </div>
   </div>
 </section>
