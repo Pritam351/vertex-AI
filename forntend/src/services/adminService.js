@@ -27,4 +27,18 @@ export const adminService = {
       body: { isActive },
     });
   },
+
+  /**
+   * Change a user's role (student ↔ instructor only).
+   * Admins cannot change their own role; last admin is protected on the backend.
+   * @param {string} userId
+   * @param {"student"|"instructor"} role
+   */
+  async updateUserRole(userId, role) {
+    return api(`/admin/users/${userId}/role`, {
+      method: "PATCH",
+      body: { role },
+    });
+  },
 };
+

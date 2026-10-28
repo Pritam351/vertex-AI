@@ -3,7 +3,9 @@ import { adminService } from "../../services/adminService.js";
 import { $, escapeHtml } from "../../utils/dom.js";
 import { toast } from "../../components/common/toast.js";
 import { setBusy } from "../../components/common/loading.js";
+import { openModal } from "../../components/common/modal.js";
 import { errorText } from "../../utils/validation.js";
+import { getUser } from "../../store/session.js";
 
 // ─── Shared helper: show a specific content view inside the admin container ──
 export function showAdminView(sectionId) {
@@ -57,61 +59,101 @@ export async function mountAdminDashboard(container) {
 export async function mountAdminCourses(container) {
   const listContainer = $("#pending-list-container", container);
   const countEl = $("#pending-count", container);
+  const loadingEl = $("#pending-loading", container);
   const emptyEl = $("#pending-empty", container);
+  const errorEl = $("#pending-error", container);
+  const errorMsgEl = $("#pending-error-message", container);
+  const retryBtn = $("#pending-retry-btn", container);
+  const refreshBtn = $("#pending-refresh-btn", container);
+
+  function showState(state) {
+    if (loadingEl) loadingEl.hidden = state !== "loading";
+    if (emptyEl) emptyEl.hidden = state !== "empty";
+    if (errorEl) errorEl.hidden = state !== "error";
+    if (listContainer) listContainer.hidden = state !== "list";
+  }
+
+  function formatDate(dateStr) {
+    if (!dateStr) return "—";
+    const d = new Date(dateStr);
+    if (isNaN(d)) return "—";
+    return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
+  }
+
+  function renderCourseCard(c) {
+    const instructor = c.instructorId;
+    const instructorName = instructor?.fullName || "Unknown Instructor";
+    const instructorEmail = instructor?.email || "";
+    const submitted = formatDate(c.createdAt);
+
+    return `
+      <article class="course-card-item">
+        ${
+          c.thumbnailUrl
+            ? `
+          <div class="course-card-thumb">
+            <img src="${escapeHtml(c.thumbnailUrl)}" alt="${escapeHtml(c.title)}" loading="lazy" onerror="this.onerror=null; this.parentElement.style.display='none';" />
+          </div>
+        `
+            : ""
+        }
+        <div class="course-card-main">
+          <div class="course-badges-row">
+            <span class="course-badge">${escapeHtml(c.category || "General")}</span>
+            ${c.difficulty ? `<span class="course-badge course-badge-difficulty">${escapeHtml(c.difficulty)}</span>` : ""}
+            <span class="status pending">Pending Approval</span>
+          </div>
+          <h3>${escapeHtml(c.title)}</h3>
+          <p class="course-card-desc">${escapeHtml(c.description || "No description added.")}</p>
+
+          <div class="course-card-meta">
+            <div class="course-instructor-info">
+              <span class="course-instructor-avatar" aria-hidden="true">${escapeHtml(instructorName.charAt(0).toUpperCase())}</span>
+              <div>
+                <span class="course-instructor-name">${escapeHtml(instructorName)}</span>
+                ${instructorEmail ? `<span class="course-instructor-email">${escapeHtml(instructorEmail)}</span>` : ""}
+              </div>
+            </div>
+            <span class="course-submitted-date">Submitted: <strong>${submitted}</strong></span>
+          </div>
+        </div>
+        <div class="course-actions">
+          <button class="button button-primary mini-button" type="button" data-review-id="${c._id}" data-decision="approved">
+            ✓ Approve
+          </button>
+          <button class="button mini-button btn-reject" type="button" data-review-id="${c._id}" data-decision="rejected">
+            ✕ Reject
+          </button>
+        </div>
+      </article>
+    `;
+  }
 
   async function loadPending() {
+    showState("loading");
+
     try {
       const payload = await courseService.getPendingCourses();
       const courses = payload?.data?.courses || [];
 
       if (countEl) countEl.textContent = `${courses.length} pending`;
-      if (emptyEl) emptyEl.hidden = courses.length > 0;
+
+      if (!courses.length) {
+        showState("empty");
+        return;
+      }
 
       if (listContainer) {
-        if (!courses.length) {
-          listContainer.innerHTML = "";
-        } else {
-          listContainer.innerHTML = courses
-            .map((c) => {
-              const instructor = c.instructorId?.fullName || "Instructor";
-              return `
-                <article class="course-card-item">
-                  ${
-                    c.thumbnailUrl
-                      ? `
-                    <div class="course-card-thumb">
-                      <img src="${escapeHtml(c.thumbnailUrl)}" alt="${escapeHtml(c.title)}" loading="lazy" onerror="this.onerror=null; this.parentElement.style.display='none';" />
-                    </div>
-                  `
-                      : ""
-                  }
-                  <div class="course-card-main">
-                    <div class="course-badges-row">
-                      <span class="course-badge">${escapeHtml(c.category || "General")}</span>
-                      <span class="status pending">Pending Approval</span>
-                    </div>
-                    <h3>${escapeHtml(c.title)}</h3>
-                    <p>${escapeHtml(c.description || "No description added.")}</p>
-                    <small style="color:var(--muted);">Submitted by: <strong>${escapeHtml(instructor)}</strong></small>
-                  </div>
-                  <div class="course-actions" style="display:flex; gap:0.5rem; justify-content:flex-end;">
-                    <button class="button button-primary mini-button" type="button" data-review-id="${c._id}" data-decision="approved">
-                      Approve ✓
-                    </button>
-                    <button class="button button-secondary mini-button" type="button" data-review-id="${c._id}" data-decision="rejected" style="border-color:var(--danger); color:var(--danger);">
-                      Reject ✕
-                    </button>
-                  </div>
-                </article>
-              `;
-            })
-            .join("");
-        }
+        listContainer.innerHTML = courses.map(renderCourseCard).join("");
       }
+      showState("list");
     } catch (error) {
-      toast(`Failed to load pending courses: ${errorText(error)}`, "error");
+      if (errorMsgEl) errorMsgEl.textContent = errorText(error);
+      showState("error");
     }
   }
+
+  // ── Action handler (approve / reject) ───────────────────────────────────────
 
   listContainer?.addEventListener("click", async (e) => {
     const button = e.target.closest("[data-review-id]");
@@ -119,16 +161,41 @@ export async function mountAdminCourses(container) {
 
     const courseId = button.dataset.reviewId;
     const decision = button.dataset.decision;
+    const isApprove = decision === "approved";
 
-    setBusy(button, true, decision === "approved" ? "Approving…" : "Rejecting…");
-    try {
-      await courseService.reviewCourse(courseId, decision);
-      toast(`Course ${decision} successfully.`);
-      await loadPending();
-    } catch (error) {
-      toast(errorText(error), "error");
-      setBusy(button, false);
-    }
+    const article = button.closest("article");
+    const title = article?.querySelector("h3")?.textContent || "this course";
+
+    openModal({
+      title: isApprove ? "Approve Course" : "Reject Course",
+      contentHtml: `
+        <p>Are you sure you want to <strong>${isApprove ? "approve" : "reject"}</strong> the course:</p>
+        <p class="modal-course-title">"${escapeHtml(title)}"</p>
+        ${!isApprove ? `<p class="modal-warning">The instructor will not be notified with a reason. Rejected courses can be resubmitted.</p>` : ""}
+      `,
+      confirmText: isApprove ? "✓ Approve" : "✕ Reject",
+      onConfirm: async (_backdrop, close) => {
+        const confirmBtn = _backdrop.querySelector(".modal-confirm");
+        if (confirmBtn) confirmBtn.disabled = true;
+        try {
+          await courseService.reviewCourse(courseId, decision);
+          close();
+          toast(`Course ${decision} successfully.`, "success");
+          await loadPending();
+        } catch (error) {
+          toast(errorText(error), "error");
+          if (confirmBtn) confirmBtn.disabled = false;
+        }
+      },
+    });
+  });
+
+  // ── Retry & Refresh ─────────────────────────────────────────────────────────
+  retryBtn?.addEventListener("click", loadPending);
+  refreshBtn?.addEventListener("click", async () => {
+    setBusy(refreshBtn, true, "↻ Refreshing…");
+    await loadPending();
+    setBusy(refreshBtn, false);
   });
 
   await loadPending();
@@ -143,12 +210,15 @@ export async function mountAdminUsers(container) {
   const resultCount = $("#users-result-count", container);
   const loadingEl = $("#users-loading", container);
   const emptyEl = $("#users-empty", container);
+  const errorEl = $("#users-error", container);
+  const errorMsgEl = $("#users-error-message", container);
   const tableWrap = $("#users-table-wrap", container);
   const tbody = $("#users-tbody", container);
   const paginationEl = $("#users-pagination", container);
   const prevBtn = $("#users-prev-btn", container);
   const nextBtn = $("#users-next-btn", container);
   const pageInfo = $("#users-page-info", container);
+  const retryBtn = $("#users-retry-btn", container);
 
   // Stat elements
   const statTotal = $("#stat-total", container);
@@ -157,6 +227,10 @@ export async function mountAdminUsers(container) {
   const statAdmins = $("#stat-admins", container);
   const statActive = $("#stat-active", container);
   const statSuspended = $("#stat-suspended", container);
+
+  // Current admin user ID – used to prevent self-role-change
+  const currentUser = getUser();
+  const currentUserId = currentUser?._id || currentUser?.id || "";
 
   let currentPage = 1;
   let totalPages = 1;
@@ -192,22 +266,48 @@ export async function mountAdminUsers(container) {
       .toUpperCase();
   }
 
+  function getRoleToggleOptions(role) {
+    if (role === "student") {
+      return { label: "Make Instructor", newRole: "instructor", cssClass: "btn-promote" };
+    }
+    if (role === "instructor") {
+      return { label: "Make Student", newRole: "student", cssClass: "btn-demote-role" };
+    }
+    return null; // admin – no role change button
+  }
+
   function renderRow(user) {
+    const isSelf = user._id === currentUserId;
     const statusClass = user.isActive ? "status-badge-active" : "status-badge-suspended";
     const statusText = user.isActive ? "Active" : "Suspended";
     const actionLabel = user.isActive ? "Suspend" : "Reactivate";
     const actionClass = user.isActive ? "btn-suspend" : "btn-reactivate";
     const avatarColor = user.isActive ? "var(--violet)" : "var(--muted)";
 
+    const roleToggle = getRoleToggleOptions(user.role);
+    const roleChangeBtn = roleToggle && !isSelf
+      ? `<button
+           class="button ${roleToggle.cssClass} mini-button"
+           type="button"
+           data-change-role="${escapeHtml(user._id)}"
+           data-target-role="${roleToggle.newRole}"
+           data-user-name="${escapeHtml(user.fullName)}"
+           data-current-role="${escapeHtml(user.role)}"
+           aria-label="${roleToggle.label} for ${escapeHtml(user.fullName)}"
+         >${roleToggle.label}</button>`
+      : (isSelf && user.role !== "admin"
+          ? `<span class="self-badge" title="Cannot change your own role">You</span>`
+          : "");
+
     return `
-      <tr data-user-id="${escapeHtml(user._id)}" data-user-active="${user.isActive}">
+      <tr data-user-id="${escapeHtml(user._id)}" data-user-active="${user.isActive}" data-user-role="${escapeHtml(user.role)}">
         <td class="user-cell">
           <div class="user-avatar-wrap">
             <span class="user-avatar" style="background:${avatarColor};" aria-hidden="true">
               ${getInitials(user.fullName)}
             </span>
             <div class="user-info">
-              <span class="user-name">${escapeHtml(user.fullName)}</span>
+              <span class="user-name">${escapeHtml(user.fullName)}${isSelf ? ' <span class="self-badge">You</span>' : ""}</span>
               <span class="user-email">${escapeHtml(user.email)}</span>
             </div>
           </div>
@@ -220,25 +320,35 @@ export async function mountAdminUsers(container) {
         </td>
         <td class="date-cell">${formatDate(user.createdAt)}</td>
         <td class="actions-cell text-right">
-          <button
-            class="button ${actionClass} mini-button"
-            type="button"
-            data-toggle-status="${escapeHtml(user._id)}"
-            data-current-active="${user.isActive}"
-            aria-label="${actionLabel} ${escapeHtml(user.fullName)}"
-          >${actionLabel}</button>
+          <div class="actions-btn-group">
+            ${roleChangeBtn}
+            <button
+              class="button ${actionClass} mini-button"
+              type="button"
+              data-toggle-status="${escapeHtml(user._id)}"
+              data-current-active="${user.isActive}"
+              ${isSelf && user.isActive ? 'disabled title="Cannot suspend your own account"' : ""}
+              aria-label="${actionLabel} ${escapeHtml(user.fullName)}"
+            >${actionLabel}</button>
+          </div>
         </td>
       </tr>
     `;
   }
 
+  // ── Show state helpers ──────────────────────────────────────────────────────
+
+  function showUsersState(state) {
+    if (loadingEl) loadingEl.hidden = state !== "loading";
+    if (emptyEl) emptyEl.hidden = state !== "empty";
+    if (errorEl) errorEl.hidden = state !== "error";
+    if (tableWrap) tableWrap.hidden = state !== "table";
+  }
+
   // ── Fetch & Render ──────────────────────────────────────────────────────────
 
   async function loadUsers() {
-    // Show loading
-    if (loadingEl) loadingEl.hidden = false;
-    if (emptyEl) emptyEl.hidden = true;
-    if (tableWrap) tableWrap.hidden = true;
+    showUsersState("loading");
 
     try {
       const params = {
@@ -266,16 +376,13 @@ export async function mountAdminUsers(container) {
       if (resultCount) resultCount.textContent = `${total} user${total !== 1 ? "s" : ""}`;
 
       if (!users.length) {
-        if (loadingEl) loadingEl.hidden = true;
-        if (emptyEl) emptyEl.hidden = false;
-        if (tableWrap) tableWrap.hidden = true;
+        showUsersState("empty");
         return;
       }
 
       // Render table
       if (tbody) tbody.innerHTML = users.map(renderRow).join("");
-      if (loadingEl) loadingEl.hidden = true;
-      if (tableWrap) tableWrap.hidden = false;
+      showUsersState("table");
 
       // Pagination
       if (paginationEl) {
@@ -285,8 +392,8 @@ export async function mountAdminUsers(container) {
         if (nextBtn) nextBtn.disabled = currentPage >= totalPages;
       }
     } catch (error) {
-      if (loadingEl) loadingEl.hidden = true;
-      toast(`Failed to load users: ${errorText(error)}`, "error");
+      if (errorMsgEl) errorMsgEl.textContent = errorText(error);
+      showUsersState("error");
     }
   }
 
@@ -299,23 +406,77 @@ export async function mountAdminUsers(container) {
     const userId = btn.dataset.toggleStatus;
     const currentActive = btn.dataset.currentActive === "true";
     const newActive = !currentActive;
+    const row = btn.closest("tr");
+    const userName = row?.querySelector(".user-name")?.textContent?.trim() || "this user";
 
-    const confirmMsg = newActive
-      ? "Are you sure you want to reactivate this user?"
-      : "Are you sure you want to suspend this user? They will lose access to the platform.";
+    openModal({
+      title: newActive ? "Reactivate Account" : "Suspend Account",
+      contentHtml: `
+        <p>Are you sure you want to <strong>${newActive ? "reactivate" : "suspend"}</strong> the account for:</p>
+        <p class="modal-course-title">${escapeHtml(userName)}</p>
+        ${!newActive ? `<p class="modal-warning">This user will immediately lose access to the platform.</p>` : ""}
+      `,
+      confirmText: newActive ? "Reactivate" : "Suspend",
+      onConfirm: async (_backdrop, close) => {
+        const confirmBtn = _backdrop.querySelector(".modal-confirm");
+        if (confirmBtn) confirmBtn.disabled = true;
+        try {
+          const result = await adminService.updateUserStatus(userId, newActive);
+          close();
+          toast(result?.message || `User ${newActive ? "reactivated" : "suspended"} successfully.`, "success");
+          await loadUsers();
+        } catch (error) {
+          toast(errorText(error), "error");
+          if (confirmBtn) confirmBtn.disabled = false;
+        }
+      },
+    });
+  });
 
-    if (!confirm(confirmMsg)) return;
+  // ── Change Role Handler ────────────────────────────────────────────────────
 
-    setBusy(btn, true, newActive ? "Reactivating…" : "Suspending…");
-    try {
-      const result = await adminService.updateUserStatus(userId, newActive);
-      toast(result?.message || `User ${newActive ? "reactivated" : "suspended"} successfully.`);
-      // Refresh current page to reflect new status
-      await loadUsers();
-    } catch (error) {
-      toast(errorText(error), "error");
-      setBusy(btn, false);
-    }
+  tableWrap?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-change-role]");
+    if (!btn) return;
+
+    const userId = btn.dataset.changeRole;
+    const targetRole = btn.dataset.targetRole;
+    const userName = btn.dataset.userName || "this user";
+    const currentRole = btn.dataset.currentRole;
+
+    const isPromote = targetRole === "instructor";
+    const actionVerb = isPromote ? "promote to Instructor" : "change back to Student";
+
+    openModal({
+      title: isPromote ? "Promote to Instructor" : "Change Role to Student",
+      contentHtml: `
+        <p>Are you sure you want to <strong>${actionVerb}</strong>:</p>
+        <p class="modal-course-title">${escapeHtml(userName)}</p>
+        <p class="modal-meta-info">Current role: <span class="modal-role-badge modal-role-${escapeHtml(currentRole)}">${currentRole.charAt(0).toUpperCase() + currentRole.slice(1)}</span> → <span class="modal-role-badge modal-role-${escapeHtml(targetRole)}">${targetRole.charAt(0).toUpperCase() + targetRole.slice(1)}</span></p>
+        ${isPromote ? `<p class="modal-warning">This user will gain instructor capabilities to create and manage courses.</p>` : `<p class="modal-warning">This user will lose instructor capabilities and course management access.</p>`}
+      `,
+      confirmText: isPromote ? "Promote" : "Change Role",
+      onConfirm: async (_backdrop, close) => {
+        const confirmBtn = _backdrop.querySelector(".modal-confirm");
+        if (confirmBtn) confirmBtn.disabled = true;
+        try {
+          const result = await adminService.updateUserRole(userId, targetRole);
+          close();
+          toast(result?.message || `Role updated to ${targetRole} successfully.`, "success");
+          await loadUsers();
+        } catch (error) {
+          toast(errorText(error), "error");
+          if (confirmBtn) confirmBtn.disabled = false;
+        }
+      },
+    });
+  });
+
+  // ── Retry handler ───────────────────────────────────────────────────────────
+
+  retryBtn?.addEventListener("click", () => {
+    currentPage = 1;
+    loadUsers();
   });
 
   // ── Search & Filter Listeners ──────────────────────────────────────────────

@@ -3,7 +3,7 @@
   <div class="section-intro">
     <p class="eyebrow">GOVERNANCE</p>
     <h2>User Directory</h2>
-    <p>Search, filter, and manage accounts across all platform roles.</p>
+    <p>Search, filter, and manage accounts and roles across all platform roles.</p>
   </div>
 
   <!-- Stats Row -->
@@ -89,6 +89,14 @@
       <div class="empty-icon" aria-hidden="true">◎</div>
       <h3>No users found</h3>
       <p>Try adjusting your search or filters.</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="users-error" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true" style="color:var(--danger);">⚠</div>
+      <h3>Failed to load users</h3>
+      <p id="users-error-message">An error occurred while fetching users.</p>
+      <button class="button button-secondary" id="users-retry-btn" type="button" style="margin-top:1rem;">Retry</button>
     </div>
 
     <!-- Table -->

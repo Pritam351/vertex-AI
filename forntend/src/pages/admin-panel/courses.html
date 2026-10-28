@@ -11,15 +11,35 @@
         <p class="eyebrow">SUBMISSIONS</p>
         <h3 id="pending-courses-heading">Pending Courses</h3>
       </div>
-      <span class="count-pill" id="pending-count">0 pending</span>
+      <div style="display:flex;align-items:center;gap:0.75rem;">
+        <span class="count-pill" id="pending-count">0 pending</span>
+        <button class="button button-secondary mini-button" id="pending-refresh-btn" type="button" aria-label="Refresh pending courses list" title="Refresh list">
+          ↻ Refresh
+        </button>
+      </div>
     </div>
 
+    <!-- Loading State -->
+    <div id="pending-loading" class="courses-loading-state">
+      <div class="courses-spinner" aria-hidden="true"></div>
+      <p>Loading pending courses…</p>
+    </div>
+
+    <!-- Error State -->
+    <div id="pending-error" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true" style="color:var(--danger);">⚠</div>
+      <h3>Failed to load courses</h3>
+      <p id="pending-error-message">An error occurred while fetching pending courses.</p>
+      <button class="button button-secondary" id="pending-retry-btn" type="button" style="margin-top:1rem;">Retry</button>
+    </div>
+
+    <!-- Empty State -->
     <div id="pending-empty" class="empty-state" hidden>
       <div class="empty-icon" aria-hidden="true">✓</div>
       <h3>All caught up</h3>
       <p>There are no courses currently waiting for administrative review.</p>
     </div>
 
-    <div id="pending-list-container" class="courses-list-grid"></div>
+    <div id="pending-list-container" class="courses-list-grid" hidden></div>
   </section>
 </section>

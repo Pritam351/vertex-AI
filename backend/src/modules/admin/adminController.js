@@ -195,9 +195,70 @@ const updateUserStatus = async (req, res, next) => {
   }
 };
 
+const updateUserRole = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+
+    if (!mongoose.isValidObjectId(id)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user ID",
+      });
+    }
+
+    const ALLOWED_ROLES = ["student", "instructor"];
+    if (!ALLOWED_ROLES.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Role must be one of: student, instructor",
+      });
+    }
+
+    // Prevent admin from changing their own role
+    if (req.user && req.user._id.toString() === id) {
+      return res.status(403).json({
+        success: false,
+        message: "You cannot change your own role",
+      });
+    }
+
+    const target = await User.findById(id).select("-passwordHash");
+    if (!target) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    // Protect the last active admin from being demoted
+    if (target.role === "admin") {
+      const activeAdminCount = await User.countDocuments({ role: "admin", isActive: true });
+      if (activeAdminCount <= 1) {
+        return res.status(409).json({
+          success: false,
+          message: "Cannot demote the last active admin account",
+        });
+      }
+    }
+
+    target.role = role;
+    await target.save();
+
+    return res.status(200).json({
+      success: true,
+      message: `${target.fullName}'s role has been updated to ${role}`,
+      data: { user: target },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getPendingCourses,
   reviewCourse,
   getAllUsers,
   updateUserStatus,
+  updateUserRole,
 };

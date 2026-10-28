@@ -8,6 +8,7 @@ const {
   reviewCourse,
   getAllUsers,
   updateUserStatus,
+  updateUserRole,
 } = require("./adminController");
 
 const router = express.Router();
@@ -19,5 +20,6 @@ router.post("/courses/:id/approve", reviewCourse);
 
 router.get("/users", getAllUsers);
 router.patch("/users/:id/status", updateUserStatus);
+router.patch("/users/:id/role", updateUserRole);
 
 module.exports = router;
