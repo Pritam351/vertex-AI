@@ -107,6 +107,22 @@ export async function navigate() {
       currentRenderedLayout = "student";
     }
 
+    // Update sidebar active state for current section
+    activeAppContainer.querySelectorAll("#sidebar .nav-link").forEach((link) => {
+      const linkSection = link.getAttribute("href")?.split("/")[2] || "";
+      link.classList.toggle("is-active", linkSection === subSection);
+    });
+
+    // Update topbar title
+    const studentSectionTitles = {
+      dashboard: "My Learning Dashboard",
+      catalog: "Course Catalog",
+      player: "Course Player",
+      quizzes: "Quizzes & Assessments"
+    };
+    const pageTitleEl = activeAppContainer.querySelector("#page-title");
+    if (pageTitleEl) pageTitleEl.textContent = studentSectionTitles[subSection] || "Student Portal";
+
     const container = activeAppContainer.querySelector("#student-page-container");
     if (!container) return;
 

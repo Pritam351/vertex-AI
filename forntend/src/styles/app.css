@@ -25,6 +25,52 @@
   transition: opacity 0.3s ease, transform 0.3s ease;
 }
 
+/* ── Student dashboard: in-progress vs completed status badges ── */
+.status.in-progress {
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.13);
+}
+
+.status.completed {
+  color: #8cedc9;
+  background: rgba(82, 216, 194, 0.12);
+}
+
+/* Completed course card highlight */
+.course-card-item.is-completed-card {
+  border-color: rgba(82, 216, 194, 0.35);
+  background: #111d36;
+}
+
+/* ── Assignment submission status badges ── */
+.status-badge-graded {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  font-family: "DM Mono", monospace;
+  font-weight: 500;
+  color: #8cedc9;
+  background: rgba(82, 216, 194, 0.12);
+  border: 1px solid rgba(82, 216, 194, 0.2);
+}
+
+.status-badge-pending {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 0.35rem;
+  font-size: 0.75rem;
+  font-family: "DM Mono", monospace;
+  font-weight: 500;
+  color: #fcd34d;
+  background: rgba(252, 211, 77, 0.1);
+  border: 1px solid rgba(252, 211, 77, 0.18);
+}
+
 .course-card-thumb {
   width: 140px;
   height: 94px;

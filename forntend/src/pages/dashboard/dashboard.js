@@ -43,13 +43,16 @@ export async function mountStudentDashboard(container) {
     if (enrolledList) {
       if (total === 0) {
         enrolledList.innerHTML = "";
+        enrolledList.hidden = true;
       } else {
+        enrolledList.hidden = false;
         enrolledList.innerHTML = enrollments
           .map((enrollment) => {
             const course = enrollment.courseId || {};
             const percent = Math.min(100, Math.max(0, Math.round(enrollment.progressPercent || 0)));
+            const isCompleted = percent === 100;
             return `
-              <article class="course-card-item">
+              <article class="course-card-item${isCompleted ? " is-completed-card" : ""}">
                 ${
                   course.thumbnailUrl
                     ? `
@@ -62,23 +65,23 @@ export async function mountStudentDashboard(container) {
                 <div class="course-card-main">
                   <div class="course-badges-row">
                     <span class="course-badge">${escapeHtml(course.category || "General")}</span>
-                    <span class="status ${percent === 100 ? "published" : "pending"}">${percent === 100 ? "Completed" : "In Progress"}</span>
+                    <span class="status ${isCompleted ? "completed" : "in-progress"}">${isCompleted ? "✓ Completed" : "In Progress"}</span>
                   </div>
                   <h3>${escapeHtml(course.title || "Course")}</h3>
                   <p>${escapeHtml(course.description || "Continue your lessons and quizzes.")}</p>
                   <div class="progress-bar-wrapper" style="margin-top: 1rem;">
                     <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.35rem;">
                       <span>Progress</span>
-                      <strong>${percent}%</strong>
+                      <strong style="color:${isCompleted ? "var(--aqua)" : "inherit"}">${percent}%</strong>
                     </div>
                     <div style="background:var(--line); border-radius:999px; height:8px; overflow:hidden;">
-                      <div style="background:linear-gradient(90deg, var(--violet), var(--aqua)); width:${percent}%; height:100%; border-radius:999px; transition:width 0.3s ease;"></div>
+                      <div style="background:${isCompleted ? "linear-gradient(90deg,#52d8c2,#8cedc9)" : "linear-gradient(90deg, var(--violet), var(--aqua))"}; width:${percent}%; height:100%; border-radius:999px; transition:width 0.3s ease;"></div>
                     </div>
                   </div>
                 </div>
                 <div class="course-actions">
-                  <a class="button button-primary mini-button" href="#/student/player?courseId=${escapeHtml(course._id || enrollment.courseId)}">
-                    Continue Learning →
+                  <a class="button ${isCompleted ? "button-secondary" : "button-primary"} mini-button" href="#/student/player?courseId=${escapeHtml(course._id || enrollment.courseId)}">
+                    ${isCompleted ? "Review Course →" : "Continue Learning →"}
                   </a>
                 </div>
               </article>
