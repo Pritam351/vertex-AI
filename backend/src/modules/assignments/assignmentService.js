@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const Assignment = require("./assignmentModel");
@@ -40,7 +39,7 @@ const createAssignment = async (data, user) => {
   if (Number.isNaN(dueDate.getTime())) fail(400, "Invalid due date");
   if (dueDate <= new Date()) fail(400, "Due date must be in the future");
 
-  return Assignment.create({
+  const assignment = await Assignment.create({
     courseId: course._id,
     title: data.title,
     instructions: data.instructions,
@@ -48,6 +47,25 @@ const createAssignment = async (data, user) => {
     dueDate,
     createdBy: user._id,
   });
+
+  // Notify students enrolled in this course
+  try {
+    const { createBulkNotifications } = require("../notifications/notificationService");
+    const enrollments = await Enrollment.find({ courseId: course._id }).select("userId").lean();
+    if (enrollments.length > 0) {
+      await createBulkNotifications(
+        enrollments.map((e) => ({
+          userId: e.userId,
+          type: "assignment",
+          title: `New Assignment: ${data.title}`,
+          message: `A new assignment "${data.title}" was posted for "${course.title}". Due: ${dueDate.toLocaleDateString()}.`,
+          link: "#/student/quizzes",
+        }))
+      );
+    }
+  } catch (_) {}
+
+  return assignment;
 };
 
 const listCourseAssignments = async (courseId, user) => {
@@ -98,8 +116,6 @@ const submitAssignment = async (assignmentId, fileUrl, user) => {
 
   if (!enrolled) fail(403, "Enroll in this course before submitting");
 
-  // Update the existing submission if the student submits again
-  // before the deadline; otherwise create their first submission.
   const submission = await Submission.findOneAndUpdate(
     { assignmentId: assignment._id, userId: user._id },
     {
@@ -107,15 +123,12 @@ const submitAssignment = async (assignmentId, fileUrl, user) => {
         fileUrl,
         submittedAt: new Date(),
         grade: null,
-        feedback: "",
+        feedback: null,
         gradedBy: null,
         gradedAt: null,
       },
     },
-    {
-      new: true,
-      runValidators: true,
-    }
+    { new: true, runValidators: true }
   );
 
   if (submission) return submission;
@@ -158,6 +171,18 @@ const gradeSubmission = async (submissionId, data, user) => {
   submission.gradedAt = new Date();
 
   await submission.save();
+
+  // Notify student of graded assignment
+  try {
+    const { createNotification } = require("../notifications/notificationService");
+    await createNotification({
+      userId: submission.userId,
+      type: "grade",
+      title: `Assignment Graded: ${assignment.title}`,
+      message: `Your submission for "${assignment.title}" has been graded: ${data.grade}/100.`,
+      link: "#/student/quizzes",
+    });
+  } catch (_) {}
 
   return Submission.findById(submission._id)
     .populate("userId", "fullName email")

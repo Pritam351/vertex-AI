@@ -36,5 +36,16 @@ export function openModal({ title, contentHtml, onConfirm, confirmText = "Confir
     }
   });
 
+  // Close on backdrop click (outside dialog)
+  backdrop.addEventListener("click", (e) => {
+    if (e.target === backdrop) close();
+  });
+
+  // Close on Escape key
+  const onKeyDown = (e) => {
+    if (e.key === "Escape") { close(); document.removeEventListener("keydown", onKeyDown); }
+  };
+  document.addEventListener("keydown", onKeyDown);
+
   return { close, element: backdrop };
 }

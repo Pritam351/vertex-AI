@@ -1,31 +1,32 @@
 <section class="view is-active" id="quizzes-view">
   <div class="section-intro">
     <p class="eyebrow">ASSESSMENTS</p>
-    <h2>Quizzes & Practice</h2>
-    <p>Test your retention, earn certificates, and challenge your understanding.</p>
+    <h2>Quizzes &amp; Assignments</h2>
+    <p>Test your retention, submit assignments, earn certificates, and challenge your understanding.</p>
   </div>
 
-  <!-- Available Quizzes Section -->
+  <!-- ── Available Quizzes ───────────────────────────────────────── -->
   <section aria-labelledby="available-quizzes-heading" style="margin-bottom: 2.5rem;">
     <div class="section-heading">
       <div>
-        <p class="eyebrow">ACTIVE CURRICULUM</p>
+        <p class="eyebrow">KNOWLEDGE CHECKS</p>
         <h3 id="available-quizzes-heading">Available Course Quizzes</h3>
       </div>
       <span class="count-pill" id="available-quizzes-count">0 quizzes</span>
     </div>
 
-    <div id="available-quizzes-empty" class="empty-state">
+    <div id="available-quizzes-empty" class="empty-state" hidden>
       <div class="empty-icon" aria-hidden="true">🎯</div>
       <h3>No quizzes published yet</h3>
       <p>Enroll in courses to take published quizzes created by your instructors.</p>
-      <a class="button button-secondary" href="#/student/dashboard">Explore Courses</a>
+      <a class="button button-secondary" href="#/student/catalog">Explore Courses</a>
     </div>
 
-    <div id="available-quizzes-list-container" class="courses-list-grid"></div>
+    <div id="available-quizzes-list-container" class="courses-list-grid" hidden></div>
   </section>
 
-  <section aria-labelledby="attempts-heading">
+  <!-- ── Quiz Attempt History ───────────────────────────────────── -->
+  <section aria-labelledby="attempts-heading" style="margin-bottom: 2.5rem;">
     <div class="section-heading">
       <div>
         <p class="eyebrow">YOUR RECORD</p>
@@ -34,12 +35,33 @@
       <span class="count-pill" id="attempts-count">0 attempts</span>
     </div>
 
-    <div id="attempts-empty" class="empty-state">
+    <div id="attempts-empty" class="empty-state" hidden>
       <div class="empty-icon" aria-hidden="true">◇</div>
       <h3>No quiz attempts yet</h3>
       <p>Take one of your available course quizzes above to see your scores recorded here.</p>
     </div>
 
-    <div id="attempts-list-container" class="courses-list-grid"></div>
+    <div id="attempts-list-container" class="courses-list-grid" hidden></div>
   </section>
+
+  <!-- ── Assignments ────────────────────────────────────────────── -->
+  <section aria-labelledby="assignments-heading" style="padding-top:2rem; border-top:1px solid var(--line);">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">COURSEWORK</p>
+        <h3 id="assignments-heading">Assignments &amp; Submissions</h3>
+        <p style="margin:0.25rem 0 0; font-size:0.82rem; color:var(--muted);">Submit your project work and track instructor grading.</p>
+      </div>
+      <span class="count-pill" id="assignments-count">0 assignments</span>
+    </div>
+
+    <div id="assignments-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">📝</div>
+      <h3>No assignments yet</h3>
+      <p>When your instructors publish assignments for your enrolled courses, they will appear here.</p>
+    </div>
+
+    <div id="assignments-list-container" class="courses-list-grid" hidden></div>
+  </section>
+
 </section>

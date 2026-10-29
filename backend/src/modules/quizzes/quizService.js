@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const Quiz = require("./quizModel");
 const QuizAttempt = require("./quizAttemptModel");
@@ -68,11 +67,32 @@ const createQuiz = async (data, user) => {
     };
   });
 
-  return Quiz.create({
+  const quiz = await Quiz.create({
     ...data,
     questions,
     createdBy: user._id,
   });
+
+  // If created already published, notify students
+  if (quiz.isPublished) {
+    try {
+      const { createBulkNotifications } = require("../notifications/notificationService");
+      const enrollments = await Enrollment.find({ courseId: course._id }).select("userId").lean();
+      if (enrollments.length > 0) {
+        await createBulkNotifications(
+          enrollments.map((e) => ({
+            userId: e.userId,
+            type: "quiz",
+            title: `New Quiz: ${quiz.title}`,
+            message: `A new quiz "${quiz.title}" has been added to "${course.title}". Test your knowledge!`,
+            link: "#/student/quizzes",
+          }))
+        );
+      }
+    } catch (_) {}
+  }
+
+  return quiz;
 };
 
 const listCourseQuizzes = async (courseId, user) => {
@@ -279,6 +299,20 @@ const submitAttempt = async (attemptId, data, user) => {
 
   await attempt.save();
 
+  // Notify student of their quiz result
+  try {
+    const { createNotification } = require("../notifications/notificationService");
+    await createNotification({
+      userId: user._id,
+      type: "quiz",
+      title: attempt.passed ? `Passed: ${quiz.title}` : `Completed: ${quiz.title}`,
+      message: attempt.passed
+        ? `Great job! You passed "${quiz.title}" with a score of ${percentage}%.`
+        : `You completed "${quiz.title}" with ${percentage}%. Review and try again!`,
+      link: "#/student/quizzes",
+    });
+  } catch (_) {}
+
   return {
     attemptId: attempt._id,
     score,
@@ -315,6 +349,23 @@ const publishQuiz = async (quizId, user) => {
   quiz.isPublished = true;
   await quiz.save();
 
+  // Notify students enrolled in this course
+  try {
+    const { createBulkNotifications } = require("../notifications/notificationService");
+    const enrollments = await Enrollment.find({ courseId: course._id }).select("userId").lean();
+    if (enrollments.length > 0) {
+      await createBulkNotifications(
+        enrollments.map((e) => ({
+          userId: e.userId,
+          type: "quiz",
+          title: `New Quiz: ${quiz.title}`,
+          message: `A new quiz "${quiz.title}" has been published for "${course.title}". Test your knowledge!`,
+          link: "#/student/quizzes",
+        }))
+      );
+    }
+  } catch (_) {}
+
   return {
     quizId: quiz._id,
     title: quiz.title,
@@ -337,6 +388,8 @@ const updateQuiz = async (quizId, data, user) => {
   ) {
     fail(403, "You cannot edit quizzes for another instructor's course");
   }
+
+  const wasPublished = quiz.isPublished;
 
   if (data.title) quiz.title = data.title;
   if (data.instructions !== undefined) quiz.instructions = data.instructions;
@@ -382,6 +435,26 @@ const updateQuiz = async (quizId, data, user) => {
   }
 
   await quiz.save();
+
+  // If newly published, notify students
+  if (!wasPublished && quiz.isPublished) {
+    try {
+      const { createBulkNotifications } = require("../notifications/notificationService");
+      const enrollments = await Enrollment.find({ courseId: course._id }).select("userId").lean();
+      if (enrollments.length > 0) {
+        await createBulkNotifications(
+          enrollments.map((e) => ({
+            userId: e.userId,
+            type: "quiz",
+            title: `New Quiz: ${quiz.title}`,
+            message: `A new quiz "${quiz.title}" has been published for "${course.title}". Test your knowledge!`,
+            link: "#/student/quizzes",
+          }))
+        );
+      }
+    } catch (_) {}
+  }
+
   return quiz;
 };
 

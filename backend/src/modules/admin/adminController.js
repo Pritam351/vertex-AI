@@ -142,6 +142,24 @@ const toggleCoursePublish = async (req, res, next) => {
 
     await course.save();
 
+    if (action === "publish") {
+      try {
+        const { createBulkNotifications } = require("../notifications/notificationService");
+        const students = await User.find({ role: "student" }).select("_id").lean();
+        if (students.length > 0) {
+          await createBulkNotifications(
+            students.map((s) => ({
+              userId: s._id,
+              type: "announcement",
+              title: `Course Published: ${course.title}`,
+              message: `Course "${course.title}" has been published and is now available in the catalog!`,
+              link: "#/student/catalog",
+            }))
+          );
+        }
+      } catch (_) {}
+    }
+
     return res.status(200).json({
       success: true,
       message: `Course "${course.title}" has been ${action === "publish" ? "published" : "unpublished"} successfully`,
@@ -189,6 +207,33 @@ const reviewCourse = async (req, res, next) => {
 
     course.status = decision;
     await course.save();
+
+    if (decision === "approved") {
+      try {
+        const { createBulkNotifications, createNotification } = require("../notifications/notificationService");
+        if (course.instructorId) {
+          await createNotification({
+            userId: course.instructorId,
+            type: "announcement",
+            title: `Course Approved: ${course.title}`,
+            message: `Congratulations! Your course "${course.title}" has been approved and is now live.`,
+            link: "#/instructor/courses",
+          });
+        }
+        const students = await User.find({ role: "student" }).select("_id").lean();
+        if (students.length > 0) {
+          await createBulkNotifications(
+            students.map((s) => ({
+              userId: s._id,
+              type: "announcement",
+              title: `New Course: ${course.title}`,
+              message: `A brand new course "${course.title}" is now available in the catalog!`,
+              link: "#/student/catalog",
+            }))
+          );
+        }
+      } catch (_) {}
+    }
 
     return res.status(200).json({
       success: true,

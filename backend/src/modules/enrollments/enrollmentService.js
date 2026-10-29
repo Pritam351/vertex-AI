@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const Course = require("../courses/courseModel");
 const CourseModule = require("../courses/moduleModel");
@@ -25,7 +24,23 @@ const enrollInCourse = async (courseId, userId) => {
   if (!course) fail(404, "Approved course not found");
 
   try {
-    return await Enrollment.create({ userId, courseId });
+    const enrollment = await Enrollment.create({ userId, courseId });
+
+    // Send notification to the student
+    try {
+      const { createNotification } = require("../notifications/notificationService");
+      await createNotification({
+        userId,
+        type: "system",
+        title: `Enrolled: ${course.title}`,
+        message: `Welcome to "${course.title}"! Your learning adventure begins now.`,
+        link: `#/student/player?courseId=${course._id}`,
+      });
+    } catch (_) {
+      // Don't fail enrollment if notification fails
+    }
+
+    return enrollment;
   } catch (error) {
     if (error.code === 11000) {
       fail(409, "You are already enrolled in this course");

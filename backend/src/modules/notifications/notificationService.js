@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const Notification = require("./notificationModel");
 
@@ -31,6 +30,21 @@ const createNotification = async ({
     message: message.trim(),
     link,
   });
+};
+
+const createBulkNotifications = async (items) => {
+  if (!Array.isArray(items) || !items.length) return [];
+  const valid = items
+    .filter((n) => mongoose.isValidObjectId(n.userId) && n.title?.trim() && n.message?.trim())
+    .map((n) => ({
+      userId: n.userId,
+      type: n.type || "system",
+      title: n.title.trim(),
+      message: n.message.trim(),
+      link: n.link || "",
+    }));
+  if (!valid.length) return [];
+  return Notification.insertMany(valid);
 };
 
 const listMyNotifications = async (userId, query = {}) => {
@@ -84,6 +98,7 @@ const markAllNotificationsRead = async (userId) => {
 
 module.exports = {
   createNotification,
+  createBulkNotifications,
   listMyNotifications,
   markNotificationRead,
   markAllNotificationsRead,

@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 const Course = require("./courseModel");
 const CourseModule = require("./moduleModel");
@@ -112,13 +111,13 @@ const deleteModule = async (moduleId, user) => {
 };
 
 const createLecture = async (moduleId, data, user) => {
-  await getModuleForEditor(moduleId, user);
+  const module = await getModuleForEditor(moduleId, user);
 
   const orderIndex =
     data.orderIndex ??
     ((await Lecture.countDocuments({ moduleId })) + 1);
 
-  return Lecture.create({
+  const lecture = await Lecture.create({
     moduleId,
     title: data.title,
     videoUrl: data.videoUrl || "",
@@ -127,6 +126,30 @@ const createLecture = async (moduleId, data, user) => {
     orderIndex,
     resourceUrls: data.resourceUrls || [],
   });
+
+  // Notify students enrolled in this course
+  try {
+    const Enrollment = require("../enrollments/enrollmentModel");
+    const { createBulkNotifications } = require("../notifications/notificationService");
+
+    const course = await Course.findById(module.courseId).select("title");
+    const courseTitle = course?.title || "your course";
+
+    const enrollments = await Enrollment.find({ courseId: module.courseId }).select("userId").lean();
+    if (enrollments.length > 0) {
+      await createBulkNotifications(
+        enrollments.map((e) => ({
+          userId: e.userId,
+          type: "announcement",
+          title: `New Lecture: ${data.title}`,
+          message: `A new lecture "${data.title}" was added to "${courseTitle}". Check it out in the course player!`,
+          link: `#/student/player?courseId=${module.courseId}`,
+        }))
+      );
+    }
+  } catch (_) {}
+
+  return lecture;
 };
 
 const updateLecture = async (lectureId, data, user) => {
