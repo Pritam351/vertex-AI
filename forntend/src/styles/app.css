@@ -1095,22 +1095,36 @@
 }
 
 .notif-bell-btn {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #2b245c;
+  color: #d9d4ff;
+  border: none;
+  outline: none;
+  cursor: pointer;
   position: relative;
-  font-size: 1.1rem;
-  padding: 0.35rem 0.45rem;
-  border-radius: 0.4rem;
-  transition: background 0.15s;
-  line-height: 1;
+  padding: 0;
+  transition: background 0.18s, color 0.18s, transform 0.15s;
 }
 
 .notif-bell-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: #393075;
+  color: #ffffff;
+}
+
+.notif-bell-btn svg {
+  display: block;
+  width: 17px;
+  height: 17px;
 }
 
 .notif-badge {
   position: absolute;
-  top: -4px;
-  right: -4px;
+  top: -2px;
+  right: -2px;
   min-width: 16px;
   height: 16px;
   border-radius: 999px;
@@ -1119,7 +1133,8 @@
   font: 700 0.62rem "DM Mono", monospace;
   display: grid;
   place-items: center;
-  padding: 0 3px;
+  padding: 0 4px;
+  border: 2px solid var(--canvas, #0b1020);
   line-height: 1;
 }
 
@@ -1242,4 +1257,299 @@
   background: #7c3aed;
   flex-shrink: 0;
   margin-top: 6px;
+}
+
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   AI TUTOR ENHANCEMENTS: Citations, History Drawer, Study Plan & Flashcards
+   ═══════════════════════════════════════════════════════════════════════════ */
+.ai-chat-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.ai-chat-title-group {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.ai-actions-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.ai-actions-toolbar .player-ctrl-btn {
+  font-size: 0.75rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 0.35rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ai-actions-toolbar .player-ctrl-btn:hover {
+  background: rgba(123, 97, 255, 0.15);
+  border-color: var(--violet);
+  color: var(--violet-light);
+}
+
+/* Sessions History Drawer */
+.ai-sessions-drawer {
+  background: #0d1424;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  max-height: 180px;
+  overflow-y: auto;
+  animation: enter 0.18s ease;
+}
+
+.ai-sessions-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.ai-sessions-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.ai-session-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.65rem;
+  border-radius: 0.35rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid transparent;
+  cursor: pointer;
+  font-size: 0.82rem;
+  color: var(--ink);
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.ai-session-item:hover {
+  background: rgba(123, 97, 255, 0.08);
+  border-color: var(--line);
+}
+
+.ai-session-item.is-active-session {
+  background: rgba(123, 97, 255, 0.15);
+  border-color: var(--violet);
+  color: var(--violet-light);
+  font-weight: 600;
+}
+
+.ai-session-meta {
+  font-size: 0.72rem;
+  color: var(--muted);
+  font-family: "DM Mono", monospace;
+}
+
+/* Citations inside AI Bubbles */
+.ai-sources-container {
+  margin-top: 0.65rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed rgba(255, 255, 255, 0.12);
+}
+
+.ai-sources-title {
+  display: block;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #a78bfa;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-bottom: 0.35rem;
+}
+
+.ai-sources-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.ai-source-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: rgba(124, 58, 237, 0.12);
+  border: 1px solid rgba(167, 139, 250, 0.3);
+  color: #e2e8f0;
+  border-radius: 0.35rem;
+  padding: 0.25rem 0.55rem;
+  font-size: 0.75rem;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.ai-source-pill:hover {
+  background: rgba(124, 58, 237, 0.25);
+  border-color: #a78bfa;
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.ai-source-score {
+  font-size: 0.68rem;
+  font-family: "DM Mono", monospace;
+  color: #52d8c2;
+  background: rgba(82, 216, 194, 0.1);
+  padding: 0.1rem 0.3rem;
+  border-radius: 0.2rem;
+}
+
+/* Study Plan Modal */
+.study-plan-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.study-plan-stat-card {
+  background: #0d1424;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  text-align: center;
+}
+
+.study-plan-stat-val {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--violet-light);
+  margin: 0.2rem 0;
+}
+
+.study-plan-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  max-height: 50vh;
+  overflow-y: auto;
+}
+
+.study-plan-day-card {
+  display: flex;
+  gap: 0.85rem;
+  padding: 0.75rem 1rem;
+  background: #0d1424;
+  border: 1px solid var(--line);
+  border-radius: 0.5rem;
+  align-items: flex-start;
+}
+
+.study-plan-day-badge {
+  background: var(--violet);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.75rem;
+  padding: 0.25rem 0.55rem;
+  border-radius: 0.3rem;
+  font-family: "DM Mono", monospace;
+  flex-shrink: 0;
+}
+
+.study-plan-day-content {
+  flex: 1;
+}
+
+.study-plan-day-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 0.2rem;
+}
+
+.study-plan-day-act {
+  font-size: 0.8rem;
+  color: var(--muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+/* Flashcard Modal */
+.flashcard-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+.flashcard-card {
+  width: 100%;
+  min-height: 180px;
+  background: #0c1222;
+  border: 1px solid #324063;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  transition: transform 0.2s, border-color 0.2s;
+  position: relative;
+}
+
+.flashcard-card:hover {
+  border-color: var(--violet-light);
+  transform: translateY(-2px);
+}
+
+.flashcard-label {
+  position: absolute;
+  top: 0.75rem;
+  left: 0.9rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #a78bfa;
+  letter-spacing: 0.05em;
+}
+
+.flashcard-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #f8fafc;
+  line-height: 1.5;
+  margin: 0.5rem 0;
+}
+
+.flashcard-hint {
+  font-size: 0.75rem;
+  color: var(--muted);
+  margin-top: 0.5rem;
+}
+
+.flashcard-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  gap: 0.75rem;
 }

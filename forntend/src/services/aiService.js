@@ -1,10 +1,19 @@
 import { api } from "./apiClient.js";
 
 export const aiService = {
-  async sendChatMessage(courseId, message) {
+  /**
+   * Send a question to the course AI tutor.
+   * Sends both question & message for robust API compatibility.
+   */
+  async sendChatMessage(courseId, question, sessionId = null, difficulty = "beginner") {
     return api(`/ai/courses/${courseId}/chat`, {
       method: "POST",
-      body: { message }
+      body: {
+        question,
+        message: question,
+        sessionId: sessionId || undefined,
+        difficulty
+      }
     });
   },
 
@@ -54,5 +63,20 @@ export const aiService = {
       method: "POST",
       body: data
     });
+  },
+
+  async generateModuleFlashcards(moduleId, count = 10) {
+    return api(`/ai/modules/${moduleId}/flashcards`, {
+      method: "POST",
+      body: { count }
+    });
+  },
+
+  async getMyFlashcardSets() {
+    return api("/ai/flashcards/me");
+  },
+
+  async getFlashcardSet(setId) {
+    return api(`/ai/flashcards/${setId}`);
   }
 };

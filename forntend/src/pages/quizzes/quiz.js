@@ -10,19 +10,24 @@ import { errorText }         from "../../utils/validation.js";
 
 // ─── Score circle SVG helper ───────────────────────────────────────────────────
 function scoreRing(pct, passed) {
-  const r   = 28;
-  const circ = 2 * Math.PI * r;
-  const dash = (pct / 100) * circ;
-  const color = passed ? "#52d8c2" : "#ff6b6b";
+  const r         = 28;
+  const circ      = 2 * Math.PI * r;
+  const safePct   = Math.max(0, Math.min(100, Math.round(pct)));
+  const dash      = (safePct / 100) * circ;
+  const color     = passed ? "#52d8c2" : "#ff6b6b";
+  const hasProg   = safePct > 0;
+
   return `
     <svg width="72" height="72" viewBox="0 0 72 72" style="flex-shrink:0;">
       <circle cx="36" cy="36" r="${r}" fill="none" stroke="#1e2a44" stroke-width="6"/>
+      ${hasProg ? `
       <circle cx="36" cy="36" r="${r}" fill="none" stroke="${color}" stroke-width="6"
         stroke-dasharray="${dash.toFixed(1)} ${circ.toFixed(1)}"
-        stroke-dashoffset="${(circ / 4).toFixed(1)}"
-        stroke-linecap="round"/>
-      <text x="36" y="40" text-anchor="middle" font-size="13" font-weight="700"
-        font-family="DM Mono,monospace" fill="${color}">${pct}%</text>
+        stroke-linecap="round"
+        transform="rotate(-90 36 36)"/>
+      ` : ""}
+      <text x="36" y="41" text-anchor="middle" font-size="13" font-weight="700"
+        font-family="DM Mono,monospace" fill="${hasProg ? color : 'var(--muted, #a8abc3)'}">${safePct}%</text>
     </svg>`;
 }
 

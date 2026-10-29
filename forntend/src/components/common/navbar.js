@@ -43,12 +43,18 @@ export function renderNavbar({ title = "Workspace", eyebrow = "STUDIO", user = n
         <!-- Notification bell -->
         <div class="notif-bell-wrapper" id="notif-bell-wrapper">
           <button
-            class="icon-button notif-bell-btn"
+            class="notif-bell-btn"
             id="notif-bell-btn"
             type="button"
             aria-label="Notifications"
             aria-expanded="false"
-          >🕭<span class="notif-badge" id="notif-badge" hidden>0</span></button>
+          >
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg>
+            <span class="notif-badge" id="notif-badge" hidden>0</span>
+          </button>
 
           <div class="notif-dropdown" id="notif-dropdown" hidden aria-label="Notifications panel">
             <div class="notif-dropdown-header">

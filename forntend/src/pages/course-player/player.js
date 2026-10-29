@@ -20,6 +20,8 @@ import { aiService }        from "../../services/aiService.js";
 import { escapeHtml }       from "../../utils/dom.js";
 import { toast }            from "../../components/common/toast.js";
 import { errorText }        from "../../utils/validation.js";
+import { openModal }        from "../../components/common/modal.js";
+
 // ─── Module-level state (reset on every mount) ────────────────────────────────
 let container        = null;
 let currentCourse    = null;
@@ -35,6 +37,8 @@ let activeTab       = "lesson-overview";
 let progressTimerInterval = null;   // setInterval handle for localStorage saves
 let isYouTube       = false;
 let enrollment      = null;         // current enrollment object
+let activeChatSessionId = null;
+let chatSessions    = [];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const qs = (sel) => container?.querySelector(sel);
@@ -550,28 +554,352 @@ function renderBookmarksTab() {
   });
 }
 
-function jumpToLecture(lectureId) {
+function jumpToLecture(lectureId, preserveTab = false) {
   for (const mod of currentModules) {
     const lec = (mod.lectures || []).find(l => String(l._id) === String(lectureId));
     if (lec) {
       selectLecture(lec, mod.title);
-      // Switch to lesson overview
-      switchTab("lesson-overview");
+      if (!preserveTab) switchTab("lesson-overview");
+      toast(`Jumped to: ${lec.title} 🎬`);
       return;
     }
   }
 }
 
-// ─── AI Tutor tab ─────────────────────────────────────────────────────────────
-function appendChatBubble(text, role = "ai") {
+// ─── AI Tutor tab & Interactive Features ──────────────────────────────────────
+function formatAiText(text) {
+  if (!text) return "";
+  let html = escapeHtml(text);
+  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  html = html.replace(/(?:^|\n)[*•-]\s+(.+)/g, "<br/>• $1");
+  html = html.replace(/\n\n+/g, "<br/><br/>");
+  html = html.replace(/\n/g, "<br/>");
+  return html;
+}
+
+function appendChatBubble(text, role = "ai", sources = []) {
   const msgs = qs("#ai-chat-messages");
   if (!msgs) return null;
   const div = document.createElement("div");
   div.className = `ai-chat-bubble ${role === "user" ? "user-bubble" : "ai-bubble"}`;
-  div.textContent = text;
+
+  const contentEl = document.createElement("div");
+  contentEl.className = "ai-bubble-content";
+  if (role === "user") {
+    contentEl.textContent = text;
+  } else {
+    contentEl.innerHTML = formatAiText(text);
+  }
+  div.appendChild(contentEl);
+
+  if (role === "ai" && Array.isArray(sources) && sources.length > 0) {
+    const srcBox = document.createElement("div");
+    srcBox.className = "ai-sources-container";
+    srcBox.innerHTML = `
+      <span class="ai-sources-title">📚 Source Citations:</span>
+      <div class="ai-sources-pills">
+        ${sources.map(s => `
+          <button type="button" class="ai-source-pill" data-source-lecture-id="${escapeHtml(s.lectureId)}" title="Jump to this lecture">
+            📖 ${escapeHtml(s.lectureTitle || "Lecture")}
+            ${s.score ? `<span class="ai-source-score">${Math.round(s.score * 100)}% match</span>` : ""}
+          </button>
+        `).join("")}
+      </div>
+    `;
+
+    srcBox.querySelectorAll(".ai-source-pill").forEach(pill => {
+      pill.addEventListener("click", () => {
+        const lId = pill.dataset.sourceLectureId;
+        if (lId) jumpToLecture(lId, true);
+      });
+    });
+
+    div.appendChild(srcBox);
+  }
+
   msgs.appendChild(div);
   msgs.scrollTop = msgs.scrollHeight;
-  return div;
+  return { element: div, contentEl };
+}
+
+async function loadChatSessions(courseId) {
+  if (!courseId) return;
+  try {
+    const res = await aiService.getCourseChats(courseId);
+    chatSessions = res?.data?.sessions || res?.sessions || [];
+
+    const countEl = qs("#chat-history-count");
+    if (countEl) countEl.textContent = String(chatSessions.length);
+
+    const listEl = qs("#ai-sessions-list");
+    if (!listEl) return;
+
+    if (!chatSessions.length) {
+      listEl.innerHTML = '<p style="color:var(--muted);font-size:0.8rem;padding:0.4rem;">No previous chat sessions yet.</p>';
+      return;
+    }
+
+    listEl.innerHTML = chatSessions.map(s => {
+      const isActive = s._id === activeChatSessionId;
+      const title = s.title || "Conversation";
+      const dateStr = s.lastMessageAt ? new Date(s.lastMessageAt).toLocaleDateString() : "";
+      return `
+        <div class="ai-session-item${isActive ? " is-active-session" : ""}" data-session-id="${escapeHtml(s._id)}">
+          <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1;">${escapeHtml(title)}</span>
+          <span class="ai-session-meta">${dateStr}</span>
+        </div>
+      `;
+    }).join("");
+
+    listEl.querySelectorAll(".ai-session-item").forEach(item => {
+      item.addEventListener("click", () => {
+        const sId = item.dataset.sessionId;
+        if (sId) openChatSession(sId);
+      });
+    });
+  } catch {
+    // Non-critical background failure
+  }
+}
+
+async function openChatSession(sessionId) {
+  try {
+    const msgsContainer = qs("#ai-chat-messages");
+    if (msgsContainer) msgsContainer.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:1rem;">Loading conversation…</p>';
+
+    const res = await aiService.getChatSession(sessionId);
+    const session = res?.data?.session || res?.session;
+
+    if (!session) {
+      toast("Could not open chat session.", "error");
+      return;
+    }
+
+    activeChatSessionId = session._id;
+    const label = qs("#ai-active-session-label");
+    if (label) label.textContent = session.title || "Previous conversation";
+
+    if (msgsContainer) {
+      msgsContainer.innerHTML = "";
+      const messages = session.messages || [];
+      if (!messages.length) {
+        appendChatBubble("No messages in this conversation yet. Ask a question below!", "ai");
+      } else {
+        messages.forEach(m => {
+          appendChatBubble(m.content, m.role, m.sources || []);
+        });
+      }
+    }
+
+    qs("#ai-sessions-drawer")?.setAttribute("hidden", "true");
+    loadChatSessions(currentCourse?._id);
+    toast("Loaded previous conversation.");
+  } catch (err) {
+    toast(`Failed to load chat: ${errorText(err)}`, "error");
+  }
+}
+
+function startNewChat() {
+  activeChatSessionId = null;
+  const msgsContainer = qs("#ai-chat-messages");
+  if (msgsContainer) {
+    msgsContainer.innerHTML = `
+      <div class="ai-chat-bubble ai-bubble">
+        <div class="ai-bubble-content">Hello! I'm your AI learning assistant. Ask me anything about this lecture or course!</div>
+      </div>
+    `;
+  }
+  const label = qs("#ai-active-session-label");
+  if (label) label.textContent = "Ask questions about this lecture or course";
+  qs("#ai-sessions-drawer")?.setAttribute("hidden", "true");
+  toast("Started a new chat session.");
+}
+
+async function handleLectureSummary() {
+  if (!activeLecture) {
+    toast("Please select a lecture first.");
+    return;
+  }
+
+  openModal({
+    title: `📋 AI Summary: ${escapeHtml(activeLecture.title)}`,
+    contentHtml: `
+      <div id="lecture-summary-modal-body" style="min-height:160px; line-height:1.6; font-size:0.92rem;">
+        <p style="color:var(--muted); padding:1rem 0;">Generating AI lecture summary with key takeaways…</p>
+      </div>
+    `,
+    confirmText: "Done",
+    onConfirm: (_, close) => close()
+  });
+
+  try {
+    const res = await aiService.summarizeLecture(activeLecture._id);
+    const summary = res?.data?.summary || res?.summary || "No summary available.";
+
+    const bodyEl = document.querySelector("#lecture-summary-modal-body");
+    if (bodyEl) {
+      bodyEl.innerHTML = `
+        <div style="background:rgba(124,58,237,0.06); border:1px solid rgba(167,139,250,0.2); border-radius:0.5rem; padding:1rem; margin-bottom:1rem;">
+          <h4 style="margin:0 0 0.5rem; color:#a78bfa; font-size:0.95rem;">Lecture: ${escapeHtml(activeLecture.title)}</h4>
+          <div style="color:#f8fafc;">${formatAiText(summary)}</div>
+        </div>
+      `;
+    }
+
+    const overviewBox = qs("#ai-takeaways-content");
+    if (overviewBox) {
+      overviewBox.innerHTML = formatAiText(summary);
+    }
+  } catch (err) {
+    const bodyEl = document.querySelector("#lecture-summary-modal-body");
+    if (bodyEl) {
+      bodyEl.innerHTML = `<p style="color:#ff9b9b;">Could not generate summary: ${escapeHtml(errorText(err))}</p>`;
+    }
+  }
+}
+
+async function handleStudyPlan() {
+  if (!currentCourse) return;
+
+  openModal({
+    title: `📅 Adaptive Study Plan: ${escapeHtml(currentCourse.title)}`,
+    contentHtml: `
+      <div id="study-plan-modal-body" style="min-height:220px;">
+        <p style="color:var(--muted); padding:1rem 0;">Analyzing your retention and generating adaptive study plan…</p>
+      </div>
+    `,
+    confirmText: "Close Plan",
+    onConfirm: (_, close) => close()
+  });
+
+  try {
+    const res = await aiService.createStudyPlan({ courseId: currentCourse._id, days: 7 });
+    const data = res?.data || res;
+    const plan = data?.studyPlan || [];
+    const mastery = data?.mastery || {};
+    const avgScore = mastery.averageScore !== null && mastery.averageScore !== undefined ? `${mastery.averageScore}%` : "Not assessed";
+
+    const modalBody = document.querySelector("#study-plan-modal-body");
+    if (!modalBody) return;
+
+    modalBody.innerHTML = `
+      <div class="study-plan-overview">
+        <div class="study-plan-stat-card">
+          <small style="color:var(--muted);font-size:0.75rem;">Assessed Topics</small>
+          <div class="study-plan-stat-val">${mastery.assessedTopics ?? 0} / ${mastery.totalTopics ?? 0}</div>
+        </div>
+        <div class="study-plan-stat-card">
+          <small style="color:var(--muted);font-size:0.75rem;">Average Score</small>
+          <div class="study-plan-stat-val" style="color:#52d8c2;">${avgScore}</div>
+        </div>
+        <div class="study-plan-stat-card">
+          <small style="color:var(--muted);font-size:0.75rem;">Plan Length</small>
+          <div class="study-plan-stat-val">7 Days</div>
+        </div>
+      </div>
+
+      <h4 style="font-size:0.95rem; margin:0 0 0.6rem; color:#f8fafc;">Day-by-Day Schedule</h4>
+      <div class="study-plan-timeline">
+        ${plan.map(d => `
+          <div class="study-plan-day-card">
+            <span class="study-plan-day-badge">Day ${d.day}</span>
+            <div class="study-plan-day-content">
+              <h5 class="study-plan-day-title">${escapeHtml(d.topic || "Core Material")}</h5>
+              <p class="study-plan-day-act">${escapeHtml(d.activity || "Review lecture notes and practice exercises.")}</p>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  } catch (err) {
+    const modalBody = document.querySelector("#study-plan-modal-body");
+    if (modalBody) {
+      modalBody.innerHTML = `<p style="color:#ff9b9b;">Failed to create study plan: ${escapeHtml(errorText(err))}</p>`;
+    }
+  }
+}
+
+async function handleFlashcards() {
+  if (!activeLecture) {
+    toast("Please select a lecture first.");
+    return;
+  }
+
+  openModal({
+    title: `🗂 Module Flashcards Review`,
+    contentHtml: `
+      <div id="flashcard-modal-body" style="min-height:240px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <p style="color:var(--muted); padding:1rem 0;">Generating interactive flashcards for this module…</p>
+      </div>
+    `,
+    confirmText: "Finish Review",
+    onConfirm: (_, close) => close()
+  });
+
+  try {
+    const res = await aiService.generateModuleFlashcards(activeLecture.moduleId, 10);
+    const set = res?.data?.flashcardSet || res?.flashcardSet || res?.data || res;
+    const cards = set.flashcards || set.cards || [];
+
+    const bodyEl = document.querySelector("#flashcard-modal-body");
+    if (!bodyEl) return;
+
+    if (!cards.length) {
+      bodyEl.innerHTML = `<p style="color:var(--muted);">No flashcards generated for this module yet. Try another module or lecture.</p>`;
+      return;
+    }
+
+    let currentIndex = 0;
+    let isFlipped = false;
+
+    const renderCard = () => {
+      const card = cards[currentIndex];
+      bodyEl.innerHTML = `
+        <div class="flashcard-wrapper" style="width:100%;">
+          <div style="display:flex; justify-content:space-between; width:100%; font-size:0.8rem; color:var(--muted); margin-bottom:0.25rem;">
+            <span>Card ${currentIndex + 1} of ${cards.length}</span>
+            <span>Click card to flip 🔄</span>
+          </div>
+
+          <div class="flashcard-card" id="active-interactive-card">
+            <span class="flashcard-label">${isFlipped ? "💡 ANSWER" : "❓ QUESTION"}</span>
+            <div class="flashcard-text">${escapeHtml(isFlipped ? card.back || card.answer : card.front || card.question)}</div>
+            <span class="flashcard-hint">${isFlipped ? "(Click to see question)" : "(Click to reveal answer)"}</span>
+          </div>
+
+          <div class="flashcard-controls">
+            <button type="button" class="button button-secondary mini-button" id="btn-fc-prev" ${currentIndex === 0 ? "disabled" : ""}>
+              ← Previous
+            </button>
+            <button type="button" class="button button-primary mini-button" id="btn-fc-flip">
+              🔄 Flip
+            </button>
+            <button type="button" class="button button-secondary mini-button" id="btn-fc-next" ${currentIndex === cards.length - 1 ? "disabled" : ""}>
+              Next →
+            </button>
+          </div>
+        </div>
+      `;
+
+      const toggleFlip = () => { isFlipped = !isFlipped; renderCard(); };
+      document.querySelector("#active-interactive-card")?.addEventListener("click", toggleFlip);
+      document.querySelector("#btn-fc-flip")?.addEventListener("click", toggleFlip);
+
+      document.querySelector("#btn-fc-prev")?.addEventListener("click", () => {
+        if (currentIndex > 0) { currentIndex--; isFlipped = false; renderCard(); }
+      });
+      document.querySelector("#btn-fc-next")?.addEventListener("click", () => {
+        if (currentIndex < cards.length - 1) { currentIndex++; isFlipped = false; renderCard(); }
+      });
+    };
+
+    renderCard();
+  } catch (err) {
+    const bodyEl = document.querySelector("#flashcard-modal-body");
+    if (bodyEl) {
+      bodyEl.innerHTML = `<p style="color:#ff9b9b;">Could not load flashcards: ${escapeHtml(errorText(err))}</p>`;
+    }
+  }
 }
 
 // ─── Select lecture (main dispatch) ──────────────────────────────────────────
@@ -769,6 +1097,25 @@ function wireEvents(courseId) {
     saveNotes(activeLecture._id, textarea.value);
   });
 
+  // AI Tutor Quick Actions
+  qs("#btn-lecture-summary-quick")?.addEventListener("click", handleLectureSummary);
+  qs("#btn-study-planner")?.addEventListener("click", handleStudyPlan);
+  qs("#btn-flashcards")?.addEventListener("click", handleFlashcards);
+
+  // Chat History Drawer Toggle & Close & New Chat
+  qs("#btn-toggle-chat-history")?.addEventListener("click", () => {
+    const drawer = qs("#ai-sessions-drawer");
+    if (!drawer) return;
+    const isHidden = drawer.hidden;
+    drawer.hidden = !isHidden;
+    if (isHidden) loadChatSessions(courseId);
+  });
+  qs("#btn-close-sessions")?.addEventListener("click", () => {
+    const drawer = qs("#ai-sessions-drawer");
+    if (drawer) drawer.hidden = true;
+  });
+  qs("#btn-new-chat-session")?.addEventListener("click", startNewChat);
+
   // AI Tutor chat form
   qs("#ai-chat-form")?.addEventListener("submit", async e => {
     e.preventDefault();
@@ -779,36 +1126,36 @@ function wireEvents(courseId) {
     appendChatBubble(userMsg, "user");
     if (input) input.value = "";
 
-    const loadingBubble = appendChatBubble("Thinking…", "ai");
+    const loadingObj = appendChatBubble("Thinking…", "ai");
 
     try {
-      const res   = await aiService.sendChatMessage(courseId, userMsg);
-      const reply = res?.data?.reply || res?.data?.message || "I'm here to help!";
-      if (loadingBubble) loadingBubble.textContent = reply;
+      const res = await aiService.sendChatMessage(courseId, userMsg, activeChatSessionId);
+      const reply = res?.data?.answer || res?.data?.reply || res?.answer || res?.reply || "I'm here to help!";
+      const sources = res?.data?.sources || res?.sources || [];
+
+      if (res?.sessionId || res?.data?.sessionId) {
+        activeChatSessionId = res?.sessionId || res?.data?.sessionId;
+      }
+
+      if (loadingObj?.element) {
+        loadingObj.element.remove();
+      }
+      appendChatBubble(reply, "ai", sources);
+
+      // Keep history list refreshed
+      loadChatSessions(courseId);
     } catch {
-      if (loadingBubble) loadingBubble.textContent = "I'm having trouble connecting right now. Please try again soon.";
+      if (loadingObj?.contentEl) {
+        loadingObj.contentEl.textContent = "I'm having trouble connecting right now. Please try again soon.";
+      }
     }
   });
 
   // AI Key Takeaways
-  qs("#btn-refresh-takeaways")?.addEventListener("click", async () => {
-    if (!activeLecture) return;
-    const box = qs("#ai-takeaways-content");
-    if (box) box.innerHTML = '<p style="color:var(--muted);font-size:0.9rem;">Generating summary…</p>';
-    try {
-      const res     = await aiService.summarizeLecture(activeLecture._id);
-      const summary = res?.data?.summary || res?.summary || "No summary available.";
-      if (box) {
-        box.innerHTML = summary
-          .split("\n")
-          .filter(l => l.trim())
-          .map(l => `<p style="margin:0.4rem 0;font-size:0.9rem;line-height:1.55;">${escapeHtml(l)}</p>`)
-          .join("");
-      }
-    } catch (err) {
-      if (box) box.innerHTML = `<p style="color:var(--error);font-size:0.9rem;">Could not generate summary: ${escapeHtml(errorText(err))}</p>`;
-    }
-  });
+  qs("#btn-refresh-takeaways")?.addEventListener("click", handleLectureSummary);
+
+  // Initial load of chat sessions
+  loadChatSessions(courseId);
 
   // Page unload: save position
   window.addEventListener("beforeunload", () => {
@@ -840,6 +1187,8 @@ export async function mountCoursePlayer(cont) {
   activeTab          = "lesson-overview";
   isYouTube          = false;
   enrollment         = null;
+  activeChatSessionId = null;
+  chatSessions       = [];
   stopProgressInterval();
 
   // Parse courseId from hash: #/student/course-player?courseId=…

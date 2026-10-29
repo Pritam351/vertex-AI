@@ -166,12 +166,43 @@
         <div class="player-tab-content" id="tab-ai-tutor" role="tabpanel" aria-labelledby="tab-btn-ai" hidden>
           <div class="ai-chat-panel">
             <div class="ai-chat-header">
-              <span class="brand-mark" style="width:1.8rem;height:1.8rem;font-size:0.9rem;" aria-hidden="true">✦</span>
-              <div>
-                <h3 style="margin:0;font-size:1.05rem;">Vertex AI Course Tutor</h3>
-                <small style="color:var(--muted);">Ask questions about this lecture or course</small>
+              <div class="ai-chat-title-group">
+                <span class="brand-mark" style="width:1.8rem;height:1.8rem;font-size:0.9rem;" aria-hidden="true">✦</span>
+                <div>
+                  <h3 style="margin:0;font-size:1.05rem;">Vertex AI Course Tutor</h3>
+                  <small style="color:var(--muted);" id="ai-active-session-label">Ask questions about this lecture or course</small>
+                </div>
+              </div>
+              <div class="ai-actions-toolbar">
+                <button class="player-ctrl-btn" id="btn-lecture-summary-quick" type="button" title="Get Instant Lecture Summary">
+                  📋 Summary
+                </button>
+                <button class="player-ctrl-btn" id="btn-study-planner" type="button" title="Generate Adaptive Study Plan">
+                  📅 Study Plan
+                </button>
+                <button class="player-ctrl-btn" id="btn-flashcards" type="button" title="Review Module Flashcards">
+                  🗂 Flashcards
+                </button>
+                <button class="player-ctrl-btn" id="btn-toggle-chat-history" type="button" title="Previous Chat Sessions">
+                  💬 History (<span id="chat-history-count">0</span>)
+                </button>
+                <button class="player-ctrl-btn" id="btn-new-chat-session" type="button" title="Start New Chat">
+                  ➕ New
+                </button>
               </div>
             </div>
+
+            <!-- Previous Chat Sessions Drawer -->
+            <div class="ai-sessions-drawer" id="ai-sessions-drawer" hidden>
+              <div class="ai-sessions-header">
+                <span>💬 Previous Conversations</span>
+                <button type="button" class="text-button" id="btn-close-sessions" style="margin:0;">✕</button>
+              </div>
+              <div class="ai-sessions-list" id="ai-sessions-list">
+                <p style="color:var(--muted);font-size:0.8rem;padding:0.5rem;">Loading chat history…</p>
+              </div>
+            </div>
+
             <div id="ai-chat-messages" class="ai-chat-messages" aria-live="polite">
               <div class="ai-chat-bubble ai-bubble">
                 Hello! I'm your AI learning assistant. Ask me anything about this lecture or course!
