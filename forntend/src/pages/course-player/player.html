@@ -1,69 +1,219 @@
 <section class="view is-active" id="course-player">
-  <div class="player-layout" style="display:grid; grid-template-columns: minmax(0, 1.8fr) minmax(300px, 1fr); gap: 1.5rem; align-items: flex-start;">
-    
-    <!-- Main lecture stage -->
-    <div class="player-main">
-      <div class="panel" style="padding: 1.5rem; margin-bottom: 1.5rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
-          <div>
-            <p class="eyebrow" id="player-course-category">COURSE</p>
-            <h2 id="player-course-title" style="margin:0.25rem 0 0.5rem;">Loading Course…</h2>
-          </div>
-          <a class="button button-secondary mini-button" href="#/student/dashboard">← Back to Dashboard</a>
-        </div>
 
-        <div id="player-video-container" style="background:#000; border-radius:0.75rem; aspect-ratio:16/9; display:grid; place-items:center; overflow:hidden; margin-bottom:1.25rem;">
-          <p id="player-video-placeholder" style="color:var(--muted);">Select a lecture from the curriculum to begin</p>
+  <!-- ── Top progress strip ─────────────────────────────────────── -->
+  <div class="player-topbar" id="player-topbar">
+    <div class="player-topbar-inner">
+      <nav class="player-breadcrumb" id="player-breadcrumb" aria-label="Course breadcrumb">
+        <a class="player-breadcrumb-link" href="#/student/dashboard">Dashboard</a>
+        <span class="player-breadcrumb-sep" aria-hidden="true">›</span>
+        <span class="player-breadcrumb-course" id="player-bc-course">Loading…</span>
+        <span class="player-breadcrumb-sep" aria-hidden="true">›</span>
+        <span class="player-breadcrumb-module" id="player-bc-module"></span>
+        <span class="player-breadcrumb-sep player-bc-lec-sep" aria-hidden="true">›</span>
+        <span class="player-breadcrumb-lecture" id="player-bc-lecture"></span>
+      </nav>
+      <div class="player-topbar-right">
+        <div class="player-progress-track" title="Course completion">
+          <div class="player-progress-fill" id="player-progress-fill" style="width:0%"></div>
         </div>
+        <span class="player-progress-pct" id="player-progress-pct">0%</span>
+        <span class="player-completed-badge" id="player-completed-badge" hidden>✓ Completed</span>
+        <button class="button button-ghost mini-button" id="btn-ai-tutor-topbar" type="button" title="Open AI Tutor tab">
+          ✦ AI Tutor
+        </button>
+        <a class="button button-ghost mini-button" href="#/student/dashboard">← Dashboard</a>
+      </div>
+    </div>
+  </div>
 
-        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--line); padding-top:1rem;">
-          <div>
-            <h3 id="player-lecture-title" style="margin:0;">Lecture Title</h3>
-            <small id="player-lecture-meta" style="color:var(--muted);">Module 1 • Lecture 1</small>
-          </div>
-          <button class="button button-primary" id="btn-complete-lecture" type="button" disabled>
-            Mark as Completed ✓
+  <!-- ── Two-column player layout ──────────────────────────────── -->
+  <div class="player-layout" id="player-layout">
+
+    <!-- LEFT: video + controls + lecture header + tabs -->
+    <div class="player-main" id="player-main">
+
+      <!-- Video wrapper -->
+      <div class="player-video-wrapper" id="player-video-container">
+        <p id="player-video-placeholder" class="player-video-placeholder">
+          Select a lecture from the curriculum to begin
+        </p>
+      </div>
+
+      <!-- Custom controls bar (shown only for native video) -->
+      <div class="player-controls-bar" id="player-controls-bar" hidden>
+        <button class="player-ctrl-btn" id="btn-play-pause" type="button" title="Play / Pause">
+          <span id="play-pause-icon">▶ Play</span>
+        </button>
+        <button class="player-ctrl-btn" id="btn-prev-lecture-ctrl" type="button" title="Previous lecture">
+          ⏮ Prev
+        </button>
+        <button class="player-ctrl-btn" id="btn-next-lecture-ctrl" type="button" title="Next lecture">
+          Next ⏭
+        </button>
+        <button class="player-ctrl-btn" id="btn-bookmark-toggle" type="button" title="Bookmark this lecture">
+          🔖 Bookmark
+        </button>
+        <label class="player-speed-label" for="player-speed-select">Speed:</label>
+        <select class="speed-select" id="player-speed-select" title="Playback speed">
+          <option value="0.5">0.5×</option>
+          <option value="0.75">0.75×</option>
+          <option value="1" selected>1.0×</option>
+          <option value="1.25">1.25×</option>
+          <option value="1.5">1.5×</option>
+          <option value="1.75">1.75×</option>
+          <option value="2">2.0×</option>
+        </select>
+        <span class="player-duration-badge" id="player-duration-badge">0:00 / 0:00</span>
+      </div>
+
+      <!-- YouTube note (shown only for YouTube videos) -->
+      <div class="player-yt-note" id="player-yt-note" hidden>
+        <span>ℹ Resume &amp; speed controls are not available for YouTube-embedded videos.</span>
+        <button class="player-ctrl-btn" id="btn-bookmark-yt" type="button" title="Bookmark this lecture">
+          🔖 Bookmark
+        </button>
+      </div>
+
+      <!-- Lecture header -->
+      <div class="player-lecture-header" id="player-lecture-header">
+        <div class="player-lecture-meta">
+          <h2 class="player-lecture-title" id="player-lecture-title">Lecture Title</h2>
+          <small class="player-lecture-sub" id="player-lecture-meta">Module • Lecture</small>
+        </div>
+        <div class="player-lecture-nav">
+          <button class="button button-secondary mini-button" id="btn-prev-lecture" type="button" disabled>
+            ← Previous
+          </button>
+          <button class="button button-primary mini-button" id="btn-mark-complete" type="button" disabled>
+            Mark Complete ✓
+          </button>
+          <button class="button button-secondary mini-button" id="btn-next-lecture" type="button" disabled>
+            Next Lesson →
+          </button>
+        </div>
+      </div>
+
+      <!-- Tabs panel -->
+      <div class="player-tabs-container">
+        <div class="player-tabs" role="tablist" id="player-tabs">
+          <button class="player-tab-btn is-active" data-tab="lesson-overview" role="tab" aria-selected="true" aria-controls="tab-lesson-overview" id="tab-btn-overview">
+            Lesson Overview
+          </button>
+          <button class="player-tab-btn" data-tab="personal-notes" role="tab" aria-selected="false" aria-controls="tab-personal-notes" id="tab-btn-notes">
+            Personal Notes <span class="tab-count-badge" id="notes-count-badge"></span>
+          </button>
+          <button class="player-tab-btn" data-tab="saved-bookmarks" role="tab" aria-selected="false" aria-controls="tab-saved-bookmarks" id="tab-btn-bookmarks">
+            Saved Bookmarks
+          </button>
+          <button class="player-tab-btn" data-tab="ai-tutor" role="tab" aria-selected="false" aria-controls="tab-ai-tutor" id="tab-btn-ai">
+            ✦ AI Tutor
           </button>
         </div>
 
-        <div id="player-transcript-box" style="margin-top:1.25rem; padding:1rem; background:var(--surface-2); border-radius:0.5rem; display:none;">
-          <strong style="display:block; margin-bottom:0.5rem; font-size:0.85rem; color:var(--violet-light);">Lecture Transcript / Notes:</strong>
-          <p id="player-transcript-content" style="white-space:pre-wrap; font-size:0.9rem; line-height:1.5; margin:0;"></p>
-        </div>
-      </div>
-
-      <!-- AI Tutor Panel -->
-      <div class="panel" style="padding: 1.5rem;">
-        <div style="display:flex; align-items:center; gap:0.5rem; margin-bottom:1rem;">
-          <span class="brand-mark" style="width:1.8rem; height:1.8rem; font-size:0.9rem;" aria-hidden="true">✦</span>
-          <div>
-            <h3 style="margin:0; font-size:1.1rem;">Vertex AI Course Tutor</h3>
-            <small style="color:var(--muted);">Ask questions about this lecture or course</small>
+        <!-- Tab: Lesson Overview -->
+        <div class="player-tab-content is-active" id="tab-lesson-overview" role="tabpanel" aria-labelledby="tab-btn-overview">
+          <div id="overview-transcript-box" class="overview-section">
+            <h4 class="overview-section-title">📄 Lecture Notes &amp; Transcript</h4>
+            <p id="overview-transcript-content" class="overview-transcript-text">
+              No notes or transcript available for this lecture.
+            </p>
+          </div>
+          <div class="ai-takeaways-panel" id="ai-takeaways-panel">
+            <div class="ai-takeaways-header">
+              <span class="brand-mark" style="width:1.4rem;height:1.4rem;font-size:0.75rem;" aria-hidden="true">✦</span>
+              <strong>AI Key Takeaways</strong>
+              <button class="player-ctrl-btn ai-takeaways-refresh" id="btn-refresh-takeaways" type="button" title="Generate AI summary">
+                Generate Summary
+              </button>
+            </div>
+            <div id="ai-takeaways-content" class="ai-takeaways-content">
+              <p style="color:var(--muted);font-size:0.9rem;">Click "Generate Summary" to get AI-powered key takeaways for this lecture.</p>
+            </div>
           </div>
         </div>
 
-        <div id="ai-chat-messages" style="background:var(--surface-2); border-radius:0.5rem; padding:1rem; height:240px; overflow-y:auto; display:flex; flex-direction:column; gap:0.75rem; margin-bottom:1rem;">
-          <div style="background:var(--line); padding:0.6rem 0.85rem; border-radius:0.5rem; max-width:85%;">
-            Hello! I am your AI learning assistant for this course. How can I help clarify this topic for you?
+        <!-- Tab: Personal Notes -->
+        <div class="player-tab-content" id="tab-personal-notes" role="tabpanel" aria-labelledby="tab-btn-notes" hidden>
+          <div class="notes-panel">
+            <div class="notes-panel-header">
+              <h4 class="overview-section-title">✏️ Personal Notes</h4>
+              <div class="notes-save-indicator" id="notes-save-indicator" aria-live="polite"></div>
+            </div>
+            <textarea
+              class="notes-textarea"
+              id="notes-textarea"
+              placeholder="Write your personal notes for this lecture here. Notes are saved automatically…"
+              maxlength="10000"
+              aria-label="Personal lecture notes"
+            ></textarea>
+            <div class="notes-footer">
+              <span class="notes-char-count" id="notes-char-count">0 / 10,000</span>
+              <button class="button button-primary mini-button" id="btn-save-notes" type="button">
+                Save Notes
+              </button>
+            </div>
           </div>
         </div>
 
-        <form id="ai-chat-form" style="display:flex; gap:0.5rem;">
-          <input name="message" type="text" placeholder="Ask anything about this course…" required style="flex:1;" />
-          <button class="button button-primary" type="submit">Ask AI</button>
-        </form>
-      </div>
-    </div>
+        <!-- Tab: Saved Bookmarks -->
+        <div class="player-tab-content" id="tab-saved-bookmarks" role="tabpanel" aria-labelledby="tab-btn-bookmarks" hidden>
+          <div id="bookmarks-list-panel" class="bookmarks-list-panel">
+            <p style="color:var(--muted);font-size:0.9rem;">Loading bookmarks…</p>
+          </div>
+        </div>
 
-    <!-- Right curriculum column -->
-    <div class="player-sidebar">
-      <div class="panel" style="padding: 1.25rem;">
-        <h3 style="margin-top:0; font-size:1.1rem;">Course Curriculum</h3>
-        <div id="player-curriculum-tree" class="player-curriculum-list" style="display:flex; flex-direction:column; gap:0.75rem; margin-top:1rem;">
-          <p style="color:var(--muted); font-size:0.85rem;">Loading modules and lectures…</p>
+        <!-- Tab: AI Tutor Chat -->
+        <div class="player-tab-content" id="tab-ai-tutor" role="tabpanel" aria-labelledby="tab-btn-ai" hidden>
+          <div class="ai-chat-panel">
+            <div class="ai-chat-header">
+              <span class="brand-mark" style="width:1.8rem;height:1.8rem;font-size:0.9rem;" aria-hidden="true">✦</span>
+              <div>
+                <h3 style="margin:0;font-size:1.05rem;">Vertex AI Course Tutor</h3>
+                <small style="color:var(--muted);">Ask questions about this lecture or course</small>
+              </div>
+            </div>
+            <div id="ai-chat-messages" class="ai-chat-messages" aria-live="polite">
+              <div class="ai-chat-bubble ai-bubble">
+                Hello! I'm your AI learning assistant. Ask me anything about this lecture or course!
+              </div>
+            </div>
+            <form id="ai-chat-form" class="ai-chat-form" novalidate>
+              <input
+                name="message"
+                type="text"
+                placeholder="Ask anything about this course…"
+                class="ai-chat-input"
+                autocomplete="off"
+                required
+              />
+              <button class="button button-primary" type="submit">Ask AI</button>
+            </form>
+          </div>
+        </div>
+
+      </div><!-- /.player-tabs-container -->
+    </div><!-- /.player-main -->
+
+    <!-- RIGHT: Curriculum sidebar -->
+    <aside class="player-sidebar" id="player-sidebar" aria-label="Course curriculum">
+      <div class="sidebar-panel">
+        <div class="sidebar-panel-header">
+          <h3 class="sidebar-panel-title">CURRICULUM CONTENT</h3>
+          <button class="button button-ghost mini-button" id="btn-open-ai-sidebar" type="button" title="Open AI Tutor">
+            ✦ AI Tutor
+          </button>
+        </div>
+        <div class="player-progress-summary" id="sidebar-progress-summary">
+          <div class="player-progress-track" style="height:6px;">
+            <div class="player-progress-fill" id="sidebar-progress-fill" style="width:0%"></div>
+          </div>
+          <small id="sidebar-progress-text" class="sidebar-progress-text">0% Course Progress</small>
+        </div>
+        <div id="player-curriculum-tree" class="player-curriculum-list">
+          <p style="color:var(--muted);font-size:0.85rem;padding:1rem 0;">Loading modules and lectures…</p>
         </div>
       </div>
-    </div>
+    </aside><!-- /.player-sidebar -->
 
-  </div>
+  </div><!-- /.player-layout -->
 </section>

@@ -140,6 +140,32 @@ const updateLectureProgress = async (
   };
 };
 
+/**
+ * Return all LectureProgress records for the current student in a given course.
+ * Used by the frontend player to initialise the completion map on load.
+ */
+const getCourseProgress = async (courseId, userId) => {
+  if (!validId(courseId)) fail(400, "Invalid course ID");
+
+  const enrollment = await Enrollment.findOne({ userId, courseId }).lean();
+  if (!enrollment) fail(403, "Not enrolled in this course");
+
+  const moduleIds = await CourseModule.find({ courseId }).distinct("_id");
+  const lectureIds = await Lecture.find({ moduleId: { $in: moduleIds } }).distinct("_id");
+
+  const records = await LectureProgress.find({
+    enrollmentId: enrollment._id,
+    lectureId: { $in: lectureIds },
+  }).lean();
+
+  return records.map((r) => ({
+    lectureId     : r.lectureId,
+    watchedSeconds: r.watchedSeconds,
+    completed     : r.completed,
+    lastWatchedAt : r.lastWatchedAt,
+  }));
+};
+
 const getCourseEnrollments = async (courseId, user) => {
   if (!validId(courseId)) fail(400, "Invalid course ID");
 
@@ -163,5 +189,6 @@ module.exports = {
   enrollInCourse,
   getMyEnrollments,
   updateLectureProgress,
+  getCourseProgress,
   getCourseEnrollments,
 };

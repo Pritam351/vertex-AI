@@ -60,6 +60,27 @@ const updateProgress = async (req, res, next) => {
   }
 };
 
+/**
+ * GET /enrollments/courses/:courseId/progress
+ * Returns all LectureProgress records for the authenticated student in a course.
+ * Enables the player to initialise its completion map without multiple individual requests.
+ */
+const getCourseProgress = async (req, res, next) => {
+  try {
+    const lectureProgress = await service.getCourseProgress(
+      req.params.courseId,
+      req.user._id
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: { lectureProgress },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 const getCourseEnrollments = async (req, res, next) => {
   try {
     const enrollments = await service.getCourseEnrollments(
@@ -80,5 +101,6 @@ module.exports = {
   enroll,
   getMyEnrollments,
   updateProgress,
+  getCourseProgress,
   getCourseEnrollments,
 };
