@@ -837,7 +837,17 @@ async function handleFlashcards() {
   });
 
   try {
-    const res = await aiService.generateModuleFlashcards(activeLecture.moduleId, 10);
+    const targetModuleId =
+      activeLecture.moduleId?._id ||
+      activeLecture.moduleId ||
+      (currentModules.find((m) => (m.lectures || []).some((l) => String(l._id) === String(activeLecture._id)))?._id);
+
+    if (!targetModuleId) {
+      toast("Could not identify the module for this lecture.", "error");
+      return;
+    }
+
+    const res = await aiService.generateModuleFlashcards(targetModuleId, 10);
     const set = res?.data?.flashcardSet || res?.flashcardSet || res?.data || res;
     const cards = set.flashcards || set.cards || [];
 
