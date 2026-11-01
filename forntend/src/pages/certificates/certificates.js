@@ -61,27 +61,32 @@ export async function mountStudentCertificates(container) {
           const certNumber = cert.certificateNumber || "VLX-VERIFIED";
 
           return `
-            <article class="course-card-item is-completed-card" style="display:flex; flex-direction:column; justify-content:space-between; border-color: rgba(139, 92, 246, 0.35);">
+            <article class="certificate-item-card">
               <div>
                 <div class="course-badges-row" style="margin-bottom:0.75rem;">
                   <span class="course-badge">${escapeHtml(category)}</span>
-                  <span class="cert-status-pill" style="font-size:0.7rem; padding:0.15rem 0.5rem;">
+                  <span class="cert-status-pill" style="font-size:0.7rem; padding:0.18rem 0.55rem;">
                     <span class="cert-status-dot"></span> Verified Active
                   </span>
                 </div>
 
-                <h3 style="font-size:1.15rem; margin-bottom:0.5rem; color:#f8fafc;">${escapeHtml(title)}</h3>
-                <p style="font-size:0.8rem; color:var(--muted); margin-bottom:0.75rem;">
+                <h3 class="cert-item-title">${escapeHtml(title)}</h3>
+                <p class="cert-item-meta">
                   Awarded to <strong style="color:#e2e8f0;">${escapeHtml(cert.studentName || "Student")}</strong> on ${escapeHtml(dateStr)}.
                 </p>
 
-                <div style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.08); border-radius:6px; padding:0.4rem 0.65rem; margin-bottom:1rem;">
-                  <span style="font-size:0.68rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; display:block;">Credential ID</span>
-                  <code style="font-family:'DM Mono', monospace; font-size:0.78rem; color:#818cf8;">${escapeHtml(certNumber)}</code>
+                <div class="cert-item-serial-box">
+                  <div style="min-width:0; flex:1;">
+                    <span style="font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; display:block; margin-bottom:0.15rem;">Credential ID</span>
+                    <code class="cert-item-serial-code" title="${escapeHtml(certNumber)}">${escapeHtml(certNumber)}</code>
+                  </div>
+                  <button type="button" class="mini-button button button-ghost btn-copy-serial-code" data-copy-text="${escapeHtml(certNumber)}" title="Copy Credential ID" style="padding:0.25rem 0.55rem; font-size:0.8rem;">
+                    📋
+                  </button>
                 </div>
               </div>
 
-              <div class="course-actions" style="display:flex; gap:0.5rem; flex-wrap:wrap; margin-top:0.75rem;">
+              <div class="cert-item-actions">
                 <button type="button" class="button button-primary mini-button btn-view-cert" data-cert-id="${cert._id}">
                   🎓 View Credential
                 </button>
@@ -115,6 +120,19 @@ export async function mountStudentCertificates(container) {
             toast("Verification link copied to clipboard! 📋");
           } catch {
             toast(`Verification link: ${shareUrl}`);
+          }
+        });
+      });
+
+      // Bind copy serial code handlers
+      gridEl.querySelectorAll(".btn-copy-serial-code").forEach((btn) => {
+        btn.addEventListener("click", async () => {
+          const text = btn.dataset.copyText;
+          try {
+            await navigator.clipboard.writeText(text);
+            toast("Credential ID copied! 📋");
+          } catch {
+            toast(`Credential ID: ${text}`);
           }
         });
       });

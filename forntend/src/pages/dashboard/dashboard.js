@@ -91,37 +91,26 @@ export async function mountStudentDashboard(container) {
             const existingCert = certificatesMap.get(courseIdStr);
 
             return `
-              <article class="course-card-item${isCompleted ? " is-completed-card" : ""}" style="display:flex; flex-direction:column; justify-content:space-between;">
-                <div>
-                  ${
-                    course.thumbnailUrl
-                      ? `
-                    <div class="course-card-thumb">
-                      <img src="${escapeHtml(course.thumbnailUrl)}" alt="${escapeHtml(course.title || "Course")}" loading="lazy" onerror="this.parentElement.style.display='none';" />
+              <article class="enrolled-course-card${isCompleted ? " is-completed-card" : ""}">
+                <div class="enrolled-course-info">
+                  <div class="course-badges-row">
+                    <span class="course-badge">${escapeHtml(course.category || "General")}</span>
+                    <span class="status ${isCompleted ? "completed" : "in-progress"}">${isCompleted ? "✓ Completed" : "In Progress"}</span>
+                  </div>
+                  <h3>${escapeHtml(course.title || "Course")}</h3>
+                  <p>${escapeHtml(course.description || "Continue your lessons and quizzes.")}</p>
+                  <div class="progress-bar-wrapper" style="margin-top: 0.75rem; max-width: 440px;">
+                    <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.35rem;">
+                      <span>Progress</span>
+                      <strong style="color:${isCompleted ? "var(--aqua)" : "inherit"}">${percent}%</strong>
                     </div>
-                  `
-                      : ""
-                  }
-                  <div class="course-card-main">
-                    <div class="course-badges-row">
-                      <span class="course-badge">${escapeHtml(course.category || "General")}</span>
-                      <span class="status ${isCompleted ? "completed" : "in-progress"}">${isCompleted ? "✓ Completed" : "In Progress"}</span>
-                    </div>
-                    <h3>${escapeHtml(course.title || "Course")}</h3>
-                    <p>${escapeHtml(course.description || "Continue your lessons and quizzes.")}</p>
-                    <div class="progress-bar-wrapper" style="margin-top: 1rem;">
-                      <div style="display:flex; justify-content:space-between; font-size:0.8rem; margin-bottom:0.35rem;">
-                        <span>Progress</span>
-                        <strong style="color:${isCompleted ? "var(--aqua)" : "inherit"}">${percent}%</strong>
-                      </div>
-                      <div style="background:var(--line); border-radius:999px; height:8px; overflow:hidden;">
-                        <div style="background:${isCompleted ? "linear-gradient(90deg,#52d8c2,#8cedc9)" : "linear-gradient(90deg, var(--violet), var(--aqua))"}; width:${percent}%; height:100%; border-radius:999px; transition:width 0.3s ease;"></div>
-                      </div>
+                    <div style="background:var(--line); border-radius:999px; height:8px; overflow:hidden;">
+                      <div style="background:${isCompleted ? "linear-gradient(90deg,#52d8c2,#8cedc9)" : "linear-gradient(90deg, var(--violet), var(--aqua))"}; width:${percent}%; height:100%; border-radius:999px; transition:width 0.3s ease;"></div>
                     </div>
                   </div>
                 </div>
 
-                <div class="course-actions" style="margin-top:1.25rem; display:flex; gap:0.5rem; flex-wrap:wrap;">
+                <div class="enrolled-course-actions">
                   <a class="button ${isCompleted ? "button-secondary" : "button-primary"} mini-button" href="#/student/player?courseId=${escapeHtml(courseIdStr)}">
                     ${isCompleted ? "Review Course →" : "Continue Learning →"}
                   </a>
@@ -255,20 +244,18 @@ export async function mountStudentDashboard(container) {
         recContainer.innerHTML = recommendations
           .map((rec) => {
             return `
-              <article class="course-card-item" style="display:flex; flex-direction:column; justify-content:space-between; border-color:rgba(99, 102, 241, 0.3);">
+              <article class="recommendation-card">
                 <div>
-                  <div class="course-badges-row" style="margin-bottom:0.5rem;">
+                  <div class="rec-badge-row">
                     <span class="course-badge">${escapeHtml(rec.category)}</span>
-                    <span style="font-size:0.72rem; font-weight:700; color:#38bdf8; background:rgba(56, 189, 248, 0.12); border:1px solid rgba(56, 189, 248, 0.3); border-radius:999px; padding:0.15rem 0.55rem;">
-                      ⚡ ${rec.matchScore}% Match
-                    </span>
+                    <span class="rec-match-pill">⚡ ${rec.matchScore}% Match</span>
                   </div>
-                  <h3 style="font-size:1.05rem; margin-bottom:0.4rem; color:#f8fafc;">${escapeHtml(rec.title)}</h3>
-                  <p style="font-size:0.8rem; color:#cbd5e1; margin-bottom:0.6rem;">${escapeHtml(rec.description || "")}</p>
-                  <p style="font-size:0.75rem; color:#a78bfa; font-style:italic; margin:0 0 0.75rem 0;">💡 ${escapeHtml(rec.reason)}</p>
+                  <h3 class="rec-title">${escapeHtml(rec.title)}</h3>
+                  <p class="rec-desc">${escapeHtml(rec.description || "")}</p>
+                  <p class="rec-reason">💡 ${escapeHtml(rec.reason)}</p>
                 </div>
-                <div class="course-actions" style="margin-top:0.5rem;">
-                  <a class="button button-primary mini-button" href="#/student/catalog">
+                <div style="margin-top:0.75rem;">
+                  <a class="button button-primary mini-button" href="#/student/catalog" style="width:100%; justify-content:center;">
                     Explore Course →
                   </a>
                 </div>
