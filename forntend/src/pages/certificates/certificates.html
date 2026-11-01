@@ -1,0 +1,68 @@
+<section class="view is-active" id="student-certificates-view">
+  <div class="welcome-row">
+    <div>
+      <h2>My Certificates &amp; Credentials</h2>
+      <p>Official verified certificates earned upon completing courses and specialized masterclasses.</p>
+    </div>
+    <div style="display:flex; gap:0.75rem; align-items:center;">
+      <a class="button button-secondary" href="#/student/dashboard">
+        <span>← My Dashboard</span>
+      </a>
+      <a class="button button-primary" href="#/student/catalog">
+        <span>Explore Catalog</span><span aria-hidden="true">→</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Certificate Verification Bar -->
+  <section class="panel" style="margin: 1.5rem 0 2rem; padding: 1.25rem 1.5rem; background: rgba(15, 23, 42, 0.45); border: 1px solid var(--line);">
+    <div style="display:flex; flex-wrap:wrap; justify-content:space-between; align-items:center; gap:1rem;">
+      <div>
+        <h4 style="margin:0 0 0.25rem 0; font-size:0.95rem; color:#f8fafc;">🔍 Public Credential Verification</h4>
+        <p style="margin:0; font-size:0.8rem; color:var(--muted);">Verify the authenticity of any VertexLearn AI certificate by entering its ID.</p>
+      </div>
+      <form id="cert-verify-form" style="display:flex; gap:0.5rem; flex:1; max-width:440px;">
+        <input
+          type="text"
+          id="cert-verify-input"
+          class="input"
+          placeholder="e.g. VERTEX-67250A..."
+          required
+          style="padding:0.45rem 0.75rem; font-family:'DM Mono', monospace; font-size:0.85rem;"
+        />
+        <button type="submit" class="button button-primary mini-button" style="white-space:nowrap;">
+          Verify Credential
+        </button>
+      </form>
+    </div>
+    <div id="cert-verify-result" style="margin-top:1rem;" hidden></div>
+  </section>
+
+  <!-- Certificates List -->
+  <section aria-labelledby="earned-certificates-heading">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">ACCREDITED AWARDS</p>
+        <h3 id="earned-certificates-heading">Earned Certificates</h3>
+      </div>
+      <span class="count-pill" id="certificates-count">0 earned</span>
+    </div>
+
+    <!-- Empty State -->
+    <div id="certificates-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">🎓</div>
+      <h3>No certificates earned yet</h3>
+      <p>Complete 100% of lectures and required assignments in your enrolled courses to claim your official verified credential.</p>
+      <a class="button button-secondary" href="#/student/dashboard">Go to My Courses</a>
+    </div>
+
+    <!-- Loading State -->
+    <div id="certificates-loading" style="padding: 2rem 0; text-align: center; color: var(--muted);">
+      <p>Loading your certificates…</p>
+    </div>
+
+    <!-- Grid Container -->
+    <div id="certificates-grid" class="courses-list-grid" hidden></div>
+  </section>
+</section>
+

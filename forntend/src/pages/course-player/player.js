@@ -17,6 +17,8 @@ import { courseService }    from "../../services/courseService.js";
 import { enrollmentService } from "../../services/enrollmentService.js";
 import { learningService }  from "../../services/learningService.js";
 import { aiService }        from "../../services/aiService.js";
+import { certificateService } from "../../services/certificateService.js";
+import { openCertificateModal } from "../../components/common/certificate-modal.js";
 import { escapeHtml }       from "../../utils/dom.js";
 import { toast }            from "../../components/common/toast.js";
 import { errorText }        from "../../utils/validation.js";
@@ -86,6 +88,9 @@ function renderTopbar() {
   if (fill)  fill.style.width = `${percent}%`;
   if (pct)   pct.textContent  = `${Math.round(percent)}%`;
   if (badge) badge.hidden = percent < 100;
+
+  const certBtn = qs("#btn-player-cert");
+  if (certBtn) certBtn.hidden = percent < 100;
 
   // sidebar mirror
   const sf  = qs("#sidebar-progress-fill");
@@ -1089,6 +1094,26 @@ function wireEvents(courseId) {
   const openAiTab = () => switchTab("ai-tutor");
   qs("#btn-ai-tutor-topbar")?.addEventListener("click", openAiTab);
   qs("#btn-open-ai-sidebar")?.addEventListener("click", openAiTab);
+
+  // Claim or view certificate
+  qs("#btn-player-cert")?.addEventListener("click", async () => {
+    try {
+      const certRes = await certificateService.getMyCertificates();
+      const list = certRes?.data?.certificates || certRes?.certificates || [];
+      const found = list.find((c) => String(c.courseId?._id || c.courseId) === String(courseId));
+
+      if (found) {
+        openCertificateModal(found);
+      } else {
+        const issueRes = await certificateService.issueCertificate(courseId);
+        const newCert = issueRes?.data?.certificate || issueRes?.certificate || issueRes;
+        toast("Congratulations! Your Certificate of Completion has been issued! 🎓");
+        openCertificateModal(newCert);
+      }
+    } catch (err) {
+      toast(`Could not load certificate: ${errorText(err)}`, "error");
+    }
+  });
 
   // Personal notes: auto-save debounce
   const textarea = qs("#notes-textarea");

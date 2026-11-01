@@ -7,7 +7,8 @@ export function renderStudentLayout(user, activeSection = "dashboard") {
     items: [
       { id: "dashboard", href: "#/student/dashboard", label: "My Learning", icon: "◈", isActive: activeSection === "dashboard" },
       { id: "catalog", href: "#/student/catalog", label: "Explore Courses", icon: "▣", isActive: activeSection === "catalog" },
-      { id: "quizzes", href: "#/student/quizzes", label: "My Quizzes", icon: "◇", isActive: activeSection === "quizzes" }
+      { id: "quizzes", href: "#/student/quizzes", label: "My Quizzes", icon: "◇", isActive: activeSection === "quizzes" },
+      { id: "certificates", href: "#/student/certificates", label: "Certificates", icon: "🎓", isActive: activeSection === "certificates" }
     ]
   });
 
@@ -15,7 +16,8 @@ export function renderStudentLayout(user, activeSection = "dashboard") {
     dashboard: "My Learning Dashboard",
     catalog: "Course Catalog",
     player: "Course Player",
-    quizzes: "Quizzes & Assessments"
+    quizzes: "Quizzes & Assessments",
+    certificates: "My Certificates & Credentials"
   };
 
   const topbarHtml = renderNavbar({

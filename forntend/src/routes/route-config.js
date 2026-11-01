@@ -79,6 +79,13 @@ export const ROUTES = {
     layout: "student",
     section: "quizzes"
   },
+  STUDENT_CERTIFICATES: {
+    hash: "#/student/certificates",
+    role: "student",
+    title: "My Certificates | VertexLearn AI",
+    layout: "student",
+    section: "certificates"
+  },
 
   // Admin
   ADMIN_DASHBOARD: {

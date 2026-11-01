@@ -19,6 +19,7 @@ import { mountStudentDashboard } from "../pages/dashboard/dashboard.js";
 import { mountCourseCatalog } from "../pages/course-catalog/catalog.js";
 import { mountCoursePlayer } from "../pages/course-player/player.js";
 import { mountStudentQuizzes } from "../pages/quizzes/quiz.js";
+import { mountStudentCertificates } from "../pages/certificates/certificates.js";
 
 // Admin
 import { mountAdminDashboard, mountAdminCourses, mountAdminUsers, showAdminView } from "../pages/admin-panel/admin.js";
@@ -34,6 +35,7 @@ const TEMPLATES = {
   studentCatalog: new URL("../pages/course-catalog/catalog.html", import.meta.url),
   studentPlayer: new URL("../pages/course-player/player.html", import.meta.url),
   studentQuizzes: new URL("../pages/quizzes/quiz.html", import.meta.url),
+  studentCertificates: new URL("../pages/certificates/certificates.html", import.meta.url),
   adminDashboard: new URL("../pages/admin-panel/dashboard.html", import.meta.url),
   adminCourses: new URL("../pages/admin-panel/courses.html", import.meta.url),
   adminUsers: new URL("../pages/admin-panel/users.html", import.meta.url)
@@ -118,7 +120,8 @@ export async function navigate() {
       dashboard: "My Learning Dashboard",
       catalog: "Course Catalog",
       player: "Course Player",
-      quizzes: "Quizzes & Assessments"
+      quizzes: "Quizzes & Assessments",
+      certificates: "My Certificates & Credentials"
     };
     const pageTitleEl = activeAppContainer.querySelector("#page-title");
     if (pageTitleEl) pageTitleEl.textContent = studentSectionTitles[subSection] || "Student Portal";
@@ -138,6 +141,9 @@ export async function navigate() {
     } else if (subSection === "quizzes") {
       container.innerHTML = await fetchHtml(TEMPLATES.studentQuizzes);
       await mountStudentQuizzes(container);
+    } else if (subSection === "certificates") {
+      container.innerHTML = await fetchHtml(TEMPLATES.studentCertificates);
+      await mountStudentCertificates(container);
     }
     return;
   }

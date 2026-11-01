@@ -4,12 +4,18 @@
       <h2>Welcome back, <span id="student-welcome-name">Student</span>!</h2>
       <p>Pick up where you left off and keep moving toward your learning goals.</p>
     </div>
-    <a class="button button-primary" href="#/student/catalog">
-      <span>Explore catalog</span><span aria-hidden="true">→</span>
-    </a>
+    <div style="display:flex; gap:0.75rem; align-items:center;">
+      <a class="button button-secondary" href="#/student/certificates">
+        <span>🎓 My Certificates</span>
+      </a>
+      <a class="button button-primary" href="#/student/catalog">
+        <span>Explore catalog</span><span aria-hidden="true">→</span>
+      </a>
+    </div>
   </div>
 
-  <section class="stats-overview" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem;">
+  <!-- Stats Overview with Streak -->
+  <section class="stats-overview" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin: 1.5rem 0 2rem;">
     <div class="panel" style="padding: 1.25rem;">
       <p class="eyebrow">ENROLLED</p>
       <h3 id="stat-enrolled" style="font-size: 1.8rem; margin: 0.25rem 0;">0</h3>
@@ -20,18 +26,24 @@
       <h3 id="stat-active" style="font-size: 1.8rem; margin: 0.25rem 0;">0</h3>
       <small style="color:var(--muted);">Courses in progress</small>
     </div>
-    <div class="panel" style="padding: 1.25rem;">
+    <div class="panel" style="padding: 1.25rem; cursor:pointer;" id="stat-cert-card" title="Click to view certificates">
       <p class="eyebrow">COMPLETED</p>
-      <h3 id="stat-completed" style="font-size: 1.8rem; margin: 0.25rem 0;">0</h3>
-      <small style="color:var(--muted);">Certificates earned</small>
+      <h3 id="stat-completed" style="font-size: 1.8rem; margin: 0.25rem 0; color:#52d8c2;">0</h3>
+      <small style="color:var(--muted);">Certificates earned ↗</small>
+    </div>
+    <div class="panel" style="padding: 1.25rem;">
+      <p class="eyebrow">STUDY STREAK</p>
+      <h3 id="stat-streak" style="font-size: 1.8rem; margin: 0.25rem 0; color:#fbbf24;">🔥 0d</h3>
+      <small style="color:var(--muted);" id="stat-streak-sub">Keep daily consistency</small>
     </div>
   </section>
 
+  <!-- In-Progress Courses -->
   <section aria-labelledby="enrolled-courses-heading">
     <div class="section-heading">
       <div>
         <p class="eyebrow">MY LEARNING</p>
-        <h3 id="enrolled-courses-heading">In-Progress Courses</h3>
+        <h3 id="enrolled-courses-heading">Enrolled Courses &amp; Progress</h3>
       </div>
       <span class="count-pill" id="enrolled-count">0 enrolled</span>
     </div>
@@ -46,12 +58,48 @@
     <div id="enrolled-list-container" class="courses-list-grid"></div>
   </section>
 
+  <!-- AI Course Recommendations Section -->
+  <section class="recommendations-section" aria-labelledby="student-recommendations-heading" style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--line);">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">AI RECOMMENDATIONS</p>
+        <h3 id="student-recommendations-heading">Recommended For You</h3>
+        <p style="margin:0.25rem 0 0 0; font-size:0.85rem; color:var(--muted);">
+          Tailored course suggestions aligned with your enrolled topics, skill interests, and quiz performance.
+        </p>
+      </div>
+      <span class="count-pill" id="student-recommendations-count">AI Powered</span>
+    </div>
+
+    <div id="recommendations-container" class="courses-list-grid" style="grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));">
+      <p style="color:var(--muted); font-size:0.85rem;">Finding matching courses…</p>
+    </div>
+  </section>
+
+  <!-- Milestones & Badges Section -->
+  <section class="badges-gamification-section" aria-labelledby="student-badges-heading" style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--line);">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">GAMIFICATION &amp; ACHIEVEMENTS</p>
+        <h3 id="student-badges-heading">Milestones &amp; Earned Badges</h3>
+        <p style="margin:0.25rem 0 0 0; font-size:0.85rem; color:var(--muted);">
+          Earn badges by achieving high quiz scores, maintaining study streaks, and finishing masterclasses.
+        </p>
+      </div>
+      <span class="count-pill" id="student-badges-count">0 / 6 Earned</span>
+    </div>
+
+    <div id="badges-grid-container" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap:1rem; margin-top:1rem;">
+      <p style="color:var(--muted); font-size:0.85rem;">Loading milestones…</p>
+    </div>
+  </section>
+
   <!-- Student Submissions & Work Section -->
   <section class="submissions-review-section" aria-labelledby="student-submissions-heading" style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--line);">
     <div class="section-heading">
       <div>
         <p class="eyebrow">MY ASSIGNMENTS</p>
-        <h3 id="student-submissions-heading">My Submitted Work & Grades</h3>
+        <h3 id="student-submissions-heading">My Submitted Work &amp; Grades</h3>
         <p style="margin:0.25rem 0 0 0; font-size:0.85rem; color:var(--muted);">
           Track your assignment deadlines (last date), submission dates, instructor grading status, and submitted work links.
         </p>
@@ -69,7 +117,7 @@
       <table class="data-table">
         <thead>
           <tr>
-            <th>Assignment & Course</th>
+            <th>Assignment &amp; Course</th>
             <th>Last Date (Deadline)</th>
             <th>Submitted Date</th>
             <th>Status / Grade</th>

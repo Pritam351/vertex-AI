@@ -101,7 +101,13 @@ const issueCertificate = async (courseId, user) => {
   const existing = await Certificate.findOne({
     userId: user._id,
     courseId: course._id,
-  });
+  })
+    .populate({
+      path: "courseId",
+      select: "title category description instructorId thumbnailUrl",
+      populate: { path: "instructorId", select: "fullName email" },
+    })
+    .lean();
 
   if (existing) {
     return existing;
@@ -112,7 +118,7 @@ const issueCertificate = async (courseId, user) => {
     .toUpperCase()}`;
 
   try {
-    return await Certificate.create({
+    const created = await Certificate.create({
       userId: user._id,
       courseId: course._id,
       certificateNumber,
@@ -120,13 +126,27 @@ const issueCertificate = async (courseId, user) => {
       courseTitle: course.title,
       issuedAt: new Date(),
     });
+
+    return await Certificate.findById(created._id)
+      .populate({
+        path: "courseId",
+        select: "title category description instructorId thumbnailUrl",
+        populate: { path: "instructorId", select: "fullName email" },
+      })
+      .lean();
   } catch (error) {
     // Handle simultaneous requests for the same certificate.
     if (error.code === 11000) {
       const certificate = await Certificate.findOne({
         userId: user._id,
         courseId: course._id,
-      });
+      })
+        .populate({
+          path: "courseId",
+          select: "title category description instructorId thumbnailUrl",
+          populate: { path: "instructorId", select: "fullName email" },
+        })
+        .lean();
 
       if (certificate) return certificate;
     }
@@ -137,6 +157,11 @@ const issueCertificate = async (courseId, user) => {
 
 const getMyCertificates = async (userId) => {
   return Certificate.find({ userId })
+    .populate({
+      path: "courseId",
+      select: "title category description instructorId thumbnailUrl",
+      populate: { path: "instructorId", select: "fullName email" },
+    })
     .sort({ issuedAt: -1 })
     .lean();
 };
@@ -145,7 +170,11 @@ const verifyCertificate = async (certificateNumber) => {
   const certificate = await Certificate.findOne({
     certificateNumber,
   })
-    .select("certificateNumber studentName courseTitle issuedAt")
+    .populate({
+      path: "courseId",
+      select: "title category description instructorId thumbnailUrl",
+      populate: { path: "instructorId", select: "fullName email" },
+    })
     .lean();
 
   if (!certificate) {

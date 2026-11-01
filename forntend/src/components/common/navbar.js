@@ -1,6 +1,7 @@
 import { initials } from "../../utils/formatters.js";
 import { authService } from "../../services/authService.js";
 import { notificationService } from "../../services/notificationService.js";
+import { gamificationService } from "../../services/gamificationService.js";
 import { toast } from "./toast.js";
 
 // ─── Notification type → emoji icon map ───────────────────────────────────────
@@ -40,6 +41,11 @@ export function renderNavbar({ title = "Workspace", eyebrow = "STUDIO", user = n
       </div>
       <div class="account-menu">
         
+        <!-- Streak counter (students) -->
+        <a class="user-streak-pill" id="user-streak-pill" href="#/student/dashboard" hidden title="Daily active study streak">
+          🔥 <span id="user-streak-days">0</span>d
+        </a>
+
         <!-- Notification bell -->
         <div class="notif-bell-wrapper" id="notif-bell-wrapper">
           <button
@@ -216,4 +222,20 @@ export function bindNavbarEvents(container = document) {
 
   // Initial fetch
   fetchNotifications();
+
+  // Load study streak for students
+  const streakPill = container.querySelector("#user-streak-pill");
+  const streakDays = container.querySelector("#user-streak-days");
+  if (streakPill && streakDays) {
+    gamificationService.getMyStreak()
+      .then((res) => {
+        const streak = res?.data || res;
+        const count = Number(streak?.currentStreak || 0);
+        if (count > 0) {
+          streakDays.textContent = count;
+          streakPill.hidden = false;
+        }
+      })
+      .catch(() => {});
+  }
 }
