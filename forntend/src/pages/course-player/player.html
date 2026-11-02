@@ -111,6 +111,9 @@
           <button class="player-tab-btn" data-tab="ai-tutor" role="tab" aria-selected="false" aria-controls="tab-ai-tutor" id="tab-btn-ai">
             ✦ AI Tutor
           </button>
+          <button class="player-tab-btn" data-tab="announcements" role="tab" aria-selected="false" aria-controls="tab-announcements" id="tab-btn-announcements">
+            📢 Announcements <span class="tab-count-badge" id="announcements-count-badge"></span>
+          </button>
         </div>
 
         <!-- Tab: Lesson Overview -->
@@ -222,6 +225,34 @@
               />
               <button class="button button-primary" type="submit">Ask AI</button>
             </form>
+          </div>
+        </div>
+
+        <!-- Tab: Course Announcements -->
+        <div class="player-tab-content" id="tab-announcements" role="tabpanel" aria-labelledby="tab-btn-announcements" hidden>
+          <div class="overview-section">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.25rem;">
+              <div>
+                <h4 class="overview-section-title" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
+                  <span>📢</span> Instructor Announcements
+                </h4>
+                <p style="color:var(--text-secondary); font-size:0.85rem; margin:0.25rem 0 0 0;">
+                  Official updates, news, and resources from your instructor.
+                </p>
+              </div>
+              <button class="player-ctrl-btn" id="btn-refresh-player-announcements" type="button" title="Refresh announcements">
+                ↻ Refresh
+              </button>
+            </div>
+            <div id="player-announcements-loading" style="padding:2rem; text-align:center; color:var(--text-secondary);">
+              Loading announcements...
+            </div>
+            <div id="player-announcements-empty" class="empty-state" hidden style="padding:2.5rem 1rem; text-align:center;">
+              <p style="color:var(--text-secondary); margin:0;">No announcements posted for this course yet.</p>
+            </div>
+            <div id="player-announcements-list" style="display:flex; flex-direction:column; gap:1rem;">
+              <!-- Cards dynamically inserted here -->
+            </div>
           </div>
         </div>
 

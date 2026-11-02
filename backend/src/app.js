@@ -20,6 +20,7 @@ const certificateRoutes = require("./modules/certificates/certificateRoutes");
 const discussionRoutes = require("./modules/discussions/discussionRoutes");
 const notificationRoutes = require("./modules/notifications/notificationRoutes");
 const gamificationRoutes = require("./modules/gamification/gamificationRoutes");
+const announcementRoutes = require("./modules/announcements/announcementRoutes");
 
 const aiRoutes = require("./ai/aiRoutes");
 
@@ -30,20 +31,6 @@ const app = express();
 
 app.use(helmet());
 app.use(cors());
-// Restrict CORS to the configured origin only
-// const allowedOrigin = process.env.ALLOWED_ORIGIN || "http://localhost:5173";
-// app.use(
-//   cors({
-//     origin: (origin, cb) => {
-//       // Allow requests with no origin (same-origin / curl / Postman in dev)
-//       if (!origin || origin === allowedOrigin) return cb(null, true);
-//       cb(new Error(`CORS: origin '${origin}' is not allowed`));
-//     },
-//     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-//     allowedHeaders: ["Content-Type", "Authorization"],
-//     credentials: true,
-//   })
-// );
 
 app.use(express.json());
 
@@ -71,6 +58,7 @@ app.use("/api/v1", certificateRoutes);
 app.use("/api/v1", discussionRoutes);
 app.use("/api/v1", notificationRoutes);
 app.use("/api/v1", gamificationRoutes);
+app.use("/api/v1", announcementRoutes);
 
 app.use("/api/v1/ai", aiRoutes);
 

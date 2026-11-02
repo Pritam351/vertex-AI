@@ -31,6 +31,7 @@ import { enrollmentService } from "../../services/enrollmentService.js";
 import { aiService } from "../../services/aiService.js";
 import { quizService } from "../../services/quizService.js";
 import { courseService } from "../../services/courseService.js";
+import { announcementService } from "../../services/announcementService.js";
 
 const state = {
   session: null,
@@ -39,6 +40,8 @@ const state = {
   workflow: { course: null, modules: [], lectures: [], quizzes: [], assignments: [] },
   submissions: [],
   isLoadingSubmissions: false,
+  announcements: [],
+  isLoadingAnnouncements: false,
   isInitialized: false
 };
 
@@ -46,6 +49,7 @@ const instructorPages = [
   new URL("./overview.html", import.meta.url),
   new URL("./course-builder.html", import.meta.url),
   new URL("./assessments.html", import.meta.url),
+  new URL("./announcements.html", import.meta.url),
   new URL("./analytics.html", import.meta.url)
 ];
 
@@ -726,6 +730,259 @@ export async function loadCourseAnalytics(courseId) {
   }
 }
 
+// ─── Course Announcements ───────────────────────────────────────────────────
+function populateAnnouncementCourseSelect() {
+  const select = $("#announcement-course-select");
+  if (!select) return;
+  const course = activeCourse();
+
+  if (!state.instructorCourses.length) {
+    select.innerHTML = '<option value="">No courses created yet</option>';
+    select.disabled = true;
+  } else {
+    select.disabled = false;
+    const currentSelected = select.value || course?._id || state.instructorCourses[0]._id;
+    select.innerHTML = state.instructorCourses
+      .map(
+        (c) =>
+          `<option value="${escapeHtml(c._id)}" ${c._id === currentSelected ? "selected" : ""}>${escapeHtml(c.title)} (${getCourseStatusLabel(c)})</option>`
+      )
+      .join("");
+  }
+}
+
+function renderInstructorAnnouncementsEmpty() {
+  const loading = $("#announcements-loading");
+  const empty = $("#announcements-empty");
+  const list = $("#announcements-list");
+  const badge = $("#announcements-count-badge");
+  if (loading) loading.hidden = true;
+  if (empty) empty.hidden = false;
+  if (list) list.innerHTML = "";
+  if (badge) badge.textContent = "0 Total";
+}
+
+async function loadInstructorAnnouncements(courseId) {
+  const loading = $("#announcements-loading");
+  const empty = $("#announcements-empty");
+  const list = $("#announcements-list");
+  const badge = $("#announcements-count-badge");
+  const select = $("#announcement-course-select");
+
+  if (!courseId) {
+    renderInstructorAnnouncementsEmpty();
+    return;
+  }
+
+  if (select && select.value !== courseId) {
+    select.value = courseId;
+  }
+
+  if (loading) loading.hidden = false;
+  if (empty) empty.hidden = true;
+  if (list) list.innerHTML = "";
+
+  state.isLoadingAnnouncements = true;
+  try {
+    const res = await announcementService.getCourseAnnouncements(courseId);
+    state.announcements = res?.data || res || [];
+    renderInstructorAnnouncements();
+  } catch (err) {
+    console.error("Failed to load course announcements:", err);
+    toast(`Failed to load announcements: ${errorText(err)}`, "error");
+    renderInstructorAnnouncementsEmpty();
+  } finally {
+    state.isLoadingAnnouncements = false;
+    if (loading) loading.hidden = true;
+  }
+}
+
+function renderInstructorAnnouncements() {
+  const loading = $("#announcements-loading");
+  const empty = $("#announcements-empty");
+  const list = $("#announcements-list");
+  const badge = $("#announcements-count-badge");
+  if (!list) return;
+
+  if (loading) loading.hidden = true;
+
+  const count = state.announcements.length;
+  if (badge) badge.textContent = `${count} Total`;
+
+  if (!count) {
+    if (empty) empty.hidden = false;
+    list.innerHTML = "";
+    return;
+  }
+
+  if (empty) empty.hidden = true;
+  list.innerHTML = state.announcements.map((ann) => {
+    const title = escapeHtml(ann.title);
+    const content = escapeHtml(ann.content).replace(/\n/g, "<br>");
+    const dateStr = ann.createdAt ? new Date(ann.createdAt).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }) : "";
+
+    const pinnedBadge = ann.isPinned
+      ? `<span style="background:rgba(234,179,8,0.15);color:#fbbf24;border:1px solid rgba(234,179,8,0.3);font-size:0.75rem;padding:0.2rem 0.5rem;border-radius:9999px;font-weight:600;">📌 Pinned</span>`
+      : "";
+
+    return `
+      <div class="announcement-item" style="background:rgba(255,255,255,0.02);border:1px solid ${ann.isPinned ? "rgba(234,179,8,0.4)" : "var(--border-subtle)"};border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            ${pinnedBadge}
+            <h4 style="margin:0;font-size:1.05rem;font-weight:600;color:var(--text-primary);">${title}</h4>
+          </div>
+          <span style="font-size:0.8rem;color:var(--text-secondary);">${dateStr}</span>
+        </div>
+        <div style="font-size:0.9rem;line-height:1.6;color:var(--text-secondary);">
+          ${content}
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.25rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:0.8rem;color:var(--text-secondary);display:inline-flex;align-items:center;gap:0.35rem;">
+            <span>📢</span> Broadcasted to enrolled learners
+          </span>
+          <div style="display:flex;align-items:center;gap:0.5rem;">
+            <button 
+              type="button" 
+              class="button button-secondary mini-button" 
+              data-action="toggle-pin-announcement" 
+              data-announcement-id="${ann._id}"
+              title="${ann.isPinned ? "Unpin this announcement" : "Pin this announcement"}"
+              style="padding:0.3rem 0.65rem;font-size:0.75rem;"
+            >
+              ${ann.isPinned ? "📍 Unpin" : "📌 Pin"}
+            </button>
+            <button 
+              type="button" 
+              class="button button-danger mini-button" 
+              data-action="delete-announcement" 
+              data-announcement-id="${ann._id}"
+              title="Delete this announcement"
+              style="padding:0.3rem 0.65rem;font-size:0.75rem;"
+            >
+              🗑 Delete
+            </button>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+async function handlePostAnnouncement(event) {
+  event.preventDefault();
+  const select = $("#announcement-course-select");
+  const courseId = select?.value;
+  if (!courseId) {
+    toast("Please select a course to post an announcement.", "error");
+    return;
+  }
+
+  const titleInput = $("#announcement-title");
+  const contentInput = $("#announcement-content");
+  const pinnedInput = $("#announcement-pinned");
+  const submitBtn = $("#btn-post-announcement");
+  const feedbackEl = $("#announcement-feedback");
+
+  const title = titleInput?.value?.trim();
+  const content = contentInput?.value?.trim();
+  const isPinned = Boolean(pinnedInput?.checked);
+
+  if (!title || title.length < 3) {
+    toast("Title must be at least 3 characters", "error");
+    titleInput?.focus();
+    return;
+  }
+  if (!content || content.length < 5) {
+    toast("Content must be at least 5 characters", "error");
+    contentInput?.focus();
+    return;
+  }
+
+  setBusy(submitBtn, true);
+  if (feedbackEl) feedbackEl.style.display = "none";
+
+  try {
+    const res = await announcementService.createAnnouncement(courseId, {
+      title,
+      content,
+      isPinned
+    });
+
+    const notifiedCount = res?.data?.notifiedCount ?? 0;
+    const msg = notifiedCount > 0
+      ? `📢 Announcement published! ${notifiedCount} student(s) received notifications.`
+      : `📢 Announcement published successfully!`;
+
+    toast(msg, "success");
+
+    if (feedbackEl) {
+      feedbackEl.style.display = "block";
+      feedbackEl.style.background = "rgba(16,185,129,0.15)";
+      feedbackEl.style.color = "#34d399";
+      feedbackEl.style.border = "1px solid rgba(16,185,129,0.3)";
+      feedbackEl.textContent = msg;
+      setTimeout(() => { if (feedbackEl) feedbackEl.style.display = "none"; }, 5000);
+    }
+
+    // Reset inputs
+    if (titleInput) titleInput.value = "";
+    if (contentInput) contentInput.value = "";
+    if (pinnedInput) pinnedInput.checked = false;
+
+    // Reload list
+    await loadInstructorAnnouncements(courseId);
+  } catch (err) {
+    console.error("Failed to post announcement:", err);
+    toast(`Failed to publish announcement: ${errorText(err)}`, "error");
+    if (feedbackEl) {
+      feedbackEl.style.display = "block";
+      feedbackEl.style.background = "rgba(239,68,68,0.15)";
+      feedbackEl.style.color = "#f87171";
+      feedbackEl.style.border = "1px solid rgba(239,68,68,0.3)";
+      feedbackEl.textContent = errorText(err);
+    }
+  } finally {
+    setBusy(submitBtn, false);
+  }
+}
+
+async function handleDeleteAnnouncement(announcementId) {
+  if (!confirm("Are you sure you want to delete this announcement?")) return;
+  try {
+    await announcementService.deleteAnnouncement(announcementId);
+    toast("Announcement deleted.", "info");
+    const select = $("#announcement-course-select");
+    const courseId = select?.value;
+    if (courseId) {
+      await loadInstructorAnnouncements(courseId);
+    }
+  } catch (err) {
+    toast(`Failed to delete announcement: ${errorText(err)}`, "error");
+  }
+}
+
+async function handleTogglePinAnnouncement(announcementId) {
+  try {
+    const res = await announcementService.togglePinAnnouncement(announcementId);
+    const isPinned = res?.data?.isPinned;
+    toast(`Announcement ${isPinned ? "pinned 📌" : "unpinned"}.`);
+    const select = $("#announcement-course-select");
+    const courseId = select?.value;
+    if (courseId) {
+      await loadInstructorAnnouncements(courseId);
+    }
+  } catch (err) {
+    toast(`Failed to update pin status: ${errorText(err)}`, "error");
+  }
+}
+
 export function showView(id) {
   document.querySelectorAll("[data-view]").forEach((view) => {
     const active = view.id === id;
@@ -741,6 +998,7 @@ export function showView(id) {
     overview: "Overview",
     "course-builder": "Course builder",
     assessments: "Assessments",
+    announcements: "Course Announcements",
     analytics: "Detailed Analytics"
   };
 
@@ -755,6 +1013,18 @@ export function showView(id) {
 
   if (window.location.hash.startsWith("#/instructor")) {
     window.location.hash = `#/instructor/${id}`;
+  }
+
+  if (id === "announcements") {
+    populateAnnouncementCourseSelect();
+    const select = $("#announcement-course-select");
+    const selectedCourseId = select?.value || activeCourse()?._id || state.instructorCourses[0]?._id;
+    if (selectedCourseId) {
+      if (select && !select.value) select.value = selectedCourseId;
+      loadInstructorAnnouncements(selectedCourseId);
+    } else {
+      renderInstructorAnnouncementsEmpty();
+    }
   }
 
   if (id === "analytics") {
@@ -1023,6 +1293,9 @@ export function render() {
         .join("");
     }
   }
+
+  // Populate Announcements Course Selector
+  populateAnnouncementCourseSelect();
 
   // Render Student Submissions & Grading table
   renderSubmissions();
@@ -2196,6 +2469,9 @@ function bindWorkspaceEventListeners() {
       setBusy(button, false);
     }
   });
+
+  // Post Announcement submit
+  $("#announcement-form")?.addEventListener("submit", handlePostAnnouncement);
 }
 
 function bindGlobalClickHandlers() {
@@ -2408,6 +2684,41 @@ function bindGlobalClickHandlers() {
       return;
     }
 
+    const refreshAnnounceBtn = event.target.closest("#btn-refresh-announcements");
+    if (refreshAnnounceBtn) {
+      event.preventDefault();
+      const select = $("#announcement-course-select");
+      const courseId = select?.value || activeCourse()?._id || state.instructorCourses[0]?._id;
+      if (courseId) {
+        setBusy(refreshAnnounceBtn, true);
+        try {
+          await loadInstructorAnnouncements(courseId);
+          toast("Announcements refreshed! ✓");
+        } catch (err) {
+          toast(`Failed to refresh announcements: ${errorText(err)}`, "error");
+        } finally {
+          setBusy(refreshAnnounceBtn, false);
+        }
+      }
+      return;
+    }
+
+    const delAnnounceBtn = event.target.closest('[data-action="delete-announcement"]');
+    if (delAnnounceBtn) {
+      event.preventDefault();
+      const annId = delAnnounceBtn.dataset.announcementId;
+      if (annId) await handleDeleteAnnouncement(annId);
+      return;
+    }
+
+    const pinAnnounceBtn = event.target.closest('[data-action="toggle-pin-announcement"]');
+    if (pinAnnounceBtn) {
+      event.preventDefault();
+      const annId = pinAnnounceBtn.dataset.announcementId;
+      if (annId) await handleTogglePinAnnouncement(annId);
+      return;
+    }
+
     const target = event.target.closest("[data-go], [data-section]");
     if (target) {
       event.preventDefault();
@@ -2426,6 +2737,11 @@ function bindGlobalClickHandlers() {
       const selectedId = event.target.value;
       if (selectedId) {
         loadCourseAnalytics(selectedId);
+      }
+    } else if (event.target.id === "announcement-course-select") {
+      const selectedId = event.target.value;
+      if (selectedId) {
+        loadInstructorAnnouncements(selectedId);
       }
     }
   });

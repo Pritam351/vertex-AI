@@ -1,0 +1,107 @@
+<section class="view" id="announcements" data-view hidden>
+  <div class="section-intro">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <p class="eyebrow">STUDENT BROADCASTS</p>
+        <h2>Course Announcements</h2>
+        <p>Post updates, announcements, and study instructions. All enrolled students receive an instant notification.</p>
+      </div>
+      <div class="analytics-toolbar">
+        <label for="announcement-course-select" class="analytics-select-label">Select Course:</label>
+        <select id="announcement-course-select" class="generator-select" style="min-width:260px;">
+          <option value="">Loading courses...</option>
+        </select>
+        <button class="button button-secondary" type="button" id="btn-refresh-announcements" style="padding:0.5rem 0.9rem;">
+          <span>↻ Refresh</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div class="announcement-layout-grid" style="display: grid; grid-template-columns: minmax(320px, 480px) 1fr; gap: 1.5rem; margin-top: 1.5rem; align-items: start;">
+    <!-- Create Announcement Form -->
+    <div class="card" style="padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px;">
+      <h3 style="font-size: 1.15rem; font-weight: 600; margin-bottom: 0.5rem; color: var(--text-primary); display: flex; align-items: center; gap: 0.5rem;">
+        <span>📢</span> Post New Announcement
+      </h3>
+      <p style="font-size: 0.875rem; color: var(--text-secondary); margin-bottom: 1.25rem; line-height: 1.5;">
+        Publishing an announcement immediately delivers in-app notifications with a direct course link to every enrolled student.
+      </p>
+
+      <form id="announcement-form" style="display: flex; flex-direction: column; gap: 1.1rem;">
+        <div>
+          <label for="announcement-title" style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--text-primary);">
+            Announcement Title *
+          </label>
+          <input 
+            type="text" 
+            id="announcement-title" 
+            class="input-field" 
+            placeholder="e.g. Office Hours Tomorrow & Lecture 3 Review" 
+            required 
+            maxlength="200"
+            style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); color: var(--text-primary); box-sizing: border-box;"
+          />
+        </div>
+
+        <div>
+          <label for="announcement-content" style="display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 0.4rem; color: var(--text-primary);">
+            Message Content *
+          </label>
+          <textarea 
+            id="announcement-content" 
+            rows="6" 
+            class="input-field" 
+            placeholder="Write your announcement details here. You can include links, review tips, or deadline reminders..."
+            required
+            maxlength="5000"
+            style="width: 100%; padding: 0.75rem 1rem; border-radius: 8px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); color: var(--text-primary); resize: vertical; font-family: inherit; box-sizing: border-box;"
+          ></textarea>
+        </div>
+
+        <div style="display: flex; align-items: center; justify-content: space-between; padding: 0.25rem 0;">
+          <label style="display: flex; align-items: center; gap: 0.5rem; font-size: 0.875rem; color: var(--text-primary); cursor: pointer;">
+            <input type="checkbox" id="announcement-pinned" style="accent-color: #6366f1; width: 16px; height: 16px; cursor: pointer;" />
+            <span>📌 Pin this announcement to the top</span>
+          </label>
+        </div>
+
+        <div id="announcement-feedback" style="display: none; padding: 0.75rem 1rem; border-radius: 8px; font-size: 0.875rem;"></div>
+
+        <button type="submit" id="btn-post-announcement" class="button button-primary" style="display: flex; align-items: center; justify-content: center; gap: 0.5rem; padding: 0.75rem 1.25rem; font-weight: 600; cursor: pointer; border: none; border-radius: 8px;">
+          <span>📢 Post &amp; Notify Students</span>
+        </button>
+      </form>
+    </div>
+
+    <!-- Announcement Feed / History -->
+    <div class="card" style="padding: 1.5rem; background: var(--bg-card); border: 1px solid var(--border-subtle); border-radius: 12px; display: flex; flex-direction: column;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem; flex-wrap: wrap; gap: 0.5rem;">
+        <div>
+          <h3 style="font-size: 1.15rem; font-weight: 600; color: var(--text-primary); margin: 0;">
+            Announcements Feed
+          </h3>
+          <p style="font-size: 0.8rem; color: var(--text-secondary); margin: 0.2rem 0 0 0;">
+            Showing announcements for the selected course.
+          </p>
+        </div>
+        <span id="announcements-count-badge" class="badge" style="background: rgba(99,102,241,0.15); color: #818cf8; border: 1px solid rgba(99,102,241,0.3); font-size: 0.75rem; padding: 0.25rem 0.65rem; border-radius: 9999px;">0 Total</span>
+      </div>
+
+      <div id="announcements-loading" class="empty-state" style="padding: 2.5rem 1rem; text-align: center;">
+        <p style="color: var(--text-secondary);">Loading announcements...</p>
+      </div>
+
+      <div id="announcements-empty" class="empty-state" hidden style="padding: 3rem 1rem; text-align: center;">
+        <div style="font-size: 2.5rem; margin-bottom: 0.75rem;">📢</div>
+        <h4 style="font-size: 1rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.25rem;">No announcements yet</h4>
+        <p style="font-size: 0.85rem; color: var(--text-secondary); max-width: 380px; margin: 0 auto;">Use the form on the left to broadcast your first announcement to students enrolled in this course.</p>
+      </div>
+
+      <div id="announcements-list" style="display: flex; flex-direction: column; gap: 1rem; overflow-y: auto; max-height: 600px; padding-right: 4px;">
+        <!-- Dynamically rendered announcements -->
+      </div>
+    </div>
+  </div>
+</section>
+

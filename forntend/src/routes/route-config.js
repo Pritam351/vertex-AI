@@ -42,6 +42,13 @@ export const ROUTES = {
     layout: "instructor",
     section: "assessments"
   },
+  INSTRUCTOR_ANNOUNCEMENTS: {
+    hash: "#/instructor/announcements",
+    role: "instructor",
+    title: "Announcements | Instructor Studio",
+    layout: "instructor",
+    section: "announcements"
+  },
   INSTRUCTOR_ANALYTICS: {
     hash: "#/instructor/analytics",
     role: "instructor",

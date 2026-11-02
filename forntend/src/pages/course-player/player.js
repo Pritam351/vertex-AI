@@ -18,6 +18,7 @@ import { enrollmentService } from "../../services/enrollmentService.js";
 import { learningService }  from "../../services/learningService.js";
 import { aiService }        from "../../services/aiService.js";
 import { certificateService } from "../../services/certificateService.js";
+import { announcementService } from "../../services/announcementService.js";
 import { openCertificateModal } from "../../components/common/certificate-modal.js";
 import { escapeHtml }       from "../../utils/dom.js";
 import { toast }            from "../../components/common/toast.js";
@@ -41,6 +42,7 @@ let isYouTube       = false;
 let enrollment      = null;         // current enrollment object
 let activeChatSessionId = null;
 let chatSessions    = [];
+let courseAnnouncements = [];
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const qs = (sel) => container?.querySelector(sel);
@@ -414,6 +416,89 @@ function switchTab(tabName) {
 
   if (tabName === "saved-bookmarks") renderBookmarksTab();
   if (tabName === "personal-notes") qs("#notes-textarea")?.focus();
+  if (tabName === "announcements") renderPlayerAnnouncements();
+}
+
+// ─── Course Announcements tab ────────────────────────────────────────────────
+async function loadCourseAnnouncements(courseId) {
+  const loadingEl = qs("#player-announcements-loading");
+  const emptyEl = qs("#player-announcements-empty");
+  const listEl = qs("#player-announcements-list");
+  const countBadge = qs("#announcements-count-badge");
+
+  if (loadingEl) loadingEl.hidden = false;
+  if (emptyEl) emptyEl.hidden = true;
+  if (listEl) listEl.innerHTML = "";
+
+  try {
+    const res = await announcementService.getCourseAnnouncements(courseId);
+    courseAnnouncements = res?.data || res || [];
+    if (countBadge) {
+      countBadge.textContent = courseAnnouncements.length ? `(${courseAnnouncements.length})` : "";
+    }
+    renderPlayerAnnouncements();
+  } catch (err) {
+    console.error("Failed to load announcements:", err);
+    if (loadingEl) loadingEl.hidden = true;
+    if (emptyEl) {
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = `<p style="color:var(--text-secondary);margin:0;">Could not load announcements at this time.</p>`;
+    }
+  }
+}
+
+function renderPlayerAnnouncements() {
+  const loadingEl = qs("#player-announcements-loading");
+  const emptyEl = qs("#player-announcements-empty");
+  const listEl = qs("#player-announcements-list");
+  if (!listEl) return;
+
+  if (loadingEl) loadingEl.hidden = true;
+
+  if (!courseAnnouncements || courseAnnouncements.length === 0) {
+    if (emptyEl) emptyEl.hidden = false;
+    listEl.innerHTML = "";
+    return;
+  }
+
+  if (emptyEl) emptyEl.hidden = true;
+  listEl.innerHTML = courseAnnouncements.map((ann) => {
+    const instructorName = escapeHtml(ann.instructorId?.name || "Instructor");
+    const title = escapeHtml(ann.title);
+    const content = escapeHtml(ann.content).replace(/\n/g, "<br>");
+    const dateStr = ann.createdAt ? new Date(ann.createdAt).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }) : "";
+
+    const pinnedBadge = ann.isPinned
+      ? `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:rgba(234,179,8,0.15);color:#fbbf24;border:1px solid rgba(234,179,8,0.3);font-size:0.75rem;padding:0.2rem 0.5rem;border-radius:9999px;font-weight:600;">📌 Pinned</span>`
+      : "";
+
+    return `
+      <div style="background:var(--bg-card);border:1px solid ${ann.isPinned ? "rgba(234,179,8,0.4)" : "var(--border-subtle)"};border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            ${pinnedBadge}
+            <h4 style="margin:0;font-size:1.05rem;font-weight:600;color:var(--text-primary);">${title}</h4>
+          </div>
+          <span style="font-size:0.8rem;color:var(--text-secondary);">${dateStr}</span>
+        </div>
+        <div style="font-size:0.9rem;line-height:1.6;color:var(--text-secondary);">
+          ${content}
+        </div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;font-size:0.8rem;color:var(--text-secondary);border-top:1px solid rgba(255,255,255,0.06);padding-top:0.6rem;">
+          <span style="background:rgba(99,102,241,0.2);color:#818cf8;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.75rem;">
+            ${instructorName.charAt(0).toUpperCase()}
+          </span>
+          <span>Posted by <strong>${instructorName}</strong></span>
+        </div>
+      </div>
+    `;
+  }).join("");
 }
 
 // ─── Lesson Overview tab ──────────────────────────────────────────────────────
@@ -1192,6 +1277,11 @@ function wireEvents(courseId) {
   // Initial load of chat sessions
   loadChatSessions(courseId);
 
+  // Announcements refresh
+  qs("#btn-refresh-player-announcements")?.addEventListener("click", () => {
+    loadCourseAnnouncements(courseId);
+  });
+
   // Page unload: save position
   window.addEventListener("beforeunload", () => {
     if (activeLecture && !isYouTube) savePositionToLS();
@@ -1224,6 +1314,7 @@ export async function mountCoursePlayer(cont) {
   enrollment         = null;
   activeChatSessionId = null;
   chatSessions       = [];
+  courseAnnouncements = [];
   stopProgressInterval();
 
   // Parse courseId from hash: #/student/course-player?courseId=…
@@ -1292,6 +1383,15 @@ export async function mountCoursePlayer(cont) {
     // Render topbar + curriculum
     renderTopbar();
     renderCurriculum();
+
+    // Load course announcements in background
+    loadCourseAnnouncements(courseId);
+
+    // If URL contains tab param (e.g. from notification click: &tab=announcements)
+    const initialTab = params.get("tab");
+    if (initialTab) {
+      switchTab(initialTab);
+    }
 
     // Determine which lecture to start on: resume from localStorage or first
     const lastData  = (() => {
