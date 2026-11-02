@@ -343,12 +343,24 @@ const listUserDiscussions = async (user, options = {}) => {
     query.isHidden = false;
     const enrollments = await Enrollment.find({ userId: user._id }).select("courseId").lean();
     const enrolledCourseIds = enrollments.map((e) => e.courseId.toString());
-    if (options.courseId && options.courseId !== "all" && mongoose.isValidObjectId(options.courseId)) {
-      if (!enrolledCourseIds.includes(options.courseId.toString())) {
-        fail(403, "Enroll in this course first");
-      }
+
+    if (options.scope === "other" || options.courseId === "other") {
+      // Find all approved courses the student has NOT enrolled in
+      const allApproved = await Course.find({ status: "approved" }).select("_id").lean();
+      const otherCourseIds = allApproved
+        .map((c) => c._id.toString())
+        .filter((id) => !enrolledCourseIds.includes(id));
+      query.courseId = { $in: otherCourseIds };
+    } else if (
+      options.courseId &&
+      options.courseId !== "all" &&
+      options.courseId !== "enrolled" &&
+      mongoose.isValidObjectId(options.courseId)
+    ) {
+      // Specific course selected
       query.courseId = new mongoose.Types.ObjectId(options.courseId);
     } else {
+      // Default: all enrolled courses
       query.courseId = { $in: enrolledCourseIds };
     }
   }

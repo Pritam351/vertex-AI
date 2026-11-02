@@ -280,25 +280,21 @@
           </div>
         </div>
 
-        <!-- Tab: Course Discussions & Forum -->
+        <!-- Tab: Course Discussions & Forum (Lecture-specific) -->
         <div class="player-tab-content" id="tab-discussions" role="tabpanel" aria-labelledby="tab-btn-discussions" hidden>
           <div class="overview-section">
             <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.75rem; margin-bottom:1.25rem;">
               <div>
                 <h4 class="overview-section-title" style="margin:0; display:flex; align-items:center; gap:0.5rem;">
-                  <span>💬</span> Course Discussions &amp; Q&amp;A
+                  <span>💬</span> Lecture Discussion &amp; Q&amp;A
                 </h4>
                 <p style="color:var(--text-secondary); font-size:0.85rem; margin:0.25rem 0 0 0;">
-                  Ask questions, discuss topics, and collaborate with students and instructors.
+                  Questions &amp; comments for: <strong id="player-disc-lecture-name" style="color:#c7d2fe;">Current Lecture</strong>
                 </p>
               </div>
               <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
-                <div class="discussions-filter-group" style="display:inline-flex; background:#0d1425; border:1px solid #313b57; border-radius:8px; padding:2px;">
-                  <button type="button" class="mini-button is-active" id="btn-filter-all-discussions" style="background:#28205e; color:#fff; border:none; border-radius:6px; padding:0.35rem 0.75rem; font-size:0.75rem; cursor:pointer;">All Topics</button>
-                  <button type="button" class="mini-button" id="btn-filter-lecture-discussions" style="background:transparent; color:#9da4c2; border:none; border-radius:6px; padding:0.35rem 0.75rem; font-size:0.75rem; cursor:pointer;">Current Lecture</button>
-                </div>
                 <button class="button button-primary mini-button" id="btn-toggle-new-thread" type="button" style="padding:0.45rem 0.85rem; font-size:0.8rem;">
-                  + Ask Question
+                  + Ask Question / Comment
                 </button>
                 <button class="player-ctrl-btn" id="btn-refresh-discussions" type="button" title="Refresh discussions">
                   ↻ Refresh
@@ -309,25 +305,24 @@
             <!-- New Discussion Composer (collapsible) -->
             <div id="new-thread-panel" class="panel form-panel" hidden style="margin-bottom:1.5rem; background:#11192d; border:1px solid #313b57; border-radius:10px; padding:1.25rem;">
               <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
-                <h4 style="margin:0; font-size:0.95rem; font-weight:700; color:#f8fafc;">Start a Discussion Thread</h4>
+                <h4 style="margin:0; font-size:0.95rem; font-weight:700; color:#f8fafc;">Ask Question or Leave Comment</h4>
                 <button type="button" class="mini-button button-subtle" id="btn-cancel-new-thread" style="padding:0.2rem 0.5rem;">✕ Close</button>
               </div>
               <form id="new-thread-form" novalidate style="display:grid; gap:0.9rem;">
-                <label>Discussion Title
+                <label>Question or Topic Title
                   <input name="title" id="thread-title-input" required minlength="3" maxlength="200"
-                    placeholder="e.g. Can someone clarify closures vs scope in JavaScript?" />
+                    placeholder="e.g. Can someone clarify this concept?" />
                 </label>
-                <label>Question or Topic Details
+                <label>Question or Comment Details
                   <textarea name="content" id="thread-content-input" required maxlength="5000" rows="4"
-                    placeholder="Provide details and context so other students and instructors can help..."></textarea>
+                    placeholder="Provide details or code so instructor and classmates can help..."></textarea>
                 </label>
-                <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:0.5rem;">
-                  <label style="display:flex; align-items:center; gap:0.5rem; font-weight:500; font-size:0.8rem; cursor:pointer;">
-                    <input type="checkbox" id="thread-attach-lecture" checked style="width:16px; height:16px; accent-color:var(--violet-light); cursor:pointer;" />
-                    <span>Tag current lecture: <strong id="thread-lecture-tag-name" style="color:var(--violet-light);">Current Lecture</strong></span>
-                  </label>
-                  <button class="button button-primary" type="submit" id="btn-submit-thread" style="padding:0.5rem 1.1rem; font-size:0.82rem;">
-                    Post Discussion
+                <div style="display:flex; align-items:center; justify-content:flex-end; gap:0.5rem;">
+                  <button class="button button-secondary mini-button" type="button" id="btn-cancel-new-thread-2" style="padding:0.5rem 0.9rem;">
+                    Cancel
+                  </button>
+                  <button class="button button-primary mini-button" type="submit" id="btn-submit-thread" style="padding:0.5rem 1.1rem; font-size:0.82rem;">
+                    Post Question
                   </button>
                 </div>
                 <p class="form-message" data-message="thread" role="alert" aria-live="polite" style="margin:0;"></p>
@@ -335,11 +330,12 @@
             </div>
 
             <!-- Discussion Thread List -->
-            <div id="player-discussions-loading" style="padding:2.5rem; text-align:center; color:var(--text-secondary);">
-              Loading discussions...
+            <div id="player-discussions-loading" hidden style="padding:2.5rem; text-align:center; color:var(--text-secondary); display:none;">
+              Loading lecture discussions...
             </div>
             <div id="player-discussions-empty" class="empty-state" hidden style="padding:3rem 1rem; text-align:center;">
-              <p style="color:var(--text-secondary); margin:0;">No discussions yet. Be the first to start a conversation!</p>
+              <div class="empty-icon" style="font-size:2rem; margin-bottom:0.5rem;">💬</div>
+              <p style="color:var(--text-secondary); margin:0;">No questions or comments for this lecture yet. Be the first to ask!</p>
             </div>
             <div id="player-discussions-list" style="display:flex; flex-direction:column; gap:1rem;">
               <!-- Discussion Threads rendered here -->

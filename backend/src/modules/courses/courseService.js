@@ -11,7 +11,7 @@ const createCourse = async (data, user) => {
 
 const listCourses = async (query) => {
   const page = Math.max(1, Number.parseInt(query.page, 10) || 1);
-  const limit = 12;
+  const limit = Math.min(100, Math.max(1, Number.parseInt(query.limit, 10) || 12));
 
   const filter = { status: "approved" };
 

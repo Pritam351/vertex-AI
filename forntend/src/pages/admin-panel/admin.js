@@ -797,8 +797,9 @@ export async function mountAdminModeration(container) {
   async function populateCourses() {
     if (!courseSelect) return;
     try {
-      const res = await courseService.getCourses();
-      const courses = res?.data?.courses || res?.data || (Array.isArray(res) ? res : []);
+      const res = await courseService.listCourses({ limit: 100 });
+      const rawCourses = res?.data?.courses || res?.data || (Array.isArray(res) ? res : []);
+      const courses = Array.isArray(rawCourses) ? rawCourses : [];
       const existingVal = courseSelect.value || "all";
       courseSelect.innerHTML = `<option value="all">All Courses</option>` +
         courses.map(c => `<option value="${c._id}">${escapeHtml(c.title)}</option>`).join("");
@@ -841,18 +842,25 @@ export async function mountAdminModeration(container) {
         }) : "";
 
         // Collect flagged or hidden posts in this thread
-        const flaggedPosts = (thread.posts || []).filter(p => p.isFlagged || p.isHidden);
+        const flaggedPosts = (thread.posts || []).filter(p => {
+          if (filter === "flagged") return p.isFlagged;
+          if (filter === "hidden") return p.isHidden;
+          return p.isFlagged || p.isHidden;
+        });
+
+        const isProblematic = thread.isFlagged || flaggedPosts.length > 0;
 
         return `
-          <div class="panel form-panel" style="background:#11192d; border:1px solid ${thread.isFlagged ? "rgba(245,158,11,0.4)" : "#27314b"}; border-radius:10px; padding:1.25rem;">
+          <div class="panel form-panel" style="background:#11192d; border:1px solid ${isProblematic ? "rgba(245,158,11,0.45)" : "#27314b"}; border-radius:10px; padding:1.25rem;">
             <!-- Header -->
             <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:0.75rem;">
-              <div style="display:flex; flex-direction:column; gap:0.25rem;">
+              <div style="display:flex; flex-direction:column; gap:0.3rem;">
                 <span style="font-size:0.75rem; color:#818cf8; font-weight:600;">📚 ${courseTitle}</span>
                 <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
                   <strong style="font-size:0.95rem; color:#f8fafc;">${title}</strong>
                   ${thread.isFlagged ? `<span class="status" style="background:rgba(245,158,11,0.18); color:#fbbf24; font-size:0.65rem; padding:0.15rem 0.45rem; font-weight:700;">🚩 FLAGGED THREAD</span>` : ""}
-                  ${thread.isHidden ? `<span class="status" style="background:rgba(100,116,139,0.25); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; font-weight:700;">👁 HIDDEN</span>` : ""}
+                  ${flaggedPosts.length > 0 ? `<span class="status" style="background:rgba(239,68,68,0.18); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; font-weight:700;">🚩 ${flaggedPosts.length} REPORTED ${flaggedPosts.length === 1 ? "COMMENT" : "COMMENTS"}</span>` : ""}
+                  ${thread.isHidden ? `<span class="status" style="background:rgba(100,116,139,0.25); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; font-weight:700;">👁 HIDDEN THREAD</span>` : ""}
                   ${thread.isLocked ? `<span class="status" style="background:rgba(239,68,68,0.18); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; font-weight:700;">🔒 LOCKED</span>` : ""}
                 </div>
               </div>
@@ -865,55 +873,57 @@ export async function mountAdminModeration(container) {
                 Created by <strong>${authorName}</strong> (${authorRole})
                 ${thread.flagReason ? `<span style="color:#fbbf24; margin-left:0.5rem;">• Report reason: <em>${escapeHtml(thread.flagReason)}</em></span>` : ""}
               </div>
-              <div style="font-size:0.84rem; line-height:1.6; color:#cbd5e1; background:rgba(0,0,0,0.15); padding:0.75rem; border-radius:6px;">
+              <div style="font-size:0.84rem; line-height:1.6; color:#cbd5e1; background:rgba(0,0,0,0.18); padding:0.75rem; border-radius:6px;">
                 ${content}
               </div>
             </div>
 
             <!-- Thread Moderation Actions -->
-            <div style="display:flex; justify-content:flex-end; align-items:center; gap:0.5rem; margin-top:0.75rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.06);">
+            <div style="display:flex; justify-content:flex-end; align-items:center; gap:0.5rem; margin-top:0.75rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.06); flex-wrap:wrap;">
               ${thread.isFlagged ? `
-                <button type="button" class="mini-button" data-mod-action="unflag" data-mod-target="thread" data-thread-id="${thread._id}" style="color:#34d399; border-color:rgba(52,211,153,0.4);">
+                <button type="button" class="mini-button" data-mod-action="unflag" data-mod-target="thread" data-thread-id="${thread._id}" style="color:#34d399; border-color:rgba(52,211,153,0.4); font-size:0.72rem; padding:0.25rem 0.65rem;">
                   ✓ Dismiss Report
                 </button>
               ` : ""}
-              <button type="button" class="mini-button" data-mod-action="${thread.isHidden ? "unhide" : "hide"}" data-mod-target="thread" data-thread-id="${thread._id}">
-                ${thread.isHidden ? "👁 Restore (Unhide)" : "👁 Hide Thread"}
+              <button type="button" class="mini-button" data-mod-action="${thread.isHidden ? "unhide" : "hide"}" data-mod-target="thread" data-thread-id="${thread._id}" style="font-size:0.72rem; padding:0.25rem 0.65rem; ${thread.isHidden ? "" : "color:#fca5a5; border-color:rgba(248,113,113,0.4);"}">
+                ${thread.isHidden ? "👁 Restore Thread" : "👁 Hide Thread"}
               </button>
-              <button type="button" class="mini-button" data-mod-action="${thread.isLocked ? "unlock" : "lock"}" data-mod-target="thread" data-thread-id="${thread._id}">
-                ${thread.isLocked ? "🔓 Unlock" : "🔒 Lock"}
+              <button type="button" class="mini-button" data-mod-action="${thread.isLocked ? "unlock" : "lock"}" data-mod-target="thread" data-thread-id="${thread._id}" style="font-size:0.72rem; padding:0.25rem 0.65rem;">
+                ${thread.isLocked ? "🔓 Unlock Thread" : "🔒 Lock Thread"}
               </button>
             </div>
 
             <!-- Flagged Replies in this Thread -->
             ${flaggedPosts.length > 0 ? `
               <div style="margin-top:1rem; border-top:1px dashed rgba(255,255,255,0.1); padding-top:0.75rem;">
-                <h5 style="margin:0 0 0.5rem 0; font-size:0.8rem; color:#fca5a5;">Flagged Replies (${flaggedPosts.length})</h5>
-                <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                <h5 style="margin:0 0 0.5rem 0; font-size:0.82rem; color:#fca5a5; display:flex; align-items:center; gap:0.4rem;">
+                  <span>🚩</span> Reported Comments Under Review (${flaggedPosts.length})
+                </h5>
+                <div style="display:flex; flex-direction:column; gap:0.6rem;">
                   ${flaggedPosts.map(post => {
-                    const pName = escapeHtml(post.userId?.name || "User");
+                    const pName = escapeHtml(post.userId?.fullName || post.userId?.name || "User");
                     const pRole = escapeHtml(post.userId?.role || "student");
                     const pContent = escapeHtml(post.content).replace(/\n/g, "<br>");
                     return `
-                      <div style="background:#0b1022; border:1px solid #1e293b; border-radius:8px; padding:0.75rem; display:flex; flex-direction:column; gap:0.4rem;">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                          <div style="font-size:0.75rem; color:#9da4c2;">
-                            Reply by <strong>${pName}</strong> (${pRole})
-                            ${post.isFlagged ? `<span style="color:#fbbf24; margin-left:0.4rem;">🚩 Flagged: <em>${escapeHtml(post.flagReason || "Reported")}</em></span>` : ""}
-                            ${post.isHidden ? `<span style="color:#94a3b8; margin-left:0.4rem;">👁 Hidden</span>` : ""}
+                      <div style="background:#0b1022; border:1px solid ${post.isFlagged ? "rgba(245,158,11,0.35)" : "#1e293b"}; border-radius:8px; padding:0.85rem; display:flex; flex-direction:column; gap:0.45rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem;">
+                          <div style="font-size:0.78rem; color:#9da4c2; display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                            <span>Reply by <strong style="color:#f8fafc;">${pName}</strong> (${pRole})</span>
+                            ${post.isFlagged ? `<span class="status" style="background:rgba(245,158,11,0.18); color:#fbbf24; font-size:0.65rem; padding:0.12rem 0.4rem; font-weight:700;">🚩 Flagged: <em>${escapeHtml(post.flagReason || "Reported")}</em></span>` : ""}
+                            ${post.isHidden ? `<span class="status" style="background:rgba(100,116,139,0.25); color:#94a3b8; font-size:0.65rem; padding:0.12rem 0.4rem; font-weight:700;">👁 Hidden</span>` : ""}
                           </div>
-                          <div style="display:flex; gap:0.4rem;">
+                          <div style="display:flex; gap:0.5rem; align-items:center;">
                             ${post.isFlagged ? `
-                              <button type="button" class="mini-button" data-mod-action="unflag" data-mod-target="post" data-thread-id="${thread._id}" data-post-id="${post._id}" style="color:#34d399; font-size:0.7rem; padding:0.2rem 0.5rem;">
-                                ✓ Dismiss
+                              <button type="button" class="mini-button" data-mod-action="unflag" data-mod-target="post" data-thread-id="${thread._id}" data-post-id="${post._id}" style="color:#34d399; border-color:rgba(52,211,153,0.4); font-size:0.72rem; padding:0.25rem 0.6rem;">
+                                ✓ Dismiss Report
                               </button>
                             ` : ""}
-                            <button type="button" class="mini-button" data-mod-action="${post.isHidden ? "unhide" : "hide"}" data-mod-target="post" data-thread-id="${thread._id}" data-post-id="${post._id}" style="font-size:0.7rem; padding:0.2rem 0.5rem;">
-                              ${post.isHidden ? "Unhide" : "Hide"}
+                            <button type="button" class="mini-button" data-mod-action="${post.isHidden ? "unhide" : "hide"}" data-mod-target="post" data-thread-id="${thread._id}" data-post-id="${post._id}" style="font-size:0.72rem; padding:0.25rem 0.6rem; ${post.isHidden ? "" : "color:#fca5a5; border-color:rgba(248,113,113,0.4);"}">
+                              ${post.isHidden ? "👁 Restore Comment" : "👁 Hide Comment"}
                             </button>
                           </div>
                         </div>
-                        <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                        <div style="font-size:0.84rem; color:#cbd5e1; line-height:1.55; word-break:break-word; background:rgba(0,0,0,0.2); padding:0.6rem 0.75rem; border-radius:6px;">
                           ${pContent}
                         </div>
                       </div>

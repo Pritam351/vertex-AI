@@ -29,8 +29,18 @@ const errorMiddleware = require("./middleware/errorMiddleware");
 
 const app = express();
 
+app.set("etag", false);
+
 app.use(helmet());
 app.use(cors());
+
+// Prevent stale 304 responses in SPA
+app.use((req, res, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+});
 
 app.use(express.json());
 

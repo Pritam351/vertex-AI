@@ -13,6 +13,7 @@ export const discussionService = {
   async getUserDiscussions(params = {}) {
     const qs = new URLSearchParams();
     if (params.courseId && params.courseId !== "all") qs.set("courseId", params.courseId);
+    if (params.scope) qs.set("scope", params.scope);
     if (params.lectureId) qs.set("lectureId", params.lectureId);
     if (params.filter) qs.set("filter", params.filter);
     const queryString = qs.toString() ? `?${qs.toString()}` : "";

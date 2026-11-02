@@ -103,6 +103,7 @@ const getUserDiscussions = async (req, res, next) => {
   try {
     const options = {
       courseId: req.query.courseId || null,
+      scope: req.query.scope || null,
       lectureId: req.query.lectureId || null,
       filter: req.query.filter || null,
     };

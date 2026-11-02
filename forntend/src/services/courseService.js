@@ -7,6 +7,7 @@ export const courseService = {
     if (params.search) query.set("search", params.search);
     if (params.category) query.set("category", params.category);
     if (params.difficulty) query.set("difficulty", params.difficulty);
+    if (params.limit) query.set("limit", params.limit);
     const qs = query.toString() ? `?${query.toString()}` : "";
     return api(`/courses${qs}`, { auth: false });
   },

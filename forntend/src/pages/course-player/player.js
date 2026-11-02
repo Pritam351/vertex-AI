@@ -26,6 +26,7 @@ import { escapeHtml }       from "../../utils/dom.js";
 import { toast }            from "../../components/common/toast.js";
 import { errorText }        from "../../utils/validation.js";
 import { openModal }        from "../../components/common/modal.js";
+import { openReportModal }   from "../../components/common/report-modal.js";
 
 // ─── Module-level state (reset on every mount) ────────────────────────────────
 let container        = null;
@@ -526,9 +527,6 @@ async function loadCourseDiscussions(courseId) {
   try {
     const res = await discussionService.getCourseDiscussions(courseId);
     courseDiscussions = res?.data || [];
-    if (countBadge) {
-      countBadge.textContent = courseDiscussions.length ? `(${courseDiscussions.length})` : "";
-    }
     renderPlayerDiscussions();
   } catch (err) {
     console.error("Failed to load discussions:", err);
@@ -548,6 +546,8 @@ function renderPlayerDiscussions() {
   const loadingEl = qs("#player-discussions-loading");
   const emptyEl = qs("#player-discussions-empty");
   const listEl = qs("#player-discussions-list");
+  const countBadge = qs("#discussions-count-badge");
+  const lectureNameEl = qs("#player-disc-lecture-name");
   if (!listEl) return;
 
   if (loadingEl) {
@@ -555,22 +555,41 @@ function renderPlayerDiscussions() {
     loadingEl.style.display = "none";
   }
 
+  // Update lecture subtitle in tab
+  if (lectureNameEl) {
+    lectureNameEl.textContent = activeLecture?.title || "Current Lecture";
+  }
+
   try {
     const session = getSession();
     const currentUser = session?.user;
     const isInstructorOrAdmin = currentUser && (currentUser.role === "admin" || (currentCourse && String(currentCourse.instructorId?._id || currentCourse.instructorId) === String(currentUser.id || currentUser._id)));
 
-    // Filter threads
-    let threads = courseDiscussions || [];
-    if (discussionsFilter === "lecture" && activeLecture) {
-      threads = threads.filter(t => String(t.lectureId) === String(activeLecture._id));
+    // Filter threads strictly for the active lecture (and include previous legacy comments)
+    let threads = (courseDiscussions || []).filter(t => {
+      if (!activeLecture) return true;
+      const tLecId = t.lectureId?._id || t.lectureId;
+      // 1. Direct lectureId match
+      if (tLecId && String(tLecId) === String(activeLecture._id)) return true;
+      // 2. Direct lectureTitle match
+      if (t.lectureTitle && activeLecture.title && t.lectureTitle.toLowerCase().trim() === activeLecture.title.toLowerCase().trim()) return true;
+      // 3. Or previous legacy questions with no lecture attached
+      if (!tLecId && !t.lectureTitle) return true;
+      return false;
+    });
+
+    if (countBadge) {
+      countBadge.textContent = threads.length ? `(${threads.length})` : "";
     }
 
     if (!threads.length) {
       if (emptyEl) {
         emptyEl.hidden = false;
         emptyEl.style.display = "block";
-        emptyEl.innerHTML = `<p style="color:var(--text-secondary);margin:0;">${discussionsFilter === "lecture" ? "No questions tagged with this lecture yet. Be the first to ask!" : "No discussions yet. Be the first to start a conversation!"}</p>`;
+        emptyEl.innerHTML = `
+          <div class="empty-icon" style="font-size:2rem; margin-bottom:0.5rem;">💬</div>
+          <p style="color:var(--text-secondary);margin:0;">No questions or comments for "${escapeHtml(activeLecture?.title || "this lecture")}" yet. Be the first to ask!</p>
+        `;
       }
       listEl.innerHTML = "";
       return;
@@ -1310,14 +1329,8 @@ async function selectLecture(lecture, moduleTitle) {
   // 13. Re-render bookmarks tab if open
   if (activeTab === "saved-bookmarks") renderBookmarksTab();
 
-  // 14. Update discussion lecture tag
-  const threadLectureTag = qs("#thread-lecture-tag-name");
-  if (threadLectureTag) threadLectureTag.textContent = lecture.title || "Current Lecture";
-
-  // 15. If discussions tab is active and filter is "lecture", re-render
-  if (activeTab === "discussions" && discussionsFilter === "lecture") {
-    renderPlayerDiscussions();
-  }
+  // 14. Update discussion lecture view and badge count for this lecture
+  renderPlayerDiscussions();
 }
 
 // ─── Prev / Next navigation ───────────────────────────────────────────────────
@@ -1534,25 +1547,6 @@ function wireEvents(courseId) {
     loadCourseAnnouncements(courseId);
   });
 
-  // Discussions filters
-  qs("#btn-filter-all-discussions")?.addEventListener("click", () => {
-    discussionsFilter = "all";
-    const btnAll = qs("#btn-filter-all-discussions");
-    const btnLec = qs("#btn-filter-lecture-discussions");
-    if (btnAll) { btnAll.style.background = "#28205e"; btnAll.style.color = "#fff"; }
-    if (btnLec) { btnLec.style.background = "transparent"; btnLec.style.color = "#9da4c2"; }
-    renderPlayerDiscussions();
-  });
-
-  qs("#btn-filter-lecture-discussions")?.addEventListener("click", () => {
-    discussionsFilter = "lecture";
-    const btnAll = qs("#btn-filter-all-discussions");
-    const btnLec = qs("#btn-filter-lecture-discussions");
-    if (btnLec) { btnLec.style.background = "#28205e"; btnLec.style.color = "#fff"; }
-    if (btnAll) { btnAll.style.background = "transparent"; btnAll.style.color = "#9da4c2"; }
-    renderPlayerDiscussions();
-  });
-
   // Discussions composer toggle & cancel
   qs("#btn-toggle-new-thread")?.addEventListener("click", () => {
     const p = qs("#new-thread-panel");
@@ -1560,33 +1554,32 @@ function wireEvents(courseId) {
     p.hidden = !p.hidden;
     if (!p.hidden) {
       qs("#thread-title-input")?.focus();
-      const threadLectureTag = qs("#thread-lecture-tag-name");
-      if (threadLectureTag) threadLectureTag.textContent = activeLecture?.title || "Current Lecture";
     }
   });
 
-  qs("#btn-cancel-new-thread")?.addEventListener("click", () => {
+  const closePlayerNewThread = () => {
     const p = qs("#new-thread-panel");
     if (p) p.hidden = true;
-  });
+  };
+  qs("#btn-cancel-new-thread")?.addEventListener("click", closePlayerNewThread);
+  qs("#btn-cancel-new-thread-2")?.addEventListener("click", closePlayerNewThread);
 
   // Discussions new thread submit
   qs("#new-thread-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     const titleInput = qs("#thread-title-input");
     const contentInput = qs("#thread-content-input");
-    const attachCheck = qs("#thread-attach-lecture");
     const submitBtn = qs("#btn-submit-thread");
 
     const title = titleInput?.value?.trim();
     const content = contentInput?.value?.trim();
     if (!title || title.length < 3) {
-      toast("Thread title must be at least 3 characters", "error");
+      toast("Question title must be at least 3 characters", "error");
       titleInput?.focus();
       return;
     }
     if (!content) {
-      toast("Question content cannot be empty", "error");
+      toast("Question details cannot be empty", "error");
       contentInput?.focus();
       return;
     }
@@ -1595,24 +1588,16 @@ function wireEvents(courseId) {
     try {
       await discussionService.createThread({
         courseId,
-        lectureId: (attachCheck?.checked && activeLecture) ? String(activeLecture._id) : null,
-        lectureTitle: (attachCheck?.checked && activeLecture) ? (activeLecture.title || "") : "",
+        lectureId: activeLecture ? String(activeLecture._id) : null,
+        lectureTitle: activeLecture ? (activeLecture.title || "") : "",
         title,
         content
       });
 
-      toast("Discussion question posted successfully! 💬", "success");
+      toast("Question posted for this lecture! 💬", "success");
       if (titleInput) titleInput.value = "";
       if (contentInput) contentInput.value = "";
-      const p = qs("#new-thread-panel");
-      if (p) p.hidden = true;
-      discussionsFilter = "all";
-      qs("#btn-filter-all-discussions")?.classList.add("is-active");
-      qs("#btn-filter-all-discussions")?.style.setProperty("background", "#28205e");
-      qs("#btn-filter-all-discussions")?.style.setProperty("color", "#fff");
-      qs("#btn-filter-lecture-discussions")?.classList.remove("is-active");
-      qs("#btn-filter-lecture-discussions")?.style.setProperty("background", "transparent");
-      qs("#btn-filter-lecture-discussions")?.style.setProperty("color", "#9da4c2");
+      closePlayerNewThread();
       await loadCourseDiscussions(courseId);
     } catch (err) {
       toast(`Failed to post question: ${errorText(err)}`, "error");
@@ -1643,16 +1628,18 @@ function wireEvents(courseId) {
     const reportThreadBtn = e.target.closest('[data-action="report-thread"]');
     if (reportThreadBtn) {
       const threadId = reportThreadBtn.dataset.threadId;
-      const reason = prompt("Reason for reporting this thread (e.g. spam, offensive language):");
-      if (reason !== null) {
-        try {
-          await discussionService.reportThread(threadId, reason);
-          toast("Thread reported to moderators. Thank you.", "info");
-          await loadCourseDiscussions(courseId);
-        } catch (err) {
-          toast(`Could not report thread: ${errorText(err)}`, "error");
+      openReportModal({
+        targetType: "thread",
+        onSubmit: async (reason) => {
+          try {
+            await discussionService.reportThread(threadId, reason);
+            toast("Thread reported to moderators. Thank you.", "info");
+            await loadCourseDiscussions(courseId);
+          } catch (err) {
+            toast(`Could not report thread: ${errorText(err)}`, "error");
+          }
         }
-      }
+      });
       return;
     }
 
@@ -1661,16 +1648,18 @@ function wireEvents(courseId) {
     if (reportPostBtn) {
       const threadId = reportPostBtn.dataset.threadId;
       const postId = reportPostBtn.dataset.postId;
-      const reason = prompt("Reason for reporting this reply:");
-      if (reason !== null) {
-        try {
-          await discussionService.reportPost(threadId, postId, reason);
-          toast("Comment reported to moderators. Thank you.", "info");
-          await loadCourseDiscussions(courseId);
-        } catch (err) {
-          toast(`Could not report comment: ${errorText(err)}`, "error");
+      openReportModal({
+        targetType: "comment",
+        onSubmit: async (reason) => {
+          try {
+            await discussionService.reportPost(threadId, postId, reason);
+            toast("Comment reported to moderators. Thank you.", "info");
+            await loadCourseDiscussions(courseId);
+          } catch (err) {
+            toast(`Could not report comment: ${errorText(err)}`, "error");
+          }
         }
-      }
+      });
       return;
     }
 
@@ -1863,16 +1852,6 @@ export async function mountCoursePlayer(cont) {
     renderTopbar();
     renderCurriculum();
 
-    // Load course announcements & discussions in background
-    loadCourseAnnouncements(courseId);
-    loadCourseDiscussions(courseId);
-
-    // If URL contains tab param (e.g. from notification click: &tab=announcements)
-    const initialTab = params.get("tab");
-    if (initialTab) {
-      switchTab(initialTab);
-    }
-
     // Determine which lecture to start on: resume from localStorage or first
     const lastData  = (() => {
       try { return JSON.parse(localStorage.getItem(`vertex:lastLecture:${courseId}`) || "null"); } catch { return null; }
@@ -1895,6 +1874,16 @@ export async function mountCoursePlayer(cont) {
 
     if (startLecture) {
       await selectLecture(startLecture, startModTitle);
+    }
+
+    // Load course announcements & discussions in parallel
+    loadCourseAnnouncements(courseId);
+    await loadCourseDiscussions(courseId);
+
+    // If URL contains tab param (e.g. from notification click: &tab=announcements)
+    const initialTab = params.get("tab");
+    if (initialTab) {
+      switchTab(initialTab);
     }
 
   } catch (err) {

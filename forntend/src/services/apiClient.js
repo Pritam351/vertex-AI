@@ -32,7 +32,8 @@ export async function api(
       method,
       headers,
       body: body === undefined ? undefined : body instanceof FormData ? body : JSON.stringify(body),
-      signal
+      signal,
+      cache: "no-store"
     });
   } catch {
     throw new ApiError(

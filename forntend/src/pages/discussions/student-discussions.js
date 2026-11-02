@@ -1,8 +1,10 @@
 import { discussionService } from "../../services/discussionService.js";
 import { enrollmentService } from "../../services/enrollmentService.js";
+import { courseService } from "../../services/courseService.js";
 import { getSession } from "../../store/session.js";
 import { $, escapeHtml } from "../../utils/dom.js";
 import { toast } from "../../components/common/toast.js";
+import { openReportModal } from "../../components/common/report-modal.js";
 import { errorText } from "../../utils/validation.js";
 
 export async function mountStudentDiscussions(container) {
@@ -24,21 +26,49 @@ export async function mountStudentDiscussions(container) {
   const feedEl = $("#std-discussions-feed", container);
 
   let enrolledCourses = [];
+  let otherCourses = [];
   let allThreads = [];
   let activeFilter = "all"; // "all" | "mine"
 
-  // 1. Populate Enrolled Courses
+  // 1. Populate Enrolled & Other Courses
   async function loadCourses() {
     try {
-      const res = await enrollmentService.getMyEnrollments();
-      const enrollments = res?.data || (Array.isArray(res) ? res : []);
-      enrolledCourses = enrollments
-        .map(e => e.courseId)
-        .filter(Boolean);
+      const [enrollRes, allCoursesRes] = await Promise.allSettled([
+        enrollmentService.getMyEnrollments(),
+        courseService.listCourses({ limit: 100 })
+      ]);
+
+      const rawEnrolls = enrollRes.status === "fulfilled"
+        ? (enrollRes.value?.data?.enrollments || enrollRes.value?.data || (Array.isArray(enrollRes.value) ? enrollRes.value : []))
+        : [];
+      const enrollments = Array.isArray(rawEnrolls) ? rawEnrolls : [];
+      enrolledCourses = enrollments.map(e => e.courseId).filter(Boolean);
+
+      const enrolledIds = new Set(enrolledCourses.map(c => String(c._id || c)));
+      const rawAll = allCoursesRes.status === "fulfilled"
+        ? (allCoursesRes.value?.data?.courses || allCoursesRes.value?.data || (Array.isArray(allCoursesRes.value) ? allCoursesRes.value : []))
+        : [];
+      const allCourseList = Array.isArray(rawAll) ? rawAll : [];
+      otherCourses = allCourseList.filter(c => !enrolledIds.has(String(c._id)));
 
       if (courseSelect) {
-        courseSelect.innerHTML = `<option value="all">All My Enrolled Courses</option>` +
-          enrolledCourses.map(c => `<option value="${c._id}">${escapeHtml(c.title)}</option>`).join("");
+        let html = "";
+        html += `<optgroup label="My Enrolled Courses">`;
+        html += `<option value="enrolled" selected>All My Enrolled Courses</option>`;
+        enrolledCourses.forEach(c => {
+          html += `<option value="${c._id}">${escapeHtml(c.title)} (Enrolled)</option>`;
+        });
+        html += `</optgroup>`;
+
+        if (otherCourses.length > 0) {
+          html += `<optgroup label="Other Courses (Not Enrolled)">`;
+          html += `<option value="other">All Other Courses</option>`;
+          otherCourses.forEach(c => {
+            html += `<option value="${c._id}">${escapeHtml(c.title)}</option>`;
+          });
+          html += `</optgroup>`;
+        }
+        courseSelect.innerHTML = html;
       }
 
       if (composerCourseSelect) {
@@ -46,7 +76,7 @@ export async function mountStudentDiscussions(container) {
           enrolledCourses.map(c => `<option value="${c._id}">${escapeHtml(c.title)}</option>`).join("");
       }
     } catch (err) {
-      console.error("Failed to load enrolled courses:", err);
+      console.error("Failed to load enrolled and other courses:", err);
     }
   }
 
@@ -62,11 +92,18 @@ export async function mountStudentDiscussions(container) {
     }
     if (feedEl) feedEl.innerHTML = "";
 
-    const selectedCourse = courseSelect?.value || "all";
+    const selectedVal = courseSelect?.value || "enrolled";
+    const params = {};
+    if (selectedVal === "other") {
+      params.scope = "other";
+    } else if (selectedVal === "enrolled" || selectedVal === "all") {
+      params.scope = "enrolled";
+    } else {
+      params.courseId = selectedVal;
+    }
+
     try {
-      const res = await discussionService.getUserDiscussions({
-        courseId: selectedCourse !== "all" ? selectedCourse : null
-      });
+      const res = await discussionService.getUserDiscussions(params);
       allThreads = res?.data || [];
       renderFeed();
     } catch (err) {
@@ -92,6 +129,7 @@ export async function mountStudentDiscussions(container) {
 
     const session = getSession();
     const currentUserId = String(session?.user?.id || session?.user?._id || "");
+    const selectedVal = courseSelect?.value || "enrolled";
 
     let threads = allThreads || [];
     if (activeFilter === "mine") {
@@ -109,10 +147,11 @@ export async function mountStudentDiscussions(container) {
       if (emptyEl) {
         emptyEl.hidden = false;
         emptyEl.style.display = "block";
+        const isOther = selectedVal === "other";
         emptyEl.innerHTML = `
           <div class="empty-icon" style="font-size:2.5rem; margin-bottom:0.75rem;">💬</div>
-          <h3>${activeFilter === "mine" ? "You haven't asked any questions yet" : "No discussions found"}</h3>
-          <p style="color:var(--text-secondary); margin:0.35rem 0 0 0;">${activeFilter === "mine" ? "Click '+ Ask Question' above to post your first topic!" : "Be the first to ask a question or start a conversation in your enrolled courses!"}</p>
+          <h3>${isOther ? "No discussions found in other courses" : (activeFilter === "mine" ? "You haven't asked any questions yet" : "No discussions found in your enrolled courses")}</h3>
+          <p style="color:var(--text-secondary); margin:0.35rem 0 0 0;">${isOther ? "Explore the course catalog to enroll in exciting new topics!" : (activeFilter === "mine" ? "Click '+ Ask Question' above to post your first topic!" : "Be the first to ask a question or start a conversation in your enrolled courses!")}</p>
         `;
       }
       if (feedEl) feedEl.innerHTML = "";
@@ -125,8 +164,9 @@ export async function mountStudentDiscussions(container) {
     }
 
     feedEl.innerHTML = threads.map((thread) => {
-      const courseTitle = escapeHtml(thread.courseId?.title || "Enrolled Course");
+      const courseTitle = escapeHtml(thread.courseId?.title || "Course");
       const courseId = thread.courseId?._id || thread.courseId;
+      const isEnrolledInCourse = enrolledCourses.some(c => String(c._id || c) === String(courseId));
       const authorName = escapeHtml(thread.createdBy?.fullName || thread.createdBy?.name || "Student");
       const authorRole = (thread.createdBy?.role || "student").toLowerCase();
       const isInstructor = authorRole === "instructor" || authorRole === "admin";
@@ -144,6 +184,10 @@ export async function mountStudentDiscussions(container) {
         ? `<span style="background:rgba(99,102,241,0.12); color:#a5b4fc; border:1px solid rgba(99,102,241,0.25); border-radius:4px; font-size:0.7rem; padding:0.15rem 0.45rem; font-weight:500;">🎬 ${escapeHtml(thread.lectureTitle)}</span>`
         : "";
 
+      const enrollmentBadge = !isEnrolledInCourse
+        ? `<span class="status" style="background:rgba(100,116,139,0.2); color:#94a3b8; font-size:0.62rem; padding:0.12rem 0.4rem; border-radius:4px;">🌐 Other Course (Not Enrolled)</span>`
+        : "";
+
       const posts = thread.posts || [];
       const isAnswered = posts.length > 0;
 
@@ -152,7 +196,10 @@ export async function mountStudentDiscussions(container) {
           <!-- Top Course & Author Row -->
           <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:0.75rem;">
             <div style="display:flex; flex-direction:column; gap:0.35rem;">
-              <span style="font-size:0.78rem; color:#818cf8; font-weight:700;">📚 ${courseTitle}</span>
+              <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                <span style="font-size:0.78rem; color:#818cf8; font-weight:700;">📚 ${courseTitle}</span>
+                ${enrollmentBadge}
+              </div>
               <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap;">
                 <span style="background:rgba(99,102,241,0.22); color:#c7d2fe; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem;">
                   ${authorName.charAt(0).toUpperCase()}
@@ -186,11 +233,15 @@ export async function mountStudentDiscussions(container) {
                 🚩 Report
               </button>
             </div>
-            ${courseId ? `
+            ${isEnrolledInCourse && courseId ? `
               <a href="#/student/player?courseId=${courseId}&tab=discussions" class="mini-button button-secondary" style="font-size:0.75rem; text-decoration:none; padding:0.3rem 0.65rem; display:inline-flex; align-items:center; gap:0.3rem;">
                 Open in Course Player →
               </a>
-            ` : ""}
+            ` : `
+              <a href="#/student/catalog" class="mini-button button-secondary" style="font-size:0.75rem; text-decoration:none; padding:0.3rem 0.65rem; display:inline-flex; align-items:center; gap:0.3rem;">
+                Explore Course in Catalog →
+              </a>
+            `}
           </div>
 
           <!-- Replies Drawer -->
@@ -234,12 +285,19 @@ export async function mountStudentDiscussions(container) {
 
             <!-- Reply Form -->
             ${!thread.isLocked ? `
-              <form class="student-reply-form" data-thread-id="${thread._id}" style="display:flex; gap:0.5rem; margin-top:0.75rem; align-items:flex-start;">
-                <textarea name="replyContent" class="student-reply-input" required maxlength="5000" rows="1" placeholder="Write a reply..." style="flex:1; padding:0.6rem 0.8rem; min-height:40px; resize:vertical; font-size:0.82rem; background:#0d1425; border:1px solid #313b57; border-radius:6px; color:#f8fafc;"></textarea>
-                <button type="submit" class="button button-primary mini-button" style="padding:0.6rem 1rem; height:40px; font-size:0.8rem;">
-                  Reply
-                </button>
-              </form>
+              ${isEnrolledInCourse ? `
+                <form class="student-reply-form" data-thread-id="${thread._id}" style="display:flex; gap:0.5rem; margin-top:0.75rem; align-items:flex-start;">
+                  <textarea name="replyContent" class="student-reply-input" required maxlength="5000" rows="1" placeholder="Write a reply..." style="flex:1; padding:0.6rem 0.8rem; min-height:40px; resize:vertical; font-size:0.82rem; background:#0d1425; border:1px solid #313b57; border-radius:6px; color:#f8fafc;"></textarea>
+                  <button type="submit" class="button button-primary mini-button" style="padding:0.6rem 1rem; height:40px; font-size:0.8rem;">
+                    Reply
+                  </button>
+                </form>
+              ` : `
+                <div style="margin-top:0.75rem; padding:0.6rem 0.85rem; background:#0b1022; border:1px dashed #313b57; border-radius:6px; font-size:0.78rem; color:#9da4c2; display:flex; justify-content:space-between; align-items:center;">
+                  <span>🔒 Enroll in this course to join the discussion and post replies.</span>
+                  <a href="#/student/catalog" class="mini-button button-secondary" style="font-size:0.72rem; text-decoration:none; padding:0.25rem 0.55rem;">Enroll Now</a>
+                </div>
+              `}
             ` : `
               <p style="color:#f87171; font-size:0.75rem; margin:0.5rem 0 0 0;">🔒 This thread has been locked.</p>
             `}
@@ -357,16 +415,18 @@ export async function mountStudentDiscussions(container) {
     const reportThreadBtn = e.target.closest('[data-action="report-student-thread"]');
     if (reportThreadBtn) {
       const threadId = reportThreadBtn.dataset.threadId;
-      const reason = prompt("Reason for reporting this thread (e.g. spam, offensive language):");
-      if (reason !== null) {
-        try {
-          await discussionService.reportThread(threadId, reason);
-          toast("Thread reported to moderators. Thank you.", "info");
-          await loadDiscussions();
-        } catch (err) {
-          toast(`Could not report thread: ${errorText(err)}`, "error");
+      openReportModal({
+        targetType: "thread",
+        onSubmit: async (reason) => {
+          try {
+            await discussionService.reportThread(threadId, reason);
+            toast("Thread reported to moderators. Thank you.", "info");
+            await loadDiscussions();
+          } catch (err) {
+            toast(`Could not report thread: ${errorText(err)}`, "error");
+          }
         }
-      }
+      });
       return;
     }
 
@@ -375,16 +435,18 @@ export async function mountStudentDiscussions(container) {
     if (reportReplyBtn) {
       const threadId = reportReplyBtn.dataset.threadId;
       const postId = reportReplyBtn.dataset.postId;
-      const reason = prompt("Reason for reporting this reply:");
-      if (reason !== null) {
-        try {
-          await discussionService.reportPost(threadId, postId, reason);
-          toast("Comment reported to moderators. Thank you.", "info");
-          await loadDiscussions();
-        } catch (err) {
-          toast(`Could not report reply: ${errorText(err)}`, "error");
+      openReportModal({
+        targetType: "comment",
+        onSubmit: async (reason) => {
+          try {
+            await discussionService.reportPost(threadId, postId, reason);
+            toast("Comment reported to moderators. Thank you.", "info");
+            await loadDiscussions();
+          } catch (err) {
+            toast(`Could not report reply: ${errorText(err)}`, "error");
+          }
         }
-      }
+      });
       return;
     }
   });
