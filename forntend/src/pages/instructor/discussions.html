@@ -1,0 +1,55 @@
+<section class="view" id="discussions" data-view hidden>
+  <div class="section-intro">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <p class="eyebrow">COURSE COMMUNITY &amp; Q&amp;A</p>
+        <h2>Course Discussions &amp; Forum</h2>
+        <p>Review student questions, post verified instructor answers, and moderate community threads across your courses.</p>
+      </div>
+      <div class="analytics-toolbar">
+        <label for="instructor-discussions-course-select" class="analytics-select-label">Select Course:</label>
+        <select id="instructor-discussions-course-select" class="generator-select" style="min-width:240px;">
+          <option value="">Loading courses...</option>
+        </select>
+        <label for="instructor-discussions-filter-select" class="analytics-select-label" style="font-size:0.8rem; color:#9da4c2;">Filter:</label>
+        <select id="instructor-discussions-filter-select" class="generator-select" style="min-width:140px;">
+          <option value="all" selected>All Topics</option>
+          <option value="unanswered">Unanswered</option>
+          <option value="answered">Answered</option>
+          <option value="reported">Reported</option>
+        </select>
+        <button class="button button-secondary" type="button" id="btn-refresh-instructor-discussions" style="padding:0.5rem 0.9rem;">
+          <span>↻ Refresh</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <section aria-labelledby="inst-discussions-heading" class="courses-section" style="margin-top:1.5rem;">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">STUDENT QUESTIONS &amp; TOPICS</p>
+        <h3 id="inst-discussions-heading">Course Discussions Feed</h3>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span class="count-pill" id="inst-discussions-count">0 questions</span>
+      </div>
+    </div>
+
+    <div id="inst-discussions-loading" class="courses-loading-state" style="padding:3rem 1rem; text-align:center;">
+      <div class="courses-spinner" aria-hidden="true"></div>
+      <p style="color:var(--text-secondary); margin-top:0.75rem;">Loading course discussions…</p>
+    </div>
+
+    <div id="inst-discussions-empty" class="empty-state" hidden style="padding:3.5rem 1rem; text-align:center;">
+      <div class="empty-icon" aria-hidden="true" style="font-size:2.5rem; margin-bottom:0.75rem;">💬</div>
+      <h3>No discussions found</h3>
+      <p style="color:var(--text-secondary); margin:0.35rem 0 0 0;">No student questions or discussion topics match your current filter.</p>
+    </div>
+
+    <div id="inst-discussions-feed" style="display:flex; flex-direction:column; gap:1.15rem; margin-top:1rem;">
+      <!-- Thread cards dynamically inserted here -->
+    </div>
+  </section>
+</section>
+

@@ -20,6 +20,7 @@ import { mountCourseCatalog } from "../pages/course-catalog/catalog.js";
 import { mountCoursePlayer } from "../pages/course-player/player.js";
 import { mountStudentQuizzes } from "../pages/quizzes/quiz.js";
 import { mountStudentCertificates } from "../pages/certificates/certificates.js";
+import { mountStudentDiscussions } from "../pages/discussions/student-discussions.js";
 
 // Admin
 import { mountAdminDashboard, mountAdminCourses, mountAdminUsers, mountAdminModeration, showAdminView } from "../pages/admin-panel/admin.js";
@@ -35,6 +36,7 @@ const TEMPLATES = {
   studentCatalog: new URL("../pages/course-catalog/catalog.html", import.meta.url),
   studentPlayer: new URL("../pages/course-player/player.html", import.meta.url),
   studentQuizzes: new URL("../pages/quizzes/quiz.html", import.meta.url),
+  studentDiscussions: new URL("../pages/discussions/student-discussions.html", import.meta.url),
   studentCertificates: new URL("../pages/certificates/certificates.html", import.meta.url),
   adminDashboard: new URL("../pages/admin-panel/dashboard.html", import.meta.url),
   adminCourses: new URL("../pages/admin-panel/courses.html", import.meta.url),
@@ -122,6 +124,7 @@ export async function navigate() {
       catalog: "Course Catalog",
       player: "Course Player",
       quizzes: "Quizzes & Assessments",
+      discussions: "Discussions & Q&A Forum",
       certificates: "My Certificates & Credentials"
     };
     const pageTitleEl = activeAppContainer.querySelector("#page-title");
@@ -142,6 +145,9 @@ export async function navigate() {
     } else if (subSection === "quizzes") {
       container.innerHTML = await fetchHtml(TEMPLATES.studentQuizzes);
       await mountStudentQuizzes(container);
+    } else if (subSection === "discussions") {
+      container.innerHTML = await fetchHtml(TEMPLATES.studentDiscussions);
+      await mountStudentDiscussions(container);
     } else if (subSection === "certificates") {
       container.innerHTML = await fetchHtml(TEMPLATES.studentCertificates);
       await mountStudentCertificates(container);

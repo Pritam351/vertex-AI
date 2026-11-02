@@ -5,6 +5,7 @@ const requireRole = require("../../middleware/roleMiddleware");
 const {
   createDiscussionThread,
   getCourseThreads,
+  getUserDiscussions,
   createReply,
   moderateThread,
   getModerationQueue,
@@ -18,6 +19,14 @@ router.get(
   authMiddleware,
   requireRole("student", "instructor", "admin"),
   getCourseThreads
+);
+
+// List user discussions across courses (student, instructor, admin)
+router.get(
+  "/discussions",
+  authMiddleware,
+  requireRole("student", "instructor", "admin"),
+  getUserDiscussions
 );
 
 // Create a discussion thread

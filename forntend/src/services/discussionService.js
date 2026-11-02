@@ -9,6 +9,16 @@ export const discussionService = {
     return api(`/courses/${courseId}/discussions${queryString}`);
   },
 
+  // Get user discussions across courses (students see enrolled courses; instructors see taught courses; admins see all)
+  async getUserDiscussions(params = {}) {
+    const qs = new URLSearchParams();
+    if (params.courseId && params.courseId !== "all") qs.set("courseId", params.courseId);
+    if (params.lectureId) qs.set("lectureId", params.lectureId);
+    if (params.filter) qs.set("filter", params.filter);
+    const queryString = qs.toString() ? `?${qs.toString()}` : "";
+    return api(`/discussions${queryString}`);
+  },
+
   // Create a new discussion thread
   async createThread(data) {
     return api("/discussions", {
@@ -51,9 +61,11 @@ export const discussionService = {
     });
   },
 
-  // Get moderation queue (Admin & Instructor)
-  async getModerationQueue(filter = "flagged") {
-    return api(`/discussions/moderation?filter=${encodeURIComponent(filter)}`);
+  // Get moderation queue (Admin & Instructor, optionally filtered by courseId)
+  async getModerationQueue(filter = "flagged", courseId = null) {
+    const qs = new URLSearchParams({ filter });
+    if (courseId && courseId !== "all") qs.set("courseId", courseId);
+    return api(`/discussions/moderation?${qs.toString()}`);
   },
 };
 

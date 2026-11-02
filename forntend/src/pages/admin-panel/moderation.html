@@ -7,8 +7,12 @@
         <p>Review flagged questions, reported comments, and enforce community standards across all course discussions.</p>
       </div>
       <div class="analytics-toolbar">
+        <label for="moderation-course-select" class="analytics-select-label" style="font-size:0.8rem; color:#9da4c2;">Course:</label>
+        <select id="moderation-course-select" class="generator-select" style="min-width:200px;">
+          <option value="all" selected>All Courses</option>
+        </select>
         <label for="moderation-filter-select" class="analytics-select-label" style="font-size:0.8rem; color:#9da4c2;">Filter:</label>
-        <select id="moderation-filter-select" class="generator-select" style="min-width:190px;">
+        <select id="moderation-filter-select" class="generator-select" style="min-width:180px;">
           <option value="flagged" selected>Reported / Flagged</option>
           <option value="hidden">Hidden Content</option>
           <option value="locked">Locked Threads</option>

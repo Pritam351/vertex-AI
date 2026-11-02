@@ -1,6 +1,7 @@
 const {
   createThread,
   listThreads,
+  listUserDiscussions,
   replyToThread,
   moderateDiscussion,
   listModerationQueue,
@@ -85,7 +86,8 @@ const moderateThread = async (req, res, next) => {
 const getModerationQueue = async (req, res, next) => {
   try {
     const filter = req.query.filter || "flagged";
-    const queue = await listModerationQueue(req.user, filter);
+    const courseId = req.query.courseId || null;
+    const queue = await listModerationQueue(req.user, filter, courseId);
 
     return res.status(200).json({
       success: true,
@@ -97,9 +99,29 @@ const getModerationQueue = async (req, res, next) => {
   }
 };
 
+const getUserDiscussions = async (req, res, next) => {
+  try {
+    const options = {
+      courseId: req.query.courseId || null,
+      lectureId: req.query.lectureId || null,
+      filter: req.query.filter || null,
+    };
+    const threads = await listUserDiscussions(req.user, options);
+
+    return res.status(200).json({
+      success: true,
+      count: threads.length,
+      data: threads,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createDiscussionThread,
   getCourseThreads,
+  getUserDiscussions,
   createReply,
   moderateThread,
   getModerationQueue,

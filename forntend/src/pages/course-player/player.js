@@ -513,8 +513,14 @@ async function loadCourseDiscussions(courseId) {
   const listEl = qs("#player-discussions-list");
   const countBadge = qs("#discussions-count-badge");
 
-  if (loadingEl) loadingEl.hidden = false;
-  if (emptyEl) emptyEl.hidden = true;
+  if (loadingEl) {
+    loadingEl.hidden = false;
+    loadingEl.style.display = "block";
+  }
+  if (emptyEl) {
+    emptyEl.hidden = true;
+    emptyEl.style.display = "none";
+  }
   if (listEl) listEl.innerHTML = "";
 
   try {
@@ -526,9 +532,13 @@ async function loadCourseDiscussions(courseId) {
     renderPlayerDiscussions();
   } catch (err) {
     console.error("Failed to load discussions:", err);
-    if (loadingEl) loadingEl.hidden = true;
+    if (loadingEl) {
+      loadingEl.hidden = true;
+      loadingEl.style.display = "none";
+    }
     if (emptyEl) {
       emptyEl.hidden = false;
+      emptyEl.style.display = "block";
       emptyEl.innerHTML = `<p style="color:var(--text-secondary);margin:0;">Could not load discussions at this time.</p>`;
     }
   }
@@ -540,110 +550,118 @@ function renderPlayerDiscussions() {
   const listEl = qs("#player-discussions-list");
   if (!listEl) return;
 
-  if (loadingEl) loadingEl.hidden = true;
-
-  const session = getSession();
-  const currentUser = session?.user;
-  const isInstructorOrAdmin = currentUser && (currentUser.role === "admin" || (currentCourse && String(currentCourse.instructorId) === String(currentUser.id || currentUser._id)));
-
-  // Filter threads
-  let threads = courseDiscussions || [];
-  if (discussionsFilter === "lecture" && activeLecture) {
-    threads = threads.filter(t => String(t.lectureId) === String(activeLecture._id));
+  if (loadingEl) {
+    loadingEl.hidden = true;
+    loadingEl.style.display = "none";
   }
 
-  if (!threads.length) {
-    if (emptyEl) {
-      emptyEl.hidden = false;
-      emptyEl.innerHTML = `<p style="color:var(--text-secondary);margin:0;">${discussionsFilter === "lecture" ? "No questions tagged with this lecture yet. Be the first to ask!" : "No discussions yet. Be the first to start a conversation!"}</p>`;
+  try {
+    const session = getSession();
+    const currentUser = session?.user;
+    const isInstructorOrAdmin = currentUser && (currentUser.role === "admin" || (currentCourse && String(currentCourse.instructorId?._id || currentCourse.instructorId) === String(currentUser.id || currentUser._id)));
+
+    // Filter threads
+    let threads = courseDiscussions || [];
+    if (discussionsFilter === "lecture" && activeLecture) {
+      threads = threads.filter(t => String(t.lectureId) === String(activeLecture._id));
     }
-    listEl.innerHTML = "";
-    return;
-  }
 
-  if (emptyEl) emptyEl.hidden = true;
+    if (!threads.length) {
+      if (emptyEl) {
+        emptyEl.hidden = false;
+        emptyEl.style.display = "block";
+        emptyEl.innerHTML = `<p style="color:var(--text-secondary);margin:0;">${discussionsFilter === "lecture" ? "No questions tagged with this lecture yet. Be the first to ask!" : "No discussions yet. Be the first to start a conversation!"}</p>`;
+      }
+      listEl.innerHTML = "";
+      return;
+    }
 
-  listEl.innerHTML = threads.map((thread) => {
-    const authorName = escapeHtml(thread.createdBy?.name || "Participant");
-    const authorRole = String(thread.createdBy?.role || "student").toLowerCase();
-    const isThreadInstructor = authorRole === "instructor";
-    const title = escapeHtml(thread.title);
-    const content = escapeHtml(thread.content).replace(/\n/g, "<br>");
-    const dateStr = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString(undefined, {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit"
-    }) : "";
+    if (emptyEl) {
+      emptyEl.hidden = true;
+      emptyEl.style.display = "none";
+    }
 
-    const roleBadge = isThreadInstructor
-      ? `<span class="status published" style="font-size:0.62rem; padding:0.15rem 0.4rem; font-weight:700;">INSTRUCTOR</span>`
-      : `<span style="font-size:0.65rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.15rem 0.4rem; border-radius:4px; font-weight:600;">STUDENT</span>`;
-
-    const lectureTag = thread.lectureTitle
-      ? `<span style="background:rgba(99,102,241,0.12); color:#a5b4fc; border:1px solid rgba(99,102,241,0.25); border-radius:4px; font-size:0.7rem; padding:0.15rem 0.45rem; font-weight:500;">🎬 ${escapeHtml(thread.lectureTitle)}</span>`
-      : "";
-
-    const lockedBadge = thread.isLocked
-      ? `<span style="background:rgba(239,68,68,0.15); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🔒 LOCKED</span>`
-      : "";
-
-    const isHiddenBadge = thread.isHidden
-      ? `<span style="background:rgba(100,116,139,0.2); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">👁 HIDDEN</span>`
-      : "";
-
-    const isReportedBadge = thread.isFlagged
-      ? `<span style="background:rgba(245,158,11,0.15); color:#fbbf24; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🚩 REPORTED</span>`
-      : "";
-
-    const posts = thread.posts || [];
-    const replyCount = posts.length;
-
-    // Render replies HTML
-    const repliesHtml = posts.map(post => {
-      const pAuthorName = escapeHtml(post.userId?.name || "User");
-      const pAuthorRole = String(post.userId?.role || "student").toLowerCase();
-      const pIsInstructor = pAuthorRole === "instructor";
-      const pContent = escapeHtml(post.content).replace(/\n/g, "<br>");
-      const pDateStr = post.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, {
+    listEl.innerHTML = threads.map((thread) => {
+      const authorName = escapeHtml(thread.createdBy?.fullName || thread.createdBy?.name || "Student");
+      const authorRole = String(thread.createdBy?.role || "student").toLowerCase();
+      const isThreadInstructor = authorRole === "instructor";
+      const title = escapeHtml(thread.title || "Untitled Discussion");
+      const content = escapeHtml(thread.content || "").replace(/\n/g, "<br>");
+      const dateStr = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString(undefined, {
         month: "short",
         day: "numeric",
         hour: "2-digit",
         minute: "2-digit"
       }) : "";
 
-      const pRoleBadge = pIsInstructor
-        ? `<span class="status published" style="font-size:0.58rem; padding:0.1rem 0.35rem; font-weight:700;">INSTRUCTOR</span>`
-        : `<span style="font-size:0.6rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.1rem 0.35rem; border-radius:3px;">STUDENT</span>`;
+      const roleBadge = isThreadInstructor
+        ? `<span class="status published" style="font-size:0.62rem; padding:0.15rem 0.4rem; font-weight:700;">INSTRUCTOR</span>`
+        : `<span style="font-size:0.65rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.15rem 0.4rem; border-radius:4px; font-weight:600;">STUDENT</span>`;
 
-      return `
-        <div class="discussion-reply-item" style="display:flex; flex-direction:column; gap:0.4rem; padding:0.75rem 0.9rem; background:#0b1022; border:1px solid #1e293b; border-radius:8px; margin-top:0.5rem;">
-          <div style="display:flex; justify-content:space-between; align-items:center;">
-            <div style="display:flex; align-items:center; gap:0.45rem;">
-              <span style="background:rgba(99,102,241,0.18); color:#a5b4fc; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:700;">${pAuthorName.charAt(0).toUpperCase()}</span>
-              <strong style="font-size:0.8rem; color:#f8fafc;">${pAuthorName}</strong>
-              ${pRoleBadge}
-              ${post.isFlagged ? `<span style="color:#fbbf24; font-size:0.65rem;">🚩 Reported</span>` : ""}
-              ${post.isHidden ? `<span style="color:#94a3b8; font-size:0.65rem;">👁 Hidden</span>` : ""}
-            </div>
-            <div style="display:flex; align-items:center; gap:0.4rem;">
-              <span style="font:500 0.65rem 'DM Mono', monospace; color:#9da4c2;">${pDateStr}</span>
-              <button type="button" class="mini-button button-subtle" data-action="report-post" data-thread-id="${thread._id}" data-post-id="${post._id}" title="Report inappropriate reply" style="padding:0.1rem 0.35rem; font-size:0.65rem; border:none; background:transparent; color:#9da4c2; cursor:pointer;">
-                🚩
-              </button>
-              ${isInstructorOrAdmin ? `
-                <button type="button" class="mini-button button-subtle" data-action="toggle-hide-post" data-thread-id="${thread._id}" data-post-id="${post._id}" data-is-hidden="${post.isHidden ? "true" : "false"}" style="padding:0.1rem 0.35rem; font-size:0.65rem;">
-                  ${post.isHidden ? "Unhide" : "Hide"}
+      const lectureTag = thread.lectureTitle
+        ? `<span style="background:rgba(99,102,241,0.12); color:#a5b4fc; border:1px solid rgba(99,102,241,0.25); border-radius:4px; font-size:0.7rem; padding:0.15rem 0.45rem; font-weight:500;">🎬 ${escapeHtml(thread.lectureTitle)}</span>`
+        : "";
+
+      const lockedBadge = thread.isLocked
+        ? `<span style="background:rgba(239,68,68,0.15); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🔒 LOCKED</span>`
+        : "";
+
+      const isHiddenBadge = thread.isHidden
+        ? `<span style="background:rgba(100,116,139,0.2); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">👁 HIDDEN</span>`
+        : "";
+
+      const isReportedBadge = thread.isFlagged
+        ? `<span style="background:rgba(245,158,11,0.15); color:#fbbf24; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🚩 REPORTED</span>`
+        : "";
+
+      const posts = thread.posts || [];
+      const replyCount = posts.length;
+
+      // Render replies HTML
+      const repliesHtml = posts.map(post => {
+        const pAuthorName = escapeHtml(post.userId?.fullName || post.userId?.name || "User");
+        const pAuthorRole = String(post.userId?.role || "student").toLowerCase();
+        const pIsInstructor = pAuthorRole === "instructor";
+        const pContent = escapeHtml(post.content || "").replace(/\n/g, "<br>");
+        const pDateStr = post.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        }) : "";
+
+        const pRoleBadge = pIsInstructor
+          ? `<span class="status published" style="font-size:0.58rem; padding:0.1rem 0.35rem; font-weight:700;">INSTRUCTOR</span>`
+          : `<span style="font-size:0.6rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.1rem 0.35rem; border-radius:3px;">STUDENT</span>`;
+
+        return `
+          <div class="discussion-reply-item" style="display:flex; flex-direction:column; gap:0.4rem; padding:0.75rem 0.9rem; background:#0b1022; border:1px solid #1e293b; border-radius:8px; margin-top:0.5rem;">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <div style="display:flex; align-items:center; gap:0.45rem;">
+                <span style="background:rgba(99,102,241,0.18); color:#a5b4fc; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:700;">${pAuthorName.charAt(0).toUpperCase()}</span>
+                <strong style="font-size:0.8rem; color:#f8fafc;">${pAuthorName}</strong>
+                ${pRoleBadge}
+                ${post.isFlagged ? `<span style="color:#fbbf24; font-size:0.65rem;">🚩 Reported</span>` : ""}
+                ${post.isHidden ? `<span style="color:#94a3b8; font-size:0.65rem;">👁 Hidden</span>` : ""}
+              </div>
+              <div style="display:flex; align-items:center; gap:0.4rem;">
+                <span style="font:500 0.65rem 'DM Mono', monospace; color:#9da4c2;">${pDateStr}</span>
+                <button type="button" class="mini-button button-subtle" data-action="report-post" data-thread-id="${thread._id}" data-post-id="${post._id}" title="Report inappropriate reply" style="padding:0.1rem 0.35rem; font-size:0.65rem; border:none; background:transparent; color:#9da4c2; cursor:pointer;">
+                  🚩
                 </button>
-              ` : ""}
+                ${isInstructorOrAdmin ? `
+                  <button type="button" class="mini-button button-subtle" data-action="toggle-hide-post" data-thread-id="${thread._id}" data-post-id="${post._id}" data-is-hidden="${post.isHidden ? "true" : "false"}" style="padding:0.1rem 0.35rem; font-size:0.65rem;">
+                    ${post.isHidden ? "Unhide" : "Hide"}
+                  </button>
+                ` : ""}
+              </div>
+            </div>
+            <div style="font-size:0.78rem; line-height:1.5; color:#cbd5e1; word-break:break-word;">
+              ${pContent}
             </div>
           </div>
-          <div style="font-size:0.78rem; line-height:1.5; color:#cbd5e1; word-break:break-word;">
-            ${pContent}
-          </div>
-        </div>
-      `;
-    }).join("");
+        `;
+      }).join("");
 
     return `
       <div class="created-item discussion-thread-item" style="display:flex; flex-direction:column; gap:0.75rem; padding:1.15rem; background:#11192d; border:1px solid #27314b; border-radius:10px;">
@@ -716,6 +734,14 @@ function renderPlayerDiscussions() {
       </div>
     `;
   }).join("");
+  } catch (renderErr) {
+    console.error("Error rendering discussions:", renderErr);
+    if (emptyEl) {
+      emptyEl.hidden = false;
+      emptyEl.style.display = "block";
+      emptyEl.innerHTML = `<p style="color:var(--text-secondary);margin:0;">Could not display discussions at this time.</p>`;
+    }
+  }
 }
 
 // ─── Lesson Overview tab ──────────────────────────────────────────────────────
@@ -1580,6 +1606,13 @@ function wireEvents(courseId) {
       if (contentInput) contentInput.value = "";
       const p = qs("#new-thread-panel");
       if (p) p.hidden = true;
+      discussionsFilter = "all";
+      qs("#btn-filter-all-discussions")?.classList.add("is-active");
+      qs("#btn-filter-all-discussions")?.style.setProperty("background", "#28205e");
+      qs("#btn-filter-all-discussions")?.style.setProperty("color", "#fff");
+      qs("#btn-filter-lecture-discussions")?.classList.remove("is-active");
+      qs("#btn-filter-lecture-discussions")?.style.setProperty("background", "transparent");
+      qs("#btn-filter-lecture-discussions")?.style.setProperty("color", "#9da4c2");
       await loadCourseDiscussions(courseId);
     } catch (err) {
       toast(`Failed to post question: ${errorText(err)}`, "error");

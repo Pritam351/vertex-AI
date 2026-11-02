@@ -32,6 +32,7 @@ import { aiService } from "../../services/aiService.js";
 import { quizService } from "../../services/quizService.js";
 import { courseService } from "../../services/courseService.js";
 import { announcementService } from "../../services/announcementService.js";
+import { discussionService } from "../../services/discussionService.js";
 import { getMegaphoneSvg } from "../../components/common/icons.js";
 
 const state = {
@@ -43,6 +44,8 @@ const state = {
   isLoadingSubmissions: false,
   announcements: [],
   isLoadingAnnouncements: false,
+  discussions: [],
+  isLoadingDiscussions: false,
   isInitialized: false
 };
 
@@ -51,7 +54,8 @@ const instructorPages = [
   new URL("./course-builder.html", import.meta.url),
   new URL("./assessments.html", import.meta.url),
   new URL("./announcements.html", import.meta.url),
-  new URL("./analytics.html", import.meta.url)
+  new URL("./analytics.html", import.meta.url),
+  new URL("./discussions.html", import.meta.url)
 ];
 
 export async function loadInstructorFragments(container) {
@@ -974,6 +978,225 @@ async function handleTogglePinAnnouncement(announcementId) {
   }
 }
 
+// ─── Course Discussions (Instructor) ─────────────────────────────────────────
+function populateInstructorDiscussionsCourseSelect() {
+  const select = $("#instructor-discussions-course-select");
+  if (!select) return;
+  const course = activeCourse();
+
+  if (!state.instructorCourses.length) {
+    select.innerHTML = '<option value="">No courses created yet</option>';
+    select.disabled = true;
+  } else {
+    select.disabled = false;
+    const currentSelected = select.value || course?._id || state.instructorCourses[0]._id;
+    select.innerHTML = state.instructorCourses
+      .map(
+        (c) =>
+          `<option value="${escapeHtml(c._id)}" ${c._id === currentSelected ? "selected" : ""}>${escapeHtml(c.title)} (${getCourseStatusLabel(c)})</option>`
+      )
+      .join("");
+  }
+}
+
+function renderInstructorDiscussionsEmpty() {
+  const loading = $("#inst-discussions-loading");
+  const empty = $("#inst-discussions-empty");
+  const feed = $("#inst-discussions-feed");
+  const countBadge = $("#inst-discussions-count");
+  if (loading) loading.hidden = true;
+  if (empty) empty.hidden = false;
+  if (feed) feed.innerHTML = "";
+  if (countBadge) countBadge.textContent = "0 questions";
+}
+
+async function loadInstructorDiscussions(courseId) {
+  const loading = $("#inst-discussions-loading");
+  const empty = $("#inst-discussions-empty");
+  const feed = $("#inst-discussions-feed");
+
+  if (!courseId) {
+    renderInstructorDiscussionsEmpty();
+    return;
+  }
+
+  if (loading) loading.hidden = false;
+  if (empty) empty.hidden = true;
+  if (feed) feed.innerHTML = "";
+
+  try {
+    const res = await discussionService.getCourseDiscussions(courseId);
+    state.discussions = res?.data || [];
+    renderInstructorDiscussionsFeed();
+  } catch (err) {
+    console.error("Failed to load discussions:", err);
+    if (loading) loading.hidden = true;
+    if (empty) {
+      empty.hidden = false;
+      empty.innerHTML = `<div class="empty-icon">⚠️</div><h3>Failed to load discussions</h3><p style="color:var(--text-secondary);">${errorText(err)}</p>`;
+    }
+  }
+}
+
+function renderInstructorDiscussionsFeed() {
+  const loading = $("#inst-discussions-loading");
+  const empty = $("#inst-discussions-empty");
+  const feed = $("#inst-discussions-feed");
+  const countBadge = $("#inst-discussions-count");
+  const filterSelect = $("#instructor-discussions-filter-select");
+  const filter = filterSelect?.value || "all";
+
+  if (loading) loading.hidden = true;
+
+  let threads = state.discussions || [];
+  if (filter === "unanswered") {
+    threads = threads.filter(t => !t.posts || t.posts.length === 0);
+  } else if (filter === "answered") {
+    threads = threads.filter(t => t.posts && t.posts.length > 0);
+  } else if (filter === "reported") {
+    threads = threads.filter(t => t.isFlagged || (t.posts || []).some(p => p.isFlagged));
+  }
+
+  if (countBadge) {
+    countBadge.textContent = `${threads.length} ${threads.length === 1 ? "question" : "questions"}`;
+  }
+
+  if (!threads.length) {
+    if (empty) empty.hidden = false;
+    if (feed) feed.innerHTML = "";
+    return;
+  }
+
+  if (empty) empty.hidden = true;
+
+  feed.innerHTML = threads.map((thread) => {
+    const authorName = escapeHtml(thread.createdBy?.fullName || thread.createdBy?.name || "Student");
+    const authorRole = escapeHtml(thread.createdBy?.role || "student");
+    const title = escapeHtml(thread.title);
+    const content = escapeHtml(thread.content).replace(/\n/g, "<br>");
+    const dateStr = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }) : "";
+
+    const lectureTag = thread.lectureTitle
+      ? `<span style="background:rgba(99,102,241,0.12); color:#a5b4fc; border:1px solid rgba(99,102,241,0.25); border-radius:4px; font-size:0.7rem; padding:0.15rem 0.45rem; font-weight:500;">🎬 ${escapeHtml(thread.lectureTitle)}</span>`
+      : "";
+
+    const posts = thread.posts || [];
+    const isAnswered = posts.length > 0;
+
+    return `
+      <div class="panel form-panel" style="background:#11192d; border:1px solid ${thread.isFlagged ? "rgba(245,158,11,0.4)" : "#27314b"}; border-radius:10px; padding:1.25rem;">
+        <!-- Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:0.75rem;">
+          <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+            <span style="background:rgba(99,102,241,0.22); color:#c7d2fe; width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.78rem;">
+              ${authorName.charAt(0).toUpperCase()}
+            </span>
+            <strong style="font-size:0.9rem; color:#f8fafc;">${authorName}</strong>
+            <span style="font-size:0.65rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.15rem 0.4rem; border-radius:4px;">${authorRole.toUpperCase()}</span>
+            ${lectureTag}
+            ${thread.isLocked ? `<span class="status" style="background:rgba(239,68,68,0.15); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🔒 LOCKED</span>` : ""}
+            ${thread.isHidden ? `<span class="status" style="background:rgba(100,116,139,0.2); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">👁 HIDDEN</span>` : ""}
+            ${thread.isFlagged ? `<span class="status" style="background:rgba(245,158,11,0.18); color:#fbbf24; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🚩 REPORTED</span>` : ""}
+            ${!isAnswered ? `<span class="status" style="background:rgba(245,158,11,0.12); color:#fde047; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:600;">Needs Answer</span>` : `<span class="status" style="background:rgba(34,197,94,0.12); color:#86efac; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:600;">✓ Answered (${posts.length})</span>`}
+          </div>
+          <span style="font:500 0.68rem 'DM Mono', monospace; color:#9da4c2;">${dateStr}</span>
+        </div>
+
+        <!-- Question Title & Body -->
+        <div style="margin-top:0.75rem;">
+          <h4 style="margin:0 0 0.4rem 0; font-size:1rem; font-weight:700; color:#f8fafc;">${title}</h4>
+          <div style="font-size:0.85rem; color:#cbd5e1; line-height:1.6; word-break:break-word;">
+            ${content}
+          </div>
+        </div>
+
+        <!-- Controls toolbar -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-top:0.85rem; padding-top:0.65rem; border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="display:flex; align-items:center; gap:0.5rem;">
+            <button type="button" class="mini-button" data-action="toggle-instructor-replies" data-thread-id="${thread._id}" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.3rem 0.65rem;">
+              <span>💬</span>
+              <span>${posts.length} ${posts.length === 1 ? "Reply" : "Replies"}</span>
+            </button>
+            ${thread.isFlagged ? `
+              <button type="button" class="mini-button button-subtle" data-action="dismiss-thread-report" data-thread-id="${thread._id}" style="font-size:0.75rem; color:#86efac; cursor:pointer;">
+                ✓ Dismiss Report
+              </button>
+            ` : ""}
+          </div>
+          <div style="display:flex; align-items:center; gap:0.4rem;">
+            <button type="button" class="mini-button button-secondary" data-action="toggle-lock-thread" data-thread-id="${thread._id}" data-is-locked="${thread.isLocked ? "true" : "false"}" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
+              ${thread.isLocked ? "🔓 Unlock" : "🔒 Lock"}
+            </button>
+            <button type="button" class="mini-button button-secondary" data-action="toggle-hide-thread" data-thread-id="${thread._id}" data-is-hidden="${thread.isHidden ? "true" : "false"}" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
+              ${thread.isHidden ? "👁 Unhide" : "👁 Hide"}
+            </button>
+          </div>
+        </div>
+
+        <!-- Replies Drawer -->
+        <div id="inst-replies-${thread._id}" class="instructor-replies-drawer" style="display:block; margin-top:0.85rem; padding-top:0.75rem; border-top:1px dashed rgba(255,255,255,0.08);">
+          <div style="display:flex; flex-direction:column; gap:0.5rem;">
+            ${posts.map(p => {
+              const pAuthor = escapeHtml(p.userId?.fullName || p.userId?.name || "Participant");
+              const pRole = (p.userId?.role || "student").toLowerCase();
+              const pIsInst = pRole === "instructor" || pRole === "admin";
+              const pContent = escapeHtml(p.content).replace(/\n/g, "<br>");
+              const pDate = p.createdAt ? new Date(p.createdAt).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+                hour: "2-digit",
+                minute: "2-digit"
+              }) : "";
+              return `
+                <div style="background:#0b1022; border:1px solid ${pIsInst ? "rgba(99,102,241,0.3)" : "#1e293b"}; border-radius:8px; padding:0.75rem 0.9rem;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.35rem;">
+                    <div style="display:flex; align-items:center; gap:0.45rem;">
+                      <span style="background:${pIsInst ? "rgba(99,102,241,0.3)" : "rgba(255,255,255,0.08)"}; color:#c7d2fe; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.7rem; font-weight:700;">
+                        ${pAuthor.charAt(0).toUpperCase()}
+                      </span>
+                      <strong style="font-size:0.82rem; color:#f8fafc;">${pAuthor}</strong>
+                      ${pIsInst ? `<span class="status published" style="font-size:0.6rem; padding:0.1rem 0.35rem; font-weight:700;">INSTRUCTOR</span>` : `<span style="font-size:0.62rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.1rem 0.35rem; border-radius:3px;">STUDENT</span>`}
+                      ${p.isFlagged ? `<span style="color:#fbbf24; font-size:0.65rem;">🚩 Flagged</span>` : ""}
+                      ${p.isHidden ? `<span style="color:#94a3b8; font-size:0.65rem;">👁 Hidden</span>` : ""}
+                    </div>
+                    <div style="display:flex; align-items:center; gap:0.4rem;">
+                      <span style="font:500 0.65rem 'DM Mono', monospace; color:#9da4c2;">${pDate}</span>
+                      <button type="button" class="mini-button button-subtle" data-action="toggle-hide-reply" data-thread-id="${thread._id}" data-post-id="${p._id}" data-is-hidden="${p.isHidden ? "true" : "false"}" style="padding:0.1rem 0.35rem; font-size:0.65rem;">
+                        ${p.isHidden ? "Unhide" : "Hide"}
+                      </button>
+                    </div>
+                  </div>
+                  <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5; word-break:break-word;">
+                    ${pContent}
+                  </div>
+                </div>
+              `;
+            }).join("")}
+          </div>
+
+          <!-- Instructor reply form -->
+          ${!thread.isLocked ? `
+            <form class="instructor-reply-form" data-thread-id="${thread._id}" style="display:flex; gap:0.5rem; margin-top:0.75rem; align-items:flex-start;">
+              <textarea name="replyContent" class="instructor-reply-input" required maxlength="5000" rows="1" placeholder="Write an instructor response to this question..." style="flex:1; padding:0.6rem 0.8rem; min-height:40px; resize:vertical; font-size:0.82rem; background:#0d1425; border:1px solid #313b57; border-radius:6px; color:#f8fafc;"></textarea>
+              <button type="submit" class="button button-primary mini-button" style="padding:0.6rem 1rem; height:40px; font-size:0.8rem;">
+                Reply as Instructor
+              </button>
+            </form>
+          ` : `
+            <p style="color:#f87171; font-size:0.75rem; margin:0.5rem 0 0 0;">🔒 This thread is locked. No new replies can be added.</p>
+          `}
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
 export function showView(id) {
   document.querySelectorAll("[data-view]").forEach((view) => {
     const active = view.id === id;
@@ -990,6 +1213,7 @@ export function showView(id) {
     "course-builder": "Course builder",
     assessments: "Assessments",
     announcements: "Course Announcements",
+    discussions: "Course Discussions & Q&A",
     analytics: "Detailed Analytics"
   };
 
@@ -1015,6 +1239,20 @@ export function showView(id) {
       loadInstructorAnnouncements(selectedCourseId);
     } else {
       renderInstructorAnnouncementsEmpty();
+    }
+  }
+
+  if (id === "discussions") {
+    populateInstructorDiscussionsCourseSelect();
+    const urlParams = new URLSearchParams(window.location.hash.split("?")[1] || "");
+    const paramCourseId = urlParams.get("courseId");
+    const select = $("#instructor-discussions-course-select");
+    const selectedCourseId = paramCourseId || select?.value || activeCourse()?._id || state.instructorCourses[0]?._id;
+    if (selectedCourseId) {
+      if (select) select.value = selectedCourseId;
+      loadInstructorDiscussions(selectedCourseId);
+    } else {
+      renderInstructorDiscussionsEmpty();
     }
   }
 
@@ -2710,10 +2948,143 @@ function bindGlobalClickHandlers() {
       return;
     }
 
+    // Refresh discussions button
+    const refreshDiscBtn = event.target.closest("#btn-refresh-instructor-discussions");
+    if (refreshDiscBtn) {
+      event.preventDefault();
+      const select = $("#instructor-discussions-course-select");
+      const courseId = select?.value || activeCourse()?._id || state.instructorCourses[0]?._id;
+      if (courseId) {
+        setBusy(refreshDiscBtn, true);
+        await loadInstructorDiscussions(courseId);
+        setBusy(refreshDiscBtn, false);
+      }
+      return;
+    }
+
+    // Toggle instructor replies drawer
+    const toggleRepliesBtn = event.target.closest('[data-action="toggle-instructor-replies"]');
+    if (toggleRepliesBtn) {
+      event.preventDefault();
+      const threadId = toggleRepliesBtn.dataset.threadId;
+      const drawer = $(`#inst-replies-${threadId}`);
+      if (drawer) {
+        drawer.style.display = drawer.style.display === "none" ? "block" : "none";
+      }
+      return;
+    }
+
+    // Toggle lock thread
+    const toggleLockBtn = event.target.closest('[data-action="toggle-lock-thread"]');
+    if (toggleLockBtn) {
+      event.preventDefault();
+      const threadId = toggleLockBtn.dataset.threadId;
+      const isLocked = toggleLockBtn.dataset.isLocked === "true";
+      try {
+        await discussionService.moderateDiscussion(threadId, {
+          action: isLocked ? "unlock" : "lock",
+          target: "thread"
+        });
+        toast(`Thread ${isLocked ? "unlocked" : "locked"}.`);
+        const select = $("#instructor-discussions-course-select");
+        if (select?.value) await loadInstructorDiscussions(select.value);
+      } catch (err) {
+        toast(`Moderation error: ${errorText(err)}`, "error");
+      }
+      return;
+    }
+
+    // Toggle hide thread
+    const toggleHideBtn = event.target.closest('[data-action="toggle-hide-thread"]');
+    if (toggleHideBtn) {
+      event.preventDefault();
+      const threadId = toggleHideBtn.dataset.threadId;
+      const isHidden = toggleHideBtn.dataset.isHidden === "true";
+      try {
+        await discussionService.moderateDiscussion(threadId, {
+          action: isHidden ? "unhide" : "hide",
+          target: "thread"
+        });
+        toast(`Thread ${isHidden ? "unhidden" : "hidden"}.`);
+        const select = $("#instructor-discussions-course-select");
+        if (select?.value) await loadInstructorDiscussions(select.value);
+      } catch (err) {
+        toast(`Moderation error: ${errorText(err)}`, "error");
+      }
+      return;
+    }
+
+    // Dismiss thread report
+    const dismissReportBtn = event.target.closest('[data-action="dismiss-thread-report"]');
+    if (dismissReportBtn) {
+      event.preventDefault();
+      const threadId = dismissReportBtn.dataset.threadId;
+      try {
+        await discussionService.moderateDiscussion(threadId, {
+          action: "unflag",
+          target: "thread"
+        });
+        toast("Report dismissed.");
+        const select = $("#instructor-discussions-course-select");
+        if (select?.value) await loadInstructorDiscussions(select.value);
+      } catch (err) {
+        toast(`Error: ${errorText(err)}`, "error");
+      }
+      return;
+    }
+
+    // Toggle hide reply
+    const toggleHideReplyBtn = event.target.closest('[data-action="toggle-hide-reply"]');
+    if (toggleHideReplyBtn) {
+      event.preventDefault();
+      const threadId = toggleHideReplyBtn.dataset.threadId;
+      const postId = toggleHideReplyBtn.dataset.postId;
+      const isHidden = toggleHideReplyBtn.dataset.isHidden === "true";
+      try {
+        await discussionService.moderateDiscussion(threadId, {
+          action: isHidden ? "unhide" : "hide",
+          target: "post",
+          postId
+        });
+        toast(`Reply ${isHidden ? "unhidden" : "hidden"}.`);
+        const select = $("#instructor-discussions-course-select");
+        if (select?.value) await loadInstructorDiscussions(select.value);
+      } catch (err) {
+        toast(`Error: ${errorText(err)}`, "error");
+      }
+      return;
+    }
+
     const target = event.target.closest("[data-go], [data-section]");
     if (target) {
       event.preventDefault();
       showView(target.dataset.go || target.dataset.section);
+    }
+  });
+
+  // Delegated reply form submit
+  document.addEventListener("submit", async (event) => {
+    const form = event.target.closest(".instructor-reply-form");
+    if (!form) return;
+    event.preventDefault();
+    const threadId = form.dataset.threadId;
+    const input = form.querySelector(".instructor-reply-input");
+    const content = input?.value?.trim();
+    if (!content) return;
+
+    const submitBtn = form.querySelector('button[type="submit"]');
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      await discussionService.replyToThread(threadId, { content });
+      toast("Instructor response posted! 💬", "success");
+      if (input) input.value = "";
+      const select = $("#instructor-discussions-course-select");
+      if (select?.value) await loadInstructorDiscussions(select.value);
+    } catch (err) {
+      toast(`Failed to post reply: ${errorText(err)}`, "error");
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
     }
   });
 
@@ -2734,6 +3105,13 @@ function bindGlobalClickHandlers() {
       if (selectedId) {
         loadInstructorAnnouncements(selectedId);
       }
+    } else if (event.target.id === "instructor-discussions-course-select") {
+      const selectedId = event.target.value;
+      if (selectedId) {
+        loadInstructorDiscussions(selectedId);
+      }
+    } else if (event.target.id === "instructor-discussions-filter-select") {
+      renderInstructorDiscussionsFeed();
     }
   });
 }

@@ -786,6 +786,7 @@ export async function mountAdminUsers(container) {
 
 // ─── Forum Moderation ───────────────────────────────────────────────────────
 export async function mountAdminModeration(container) {
+  const courseSelect = $("#moderation-course-select", container);
   const filterSelect = $("#moderation-filter-select", container);
   const refreshBtn = $("#btn-refresh-moderation", container);
   const countPill = $("#mod-queue-count", container);
@@ -793,14 +794,29 @@ export async function mountAdminModeration(container) {
   const emptyEl = $("#mod-queue-empty", container);
   const queueContainer = $("#mod-queue-container", container);
 
+  async function populateCourses() {
+    if (!courseSelect) return;
+    try {
+      const res = await courseService.getCourses();
+      const courses = res?.data?.courses || res?.data || (Array.isArray(res) ? res : []);
+      const existingVal = courseSelect.value || "all";
+      courseSelect.innerHTML = `<option value="all">All Courses</option>` +
+        courses.map(c => `<option value="${c._id}">${escapeHtml(c.title)}</option>`).join("");
+      courseSelect.value = existingVal;
+    } catch {
+      // Keep default All Courses if course fetch fails
+    }
+  }
+
   async function loadQueue() {
     if (loadingEl) loadingEl.hidden = false;
     if (emptyEl) emptyEl.hidden = true;
     if (queueContainer) queueContainer.innerHTML = "";
 
     const filter = filterSelect?.value || "flagged";
+    const selectedCourse = courseSelect?.value || "all";
     try {
-      const res = await discussionService.getModerationQueue(filter);
+      const res = await discussionService.getModerationQueue(filter, selectedCourse);
       const items = res?.data || [];
       if (countPill) countPill.textContent = `${items.length} ${items.length === 1 ? "item" : "items"}`;
 
@@ -812,7 +828,7 @@ export async function mountAdminModeration(container) {
       if (emptyEl) emptyEl.hidden = true;
       queueContainer.innerHTML = items.map((thread) => {
         const courseTitle = escapeHtml(thread.courseId?.title || "Course");
-        const authorName = escapeHtml(thread.createdBy?.name || "User");
+        const authorName = escapeHtml(thread.createdBy?.fullName || thread.createdBy?.name || "User");
         const authorRole = escapeHtml(thread.createdBy?.role || "student");
         const title = escapeHtml(thread.title);
         const content = escapeHtml(thread.content).replace(/\n/g, "<br>");
@@ -916,9 +932,13 @@ export async function mountAdminModeration(container) {
     }
   }
 
-  // Filter change
+  // Filter & course change
+  courseSelect?.addEventListener("change", loadQueue);
   filterSelect?.addEventListener("change", loadQueue);
-  refreshBtn?.addEventListener("click", loadQueue);
+  refreshBtn?.addEventListener("click", () => {
+    populateCourses();
+    loadQueue();
+  });
 
   // Moderation action delegation
   queueContainer?.addEventListener("click", async (e) => {
@@ -945,5 +965,6 @@ export async function mountAdminModeration(container) {
     }
   });
 
+  await populateCourses();
   await loadQueue();
 }

@@ -10,6 +10,7 @@ export function renderInstructorLayout(user, activeSection = "overview") {
       { id: "course-builder", href: "#/instructor/course-builder", label: "Course builder", icon: "▣", isActive: activeSection === "course-builder" },
       { id: "assessments", href: "#/instructor/assessments", label: "Assessments", icon: "◇", isActive: activeSection === "assessments" },
       { id: "announcements", href: "#/instructor/announcements", label: "Announcements", icon: getMegaphoneSvg({ size: 16 }), isActive: activeSection === "announcements" },
+      { id: "discussions", href: "#/instructor/discussions", label: "Discussions", icon: "💬", isActive: activeSection === "discussions" },
       { id: "analytics", href: "#/instructor/analytics", label: "Analytics", icon: "Δ", isActive: activeSection === "analytics" }
     ]
   });
@@ -19,6 +20,7 @@ export function renderInstructorLayout(user, activeSection = "overview") {
     "course-builder": "Course builder",
     assessments: "Assessments",
     announcements: "Course Announcements",
+    discussions: "Course Discussions & Q&A",
     analytics: "Detailed Analytics"
   };
 

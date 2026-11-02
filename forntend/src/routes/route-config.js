@@ -49,6 +49,13 @@ export const ROUTES = {
     layout: "instructor",
     section: "announcements"
   },
+  INSTRUCTOR_DISCUSSIONS: {
+    hash: "#/instructor/discussions",
+    role: "instructor",
+    title: "Discussions & Q&A | Instructor Studio",
+    layout: "instructor",
+    section: "discussions"
+  },
   INSTRUCTOR_ANALYTICS: {
     hash: "#/instructor/analytics",
     role: "instructor",
@@ -85,6 +92,13 @@ export const ROUTES = {
     title: "My Quizzes | VertexLearn AI",
     layout: "student",
     section: "quizzes"
+  },
+  STUDENT_DISCUSSIONS: {
+    hash: "#/student/discussions",
+    role: "student",
+    title: "Discussions & Q&A | VertexLearn AI",
+    layout: "student",
+    section: "discussions"
   },
   STUDENT_CERTIFICATES: {
     hash: "#/student/certificates",

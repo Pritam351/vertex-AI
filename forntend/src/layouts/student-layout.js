@@ -8,6 +8,7 @@ export function renderStudentLayout(user, activeSection = "dashboard") {
       { id: "dashboard", href: "#/student/dashboard", label: "My Learning", icon: "◈", isActive: activeSection === "dashboard" },
       { id: "catalog", href: "#/student/catalog", label: "Explore Courses", icon: "▣", isActive: activeSection === "catalog" },
       { id: "quizzes", href: "#/student/quizzes", label: "My Quizzes", icon: "◇", isActive: activeSection === "quizzes" },
+      { id: "discussions", href: "#/student/discussions", label: "Discussions", icon: "💬", isActive: activeSection === "discussions" },
       { id: "certificates", href: "#/student/certificates", label: "Certificates", icon: "🎓", isActive: activeSection === "certificates" }
     ]
   });
@@ -17,6 +18,7 @@ export function renderStudentLayout(user, activeSection = "dashboard") {
     catalog: "Course Catalog",
     player: "Course Player",
     quizzes: "Quizzes & Assessments",
+    discussions: "Discussions & Q&A Forum",
     certificates: "My Certificates & Credentials"
   };
 

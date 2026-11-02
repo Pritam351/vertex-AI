@@ -2,6 +2,7 @@ const mongoose = require("mongoose");
 const DiscussionThread = require("./discussionModel");
 const Course = require("../courses/courseModel");
 const Enrollment = require("../enrollments/enrollmentModel");
+const User = require("../users/userModel");
 const { createNotification } = require("../notifications/notificationService");
 
 const fail = (statusCode, message) => {
@@ -74,7 +75,7 @@ const createThread = async (data, user) => {
         type: "discussion",
         title: `💬 New question in ${course.title}`,
         message: `${user.fullName || user.name || "A student"} asked: "${data.title}"`,
-        link: `#/student/player?courseId=${course._id}&tab=discussions`,
+        link: `#/instructor/discussions?courseId=${course._id}`,
       });
     } catch (notifErr) {
       console.error("[DiscussionService] Notification error:", notifErr.message);
@@ -158,12 +159,17 @@ const replyToThread = async (threadId, data, user) => {
   // Notify the thread author if they are not the replier
   if (thread.createdBy.toString() !== user._id.toString()) {
     try {
+      const author = await User.findById(thread.createdBy).select("role").lean();
+      const targetHash = author?.role === "instructor"
+        ? `#/instructor/discussions?courseId=${course._id}`
+        : `#/student/discussions?courseId=${course._id}`;
+
       await createNotification({
         userId: thread.createdBy,
         type: "discussion",
         title: `💬 New reply in "${thread.title.slice(0, 35)}"`,
         message: `${user.fullName || user.name || "A participant"} replied: ${data.content.slice(0, 120)}`,
-        link: `#/student/player?courseId=${course._id}&tab=discussions`,
+        link: targetHash,
       });
     } catch (notifErr) {
       console.error("[DiscussionService] Notification error:", notifErr.message);
@@ -273,20 +279,26 @@ const moderateDiscussion = async (threadId, data, user) => {
     .lean();
 };
 
-const listModerationQueue = async (user, filter = "flagged") => {
+const listModerationQueue = async (user, filter = "flagged", courseId = null) => {
   if (user.role !== "admin" && user.role !== "instructor") {
     fail(403, "Access restricted to administrators and instructors");
   }
 
-  let courseIds = null;
+  let allowedCourseIds = null;
   if (user.role === "instructor") {
     const courses = await Course.find({ instructorId: user._id }).select("_id").lean();
-    courseIds = courses.map((c) => c._id);
+    allowedCourseIds = courses.map((c) => c._id.toString());
   }
 
   const query = {};
-  if (courseIds) {
-    query.courseId = { $in: courseIds };
+
+  if (courseId && courseId !== "all" && mongoose.isValidObjectId(courseId)) {
+    if (user.role === "instructor" && !allowedCourseIds.includes(courseId.toString())) {
+      fail(403, "You do not instruct this course");
+    }
+    query.courseId = new mongoose.Types.ObjectId(courseId);
+  } else if (allowedCourseIds) {
+    query.courseId = { $in: allowedCourseIds };
   }
 
   if (filter === "flagged") {
@@ -308,9 +320,68 @@ const listModerationQueue = async (user, filter = "flagged") => {
   return threads;
 };
 
+const listUserDiscussions = async (user, options = {}) => {
+  const query = {};
+
+  if (user.role === "admin") {
+    if (options.courseId && options.courseId !== "all" && mongoose.isValidObjectId(options.courseId)) {
+      query.courseId = new mongoose.Types.ObjectId(options.courseId);
+    }
+  } else if (user.role === "instructor") {
+    const courses = await Course.find({ instructorId: user._id }).select("_id").lean();
+    const instructorCourseIds = courses.map((c) => c._id.toString());
+    if (options.courseId && options.courseId !== "all" && mongoose.isValidObjectId(options.courseId)) {
+      if (!instructorCourseIds.includes(options.courseId.toString())) {
+        fail(403, "You do not instruct this course");
+      }
+      query.courseId = new mongoose.Types.ObjectId(options.courseId);
+    } else {
+      query.courseId = { $in: instructorCourseIds };
+    }
+  } else {
+    // student
+    query.isHidden = false;
+    const enrollments = await Enrollment.find({ userId: user._id }).select("courseId").lean();
+    const enrolledCourseIds = enrollments.map((e) => e.courseId.toString());
+    if (options.courseId && options.courseId !== "all" && mongoose.isValidObjectId(options.courseId)) {
+      if (!enrolledCourseIds.includes(options.courseId.toString())) {
+        fail(403, "Enroll in this course first");
+      }
+      query.courseId = new mongoose.Types.ObjectId(options.courseId);
+    } else {
+      query.courseId = { $in: enrolledCourseIds };
+    }
+  }
+
+  if (options.lectureId) {
+    query.lectureId = options.lectureId;
+  }
+
+  const threads = await DiscussionThread.find(query)
+    .populate("courseId", "title thumbnailUrl category")
+    .populate("createdBy", "fullName name email role avatarUrl")
+    .populate("posts.userId", "fullName name email role avatarUrl")
+    .populate("moderatedBy", "fullName name email role avatarUrl")
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  return threads.map((thread) => {
+    const visiblePosts =
+      user.role === "student"
+        ? (thread.posts || []).filter((post) => !post.isHidden)
+        : (thread.posts || []);
+
+    return {
+      ...thread,
+      posts: visiblePosts,
+    };
+  });
+};
+
 module.exports = {
   createThread,
   listThreads,
+  listUserDiscussions,
   replyToThread,
   moderateDiscussion,
   listModerationQueue,
