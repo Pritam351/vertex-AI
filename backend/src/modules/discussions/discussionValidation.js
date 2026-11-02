@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const fail = (message) => {
@@ -32,6 +31,8 @@ const validateCreateThread = (body = {}) => ({
     validObjectId(body.courseId, "course ID");
     return body.courseId;
   })(),
+  lectureId: body.lectureId ? String(body.lectureId).trim() : null,
+  lectureTitle: body.lectureTitle ? String(body.lectureTitle).trim().slice(0, 200) : "",
   title: requiredText(body.title, "Title", 200),
   content: requiredText(body.content, "Content", 5000),
 });
@@ -60,6 +61,7 @@ const validateModeration = (body = {}) => {
     action: body.action,
     target: body.target || "thread",
     postId: body.postId || null,
+    reason: body.reason ? String(body.reason).trim().slice(0, 500) : "",
   };
 };
 

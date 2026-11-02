@@ -115,5 +115,12 @@ export const ROUTES = {
     title: "User Management | Admin Panel",
     layout: "admin",
     section: "users"
+  },
+  ADMIN_MODERATION: {
+    hash: "#/admin/moderation",
+    role: "admin",
+    title: "Forum Moderation | Admin Panel",
+    layout: "admin",
+    section: "moderation"
   }
 };

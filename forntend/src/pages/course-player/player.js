@@ -19,6 +19,8 @@ import { learningService }  from "../../services/learningService.js";
 import { aiService }        from "../../services/aiService.js";
 import { certificateService } from "../../services/certificateService.js";
 import { announcementService } from "../../services/announcementService.js";
+import { discussionService }   from "../../services/discussionService.js";
+import { getSession }          from "../../store/session.js";
 import { openCertificateModal } from "../../components/common/certificate-modal.js";
 import { escapeHtml }       from "../../utils/dom.js";
 import { toast }            from "../../components/common/toast.js";
@@ -43,6 +45,8 @@ let enrollment      = null;         // current enrollment object
 let activeChatSessionId = null;
 let chatSessions    = [];
 let courseAnnouncements = [];
+let courseDiscussions = [];
+let discussionsFilter = "all";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 const qs = (sel) => container?.querySelector(sel);
@@ -417,6 +421,7 @@ function switchTab(tabName) {
   if (tabName === "saved-bookmarks") renderBookmarksTab();
   if (tabName === "personal-notes") qs("#notes-textarea")?.focus();
   if (tabName === "announcements") renderPlayerAnnouncements();
+  if (tabName === "discussions") renderPlayerDiscussions();
 }
 
 // ─── Course Announcements tab ────────────────────────────────────────────────
@@ -495,6 +500,218 @@ function renderPlayerAnnouncements() {
             ${instructorName.charAt(0).toUpperCase()}
           </span>
           <span>Posted by <strong>${instructorName}</strong></span>
+        </div>
+      </div>
+    `;
+  }).join("");
+}
+
+// ─── Course Discussions & Forum ──────────────────────────────────────────────
+async function loadCourseDiscussions(courseId) {
+  const loadingEl = qs("#player-discussions-loading");
+  const emptyEl = qs("#player-discussions-empty");
+  const listEl = qs("#player-discussions-list");
+  const countBadge = qs("#discussions-count-badge");
+
+  if (loadingEl) loadingEl.hidden = false;
+  if (emptyEl) emptyEl.hidden = true;
+  if (listEl) listEl.innerHTML = "";
+
+  try {
+    const res = await discussionService.getCourseDiscussions(courseId);
+    courseDiscussions = res?.data || [];
+    if (countBadge) {
+      countBadge.textContent = courseDiscussions.length ? `(${courseDiscussions.length})` : "";
+    }
+    renderPlayerDiscussions();
+  } catch (err) {
+    console.error("Failed to load discussions:", err);
+    if (loadingEl) loadingEl.hidden = true;
+    if (emptyEl) {
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = `<p style="color:var(--text-secondary);margin:0;">Could not load discussions at this time.</p>`;
+    }
+  }
+}
+
+function renderPlayerDiscussions() {
+  const loadingEl = qs("#player-discussions-loading");
+  const emptyEl = qs("#player-discussions-empty");
+  const listEl = qs("#player-discussions-list");
+  if (!listEl) return;
+
+  if (loadingEl) loadingEl.hidden = true;
+
+  const session = getSession();
+  const currentUser = session?.user;
+  const isInstructorOrAdmin = currentUser && (currentUser.role === "admin" || (currentCourse && String(currentCourse.instructorId) === String(currentUser.id || currentUser._id)));
+
+  // Filter threads
+  let threads = courseDiscussions || [];
+  if (discussionsFilter === "lecture" && activeLecture) {
+    threads = threads.filter(t => String(t.lectureId) === String(activeLecture._id));
+  }
+
+  if (!threads.length) {
+    if (emptyEl) {
+      emptyEl.hidden = false;
+      emptyEl.innerHTML = `<p style="color:var(--text-secondary);margin:0;">${discussionsFilter === "lecture" ? "No questions tagged with this lecture yet. Be the first to ask!" : "No discussions yet. Be the first to start a conversation!"}</p>`;
+    }
+    listEl.innerHTML = "";
+    return;
+  }
+
+  if (emptyEl) emptyEl.hidden = true;
+
+  listEl.innerHTML = threads.map((thread) => {
+    const authorName = escapeHtml(thread.createdBy?.name || "Participant");
+    const authorRole = String(thread.createdBy?.role || "student").toLowerCase();
+    const isThreadInstructor = authorRole === "instructor";
+    const title = escapeHtml(thread.title);
+    const content = escapeHtml(thread.content).replace(/\n/g, "<br>");
+    const dateStr = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit"
+    }) : "";
+
+    const roleBadge = isThreadInstructor
+      ? `<span class="status published" style="font-size:0.62rem; padding:0.15rem 0.4rem; font-weight:700;">INSTRUCTOR</span>`
+      : `<span style="font-size:0.65rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.15rem 0.4rem; border-radius:4px; font-weight:600;">STUDENT</span>`;
+
+    const lectureTag = thread.lectureTitle
+      ? `<span style="background:rgba(99,102,241,0.12); color:#a5b4fc; border:1px solid rgba(99,102,241,0.25); border-radius:4px; font-size:0.7rem; padding:0.15rem 0.45rem; font-weight:500;">🎬 ${escapeHtml(thread.lectureTitle)}</span>`
+      : "";
+
+    const lockedBadge = thread.isLocked
+      ? `<span style="background:rgba(239,68,68,0.15); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🔒 LOCKED</span>`
+      : "";
+
+    const isHiddenBadge = thread.isHidden
+      ? `<span style="background:rgba(100,116,139,0.2); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">👁 HIDDEN</span>`
+      : "";
+
+    const isReportedBadge = thread.isFlagged
+      ? `<span style="background:rgba(245,158,11,0.15); color:#fbbf24; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🚩 REPORTED</span>`
+      : "";
+
+    const posts = thread.posts || [];
+    const replyCount = posts.length;
+
+    // Render replies HTML
+    const repliesHtml = posts.map(post => {
+      const pAuthorName = escapeHtml(post.userId?.name || "User");
+      const pAuthorRole = String(post.userId?.role || "student").toLowerCase();
+      const pIsInstructor = pAuthorRole === "instructor";
+      const pContent = escapeHtml(post.content).replace(/\n/g, "<br>");
+      const pDateStr = post.createdAt ? new Date(post.createdAt).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      }) : "";
+
+      const pRoleBadge = pIsInstructor
+        ? `<span class="status published" style="font-size:0.58rem; padding:0.1rem 0.35rem; font-weight:700;">INSTRUCTOR</span>`
+        : `<span style="font-size:0.6rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.1rem 0.35rem; border-radius:3px;">STUDENT</span>`;
+
+      return `
+        <div class="discussion-reply-item" style="display:flex; flex-direction:column; gap:0.4rem; padding:0.75rem 0.9rem; background:#0b1022; border:1px solid #1e293b; border-radius:8px; margin-top:0.5rem;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:0.45rem;">
+              <span style="background:rgba(99,102,241,0.18); color:#a5b4fc; width:20px; height:20px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-size:0.68rem; font-weight:700;">${pAuthorName.charAt(0).toUpperCase()}</span>
+              <strong style="font-size:0.8rem; color:#f8fafc;">${pAuthorName}</strong>
+              ${pRoleBadge}
+              ${post.isFlagged ? `<span style="color:#fbbf24; font-size:0.65rem;">🚩 Reported</span>` : ""}
+              ${post.isHidden ? `<span style="color:#94a3b8; font-size:0.65rem;">👁 Hidden</span>` : ""}
+            </div>
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <span style="font:500 0.65rem 'DM Mono', monospace; color:#9da4c2;">${pDateStr}</span>
+              <button type="button" class="mini-button button-subtle" data-action="report-post" data-thread-id="${thread._id}" data-post-id="${post._id}" title="Report inappropriate reply" style="padding:0.1rem 0.35rem; font-size:0.65rem; border:none; background:transparent; color:#9da4c2; cursor:pointer;">
+                🚩
+              </button>
+              ${isInstructorOrAdmin ? `
+                <button type="button" class="mini-button button-subtle" data-action="toggle-hide-post" data-thread-id="${thread._id}" data-post-id="${post._id}" data-is-hidden="${post.isHidden ? "true" : "false"}" style="padding:0.1rem 0.35rem; font-size:0.65rem;">
+                  ${post.isHidden ? "Unhide" : "Hide"}
+                </button>
+              ` : ""}
+            </div>
+          </div>
+          <div style="font-size:0.78rem; line-height:1.5; color:#cbd5e1; word-break:break-word;">
+            ${pContent}
+          </div>
+        </div>
+      `;
+    }).join("");
+
+    return `
+      <div class="created-item discussion-thread-item" style="display:flex; flex-direction:column; gap:0.75rem; padding:1.15rem; background:#11192d; border:1px solid #27314b; border-radius:10px;">
+        <!-- Thread Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; width:100%;">
+          <div style="display:flex; align-items:center; gap:0.55rem; flex-wrap:wrap;">
+            <span style="background:rgba(99,102,241,0.22); color:#c7d2fe; width:26px; height:26px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.75rem;">
+              ${authorName.charAt(0).toUpperCase()}
+            </span>
+            <strong style="font-size:0.86rem; color:#f8fafc;">${authorName}</strong>
+            ${roleBadge}
+            ${lectureTag}
+            ${lockedBadge}
+            ${isHiddenBadge}
+            ${isReportedBadge}
+          </div>
+          <span style="font:500 0.68rem 'DM Mono', monospace; color:#9da4c2;">${dateStr}</span>
+        </div>
+
+        <!-- Thread Title & Body -->
+        <div style="display:flex; flex-direction:column; gap:0.35rem;">
+          <h4 style="margin:0; font-size:0.95rem; font-weight:700; color:#f8fafc;">${title}</h4>
+          <div style="font-size:0.82rem; line-height:1.6; color:#cbd5e1; word-break:break-word;">
+            ${content}
+          </div>
+        </div>
+
+        <!-- Thread Footer Controls -->
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-top:0.25rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.06); width:100%;">
+          <div style="display:flex; align-items:center; gap:0.65rem;">
+            <button type="button" class="mini-button" data-action="toggle-replies" data-thread-id="${thread._id}" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.3rem 0.65rem;">
+              <span>💬</span>
+              <span>${replyCount} ${replyCount === 1 ? "Reply" : "Replies"}</span>
+            </button>
+            <button type="button" class="mini-button button-subtle" data-action="report-thread" data-thread-id="${thread._id}" title="Report thread" style="border:none; background:transparent; color:#9da4c2; font-size:0.75rem; cursor:pointer;">
+              🚩 Report
+            </button>
+          </div>
+
+          ${isInstructorOrAdmin ? `
+            <div style="display:flex; align-items:center; gap:0.4rem;">
+              <button type="button" class="mini-button" data-action="toggle-lock-thread" data-thread-id="${thread._id}" data-is-locked="${thread.isLocked ? "true" : "false"}" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
+                ${thread.isLocked ? "🔓 Unlock" : "🔒 Lock"}
+              </button>
+              <button type="button" class="mini-button" data-action="toggle-hide-thread" data-thread-id="${thread._id}" data-is-hidden="${thread.isHidden ? "true" : "false"}" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
+                ${thread.isHidden ? "👁 Unhide" : "👁 Hide"}
+              </button>
+            </div>
+          ` : ""}
+        </div>
+
+        <!-- Replies Drawer / Container -->
+        <div class="discussion-replies-wrapper" id="replies-wrapper-${thread._id}" style="display:none; width:100%; border-top:1px dashed rgba(255,255,255,0.08); padding-top:0.75rem;">
+          <div class="discussion-replies-list" style="display:flex; flex-direction:column; gap:0.4rem;">
+            ${repliesHtml}
+          </div>
+
+          <!-- Reply composer (if not locked) -->
+          ${!thread.isLocked ? `
+            <form class="discussion-reply-form" data-thread-id="${thread._id}" style="display:flex; gap:0.5rem; margin-top:0.75rem; align-items:flex-start;">
+              <textarea name="replyContent" class="discussion-reply-input" required maxlength="5000" rows="1" placeholder="Write a reply..." style="flex:1; padding:0.55rem 0.75rem; min-height:38px; resize:vertical; font-size:0.8rem;"></textarea>
+              <button type="submit" class="button button-primary mini-button" style="padding:0.55rem 0.85rem; height:38px; font-size:0.78rem;">
+                Reply
+              </button>
+            </form>
+          ` : `
+            <p style="color:#f87171; font-size:0.75rem; margin:0.5rem 0 0 0;">🔒 This discussion thread has been locked by an instructor.</p>
+          `}
         </div>
       </div>
     `;
@@ -1066,6 +1283,15 @@ async function selectLecture(lecture, moduleTitle) {
 
   // 13. Re-render bookmarks tab if open
   if (activeTab === "saved-bookmarks") renderBookmarksTab();
+
+  // 14. Update discussion lecture tag
+  const threadLectureTag = qs("#thread-lecture-tag-name");
+  if (threadLectureTag) threadLectureTag.textContent = lecture.title || "Current Lecture";
+
+  // 15. If discussions tab is active and filter is "lecture", re-render
+  if (activeTab === "discussions" && discussionsFilter === "lecture") {
+    renderPlayerDiscussions();
+  }
 }
 
 // ─── Prev / Next navigation ───────────────────────────────────────────────────
@@ -1282,6 +1508,224 @@ function wireEvents(courseId) {
     loadCourseAnnouncements(courseId);
   });
 
+  // Discussions filters
+  qs("#btn-filter-all-discussions")?.addEventListener("click", () => {
+    discussionsFilter = "all";
+    const btnAll = qs("#btn-filter-all-discussions");
+    const btnLec = qs("#btn-filter-lecture-discussions");
+    if (btnAll) { btnAll.style.background = "#28205e"; btnAll.style.color = "#fff"; }
+    if (btnLec) { btnLec.style.background = "transparent"; btnLec.style.color = "#9da4c2"; }
+    renderPlayerDiscussions();
+  });
+
+  qs("#btn-filter-lecture-discussions")?.addEventListener("click", () => {
+    discussionsFilter = "lecture";
+    const btnAll = qs("#btn-filter-all-discussions");
+    const btnLec = qs("#btn-filter-lecture-discussions");
+    if (btnLec) { btnLec.style.background = "#28205e"; btnLec.style.color = "#fff"; }
+    if (btnAll) { btnAll.style.background = "transparent"; btnAll.style.color = "#9da4c2"; }
+    renderPlayerDiscussions();
+  });
+
+  // Discussions composer toggle & cancel
+  qs("#btn-toggle-new-thread")?.addEventListener("click", () => {
+    const p = qs("#new-thread-panel");
+    if (!p) return;
+    p.hidden = !p.hidden;
+    if (!p.hidden) {
+      qs("#thread-title-input")?.focus();
+      const threadLectureTag = qs("#thread-lecture-tag-name");
+      if (threadLectureTag) threadLectureTag.textContent = activeLecture?.title || "Current Lecture";
+    }
+  });
+
+  qs("#btn-cancel-new-thread")?.addEventListener("click", () => {
+    const p = qs("#new-thread-panel");
+    if (p) p.hidden = true;
+  });
+
+  // Discussions new thread submit
+  qs("#new-thread-form")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const titleInput = qs("#thread-title-input");
+    const contentInput = qs("#thread-content-input");
+    const attachCheck = qs("#thread-attach-lecture");
+    const submitBtn = qs("#btn-submit-thread");
+
+    const title = titleInput?.value?.trim();
+    const content = contentInput?.value?.trim();
+    if (!title || title.length < 3) {
+      toast("Thread title must be at least 3 characters", "error");
+      titleInput?.focus();
+      return;
+    }
+    if (!content) {
+      toast("Question content cannot be empty", "error");
+      contentInput?.focus();
+      return;
+    }
+
+    if (submitBtn) submitBtn.disabled = true;
+    try {
+      await discussionService.createThread({
+        courseId,
+        lectureId: (attachCheck?.checked && activeLecture) ? String(activeLecture._id) : null,
+        lectureTitle: (attachCheck?.checked && activeLecture) ? (activeLecture.title || "") : "",
+        title,
+        content
+      });
+
+      toast("Discussion question posted successfully! 💬", "success");
+      if (titleInput) titleInput.value = "";
+      if (contentInput) contentInput.value = "";
+      const p = qs("#new-thread-panel");
+      if (p) p.hidden = true;
+      await loadCourseDiscussions(courseId);
+    } catch (err) {
+      toast(`Failed to post question: ${errorText(err)}`, "error");
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
+
+  // Discussions refresh
+  qs("#btn-refresh-discussions")?.addEventListener("click", () => {
+    loadCourseDiscussions(courseId);
+  });
+
+  // Delegated thread actions in #player-discussions-list
+  qs("#player-discussions-list")?.addEventListener("click", async (e) => {
+    // Toggle replies drawer
+    const toggleRepliesBtn = e.target.closest('[data-action="toggle-replies"]');
+    if (toggleRepliesBtn) {
+      const threadId = toggleRepliesBtn.dataset.threadId;
+      const drawer = qs(`#replies-wrapper-${threadId}`);
+      if (drawer) {
+        drawer.style.display = drawer.style.display === "none" ? "block" : "none";
+      }
+      return;
+    }
+
+    // Report thread
+    const reportThreadBtn = e.target.closest('[data-action="report-thread"]');
+    if (reportThreadBtn) {
+      const threadId = reportThreadBtn.dataset.threadId;
+      const reason = prompt("Reason for reporting this thread (e.g. spam, offensive language):");
+      if (reason !== null) {
+        try {
+          await discussionService.reportThread(threadId, reason);
+          toast("Thread reported to moderators. Thank you.", "info");
+          await loadCourseDiscussions(courseId);
+        } catch (err) {
+          toast(`Could not report thread: ${errorText(err)}`, "error");
+        }
+      }
+      return;
+    }
+
+    // Report reply post
+    const reportPostBtn = e.target.closest('[data-action="report-post"]');
+    if (reportPostBtn) {
+      const threadId = reportPostBtn.dataset.threadId;
+      const postId = reportPostBtn.dataset.postId;
+      const reason = prompt("Reason for reporting this reply:");
+      if (reason !== null) {
+        try {
+          await discussionService.reportPost(threadId, postId, reason);
+          toast("Comment reported to moderators. Thank you.", "info");
+          await loadCourseDiscussions(courseId);
+        } catch (err) {
+          toast(`Could not report comment: ${errorText(err)}`, "error");
+        }
+      }
+      return;
+    }
+
+    // Lock/Unlock thread (Instructor/Admin)
+    const lockBtn = e.target.closest('[data-action="toggle-lock-thread"]');
+    if (lockBtn) {
+      const threadId = lockBtn.dataset.threadId;
+      const isLocked = lockBtn.dataset.isLocked === "true";
+      try {
+        await discussionService.moderateDiscussion(threadId, {
+          action: isLocked ? "unlock" : "lock",
+          target: "thread"
+        });
+        toast(`Thread ${isLocked ? "unlocked" : "locked"}.`);
+        await loadCourseDiscussions(courseId);
+      } catch (err) {
+        toast(`Moderation error: ${errorText(err)}`, "error");
+      }
+      return;
+    }
+
+    // Hide/Unhide thread (Instructor/Admin)
+    const hideThreadBtn = e.target.closest('[data-action="toggle-hide-thread"]');
+    if (hideThreadBtn) {
+      const threadId = hideThreadBtn.dataset.threadId;
+      const isHidden = hideThreadBtn.dataset.isHidden === "true";
+      try {
+        await discussionService.moderateDiscussion(threadId, {
+          action: isHidden ? "unhide" : "hide",
+          target: "thread"
+        });
+        toast(`Thread ${isHidden ? "restored" : "hidden"}.`);
+        await loadCourseDiscussions(courseId);
+      } catch (err) {
+        toast(`Moderation error: ${errorText(err)}`, "error");
+      }
+      return;
+    }
+
+    // Hide/Unhide post (Instructor/Admin)
+    const hidePostBtn = e.target.closest('[data-action="toggle-hide-post"]');
+    if (hidePostBtn) {
+      const threadId = hidePostBtn.dataset.threadId;
+      const postId = hidePostBtn.dataset.postId;
+      const isHidden = hidePostBtn.dataset.isHidden === "true";
+      try {
+        await discussionService.moderateDiscussion(threadId, {
+          action: isHidden ? "unhide" : "hide",
+          target: "post",
+          postId
+        });
+        toast(`Reply ${isHidden ? "restored" : "hidden"}.`);
+        await loadCourseDiscussions(courseId);
+      } catch (err) {
+        toast(`Moderation error: ${errorText(err)}`, "error");
+      }
+      return;
+    }
+  });
+
+  // Reply form submission
+  qs("#player-discussions-list")?.addEventListener("submit", async (e) => {
+    const form = e.target.closest(".discussion-reply-form");
+    if (!form) return;
+    e.preventDefault();
+    const threadId = form.dataset.threadId;
+    const input = form.querySelector("textarea[name='replyContent']");
+    const content = input?.value?.trim();
+    if (!content) return;
+
+    const btn = form.querySelector("button[type='submit']");
+    if (btn) btn.disabled = true;
+
+    try {
+      await discussionService.replyToThread(threadId, { content });
+      toast("Reply posted! 💬", "success");
+      if (input) input.value = "";
+      await loadCourseDiscussions(courseId);
+      // Ensure drawer stays open
+      const drawer = qs(`#replies-wrapper-${threadId}`);
+      if (drawer) drawer.style.display = "block";
+    } catch (err) {
+      toast(`Failed to post reply: ${errorText(err)}`, "error");
+    } finally {
+      if (btn) btn.disabled = false;
+    }
+  });
+
   // Page unload: save position
   window.addEventListener("beforeunload", () => {
     if (activeLecture && !isYouTube) savePositionToLS();
@@ -1315,6 +1759,8 @@ export async function mountCoursePlayer(cont) {
   activeChatSessionId = null;
   chatSessions       = [];
   courseAnnouncements = [];
+  courseDiscussions  = [];
+  discussionsFilter  = "all";
   stopProgressInterval();
 
   // Parse courseId from hash: #/student/course-player?courseId=…
@@ -1384,8 +1830,9 @@ export async function mountCoursePlayer(cont) {
     renderTopbar();
     renderCurriculum();
 
-    // Load course announcements in background
+    // Load course announcements & discussions in background
     loadCourseAnnouncements(courseId);
+    loadCourseDiscussions(courseId);
 
     // If URL contains tab param (e.g. from notification click: &tab=announcements)
     const initialTab = params.get("tab");

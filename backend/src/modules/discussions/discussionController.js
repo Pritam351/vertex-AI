@@ -1,9 +1,9 @@
-
 const {
   createThread,
   listThreads,
   replyToThread,
   moderateDiscussion,
+  listModerationQueue,
 } = require("./discussionService");
 
 const {
@@ -29,7 +29,10 @@ const createDiscussionThread = async (req, res, next) => {
 
 const getCourseThreads = async (req, res, next) => {
   try {
-    const threads = await listThreads(req.params.courseId, req.user);
+    const options = {
+      lectureId: req.query.lectureId || null,
+    };
+    const threads = await listThreads(req.params.courseId, req.user, options);
 
     return res.status(200).json({
       success: true,
@@ -79,9 +82,25 @@ const moderateThread = async (req, res, next) => {
   }
 };
 
+const getModerationQueue = async (req, res, next) => {
+  try {
+    const filter = req.query.filter || "flagged";
+    const queue = await listModerationQueue(req.user, filter);
+
+    return res.status(200).json({
+      success: true,
+      count: queue.length,
+      data: queue,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   createDiscussionThread,
   getCourseThreads,
   createReply,
   moderateThread,
+  getModerationQueue,
 };

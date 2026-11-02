@@ -1,8 +1,8 @@
-
 const mongoose = require("mongoose");
 const DiscussionThread = require("./discussionModel");
 const Course = require("../courses/courseModel");
 const Enrollment = require("../enrollments/enrollmentModel");
+const { createNotification } = require("../notifications/notificationService");
 
 const fail = (statusCode, message) => {
   const error = new Error(message);
@@ -57,15 +57,37 @@ const createThread = async (data, user) => {
   const course = await getCourse(data.courseId);
   await ensureCourseAccess(course, user);
 
-  return DiscussionThread.create({
+  const thread = await DiscussionThread.create({
     courseId: course._id,
+    lectureId: data.lectureId || null,
+    lectureTitle: data.lectureTitle || "",
     createdBy: user._id,
     title: data.title,
     content: data.content,
   });
+
+  // Notify course instructor if a student posts a question
+  if (user.role === "student" && course.instructorId.toString() !== user._id.toString()) {
+    try {
+      await createNotification({
+        userId: course.instructorId,
+        type: "discussion",
+        title: `💬 New question in ${course.title}`,
+        message: `${user.fullName || user.name || "A student"} asked: "${data.title}"`,
+        link: `#/student/player?courseId=${course._id}&tab=discussions`,
+      });
+    } catch (notifErr) {
+      console.error("[DiscussionService] Notification error:", notifErr.message);
+    }
+  }
+
+  return DiscussionThread.findById(thread._id)
+    .populate("createdBy", "fullName name email role avatarUrl")
+    .populate("posts.userId", "fullName name email role avatarUrl")
+    .lean();
 };
 
-const listThreads = async (courseId, user) => {
+const listThreads = async (courseId, user, options = {}) => {
   if (!mongoose.isValidObjectId(courseId)) {
     fail(400, "Invalid course ID");
   }
@@ -79,15 +101,22 @@ const listThreads = async (courseId, user) => {
     query.isHidden = false;
   }
 
+  if (options.lectureId) {
+    query.lectureId = options.lectureId;
+  }
+
   const threads = await DiscussionThread.find(query)
+    .populate("createdBy", "fullName name email role avatarUrl")
+    .populate("posts.userId", "fullName name email role avatarUrl")
+    .populate("moderatedBy", "fullName name email role avatarUrl")
     .sort({ createdAt: -1 })
     .lean();
 
   return threads.map((thread) => {
     const visiblePosts =
       user.role === "student"
-        ? thread.posts.filter((post) => !post.isHidden)
-        : thread.posts;
+        ? (thread.posts || []).filter((post) => !post.isHidden)
+        : (thread.posts || []);
 
     return {
       ...thread,
@@ -101,8 +130,12 @@ const replyToThread = async (threadId, data, user) => {
   const course = await getCourse(thread.courseId);
   await ensureCourseAccess(course, user);
 
-  if (thread.isHidden) fail(404, "Discussion thread not found");
-  if (thread.isLocked) fail(403, "This discussion thread is locked");
+  if (thread.isHidden && user.role === "student") {
+    fail(404, "Discussion thread not found");
+  }
+  if (thread.isLocked) {
+    fail(403, "This discussion thread is locked");
+  }
 
   if (data.parentPostId) {
     const parentExists = thread.posts.some(
@@ -121,15 +154,40 @@ const replyToThread = async (threadId, data, user) => {
   });
 
   await thread.save();
-  return thread;
+
+  // Notify the thread author if they are not the replier
+  if (thread.createdBy.toString() !== user._id.toString()) {
+    try {
+      await createNotification({
+        userId: thread.createdBy,
+        type: "discussion",
+        title: `💬 New reply in "${thread.title.slice(0, 35)}"`,
+        message: `${user.fullName || user.name || "A participant"} replied: ${data.content.slice(0, 120)}`,
+        link: `#/student/player?courseId=${course._id}&tab=discussions`,
+      });
+    } catch (notifErr) {
+      console.error("[DiscussionService] Notification error:", notifErr.message);
+    }
+  }
+
+  return DiscussionThread.findById(thread._id)
+    .populate("createdBy", "fullName name email role avatarUrl")
+    .populate("posts.userId", "fullName name email role avatarUrl")
+    .lean();
 };
 
 const moderateDiscussion = async (threadId, data, user) => {
   const thread = await getThread(threadId);
   const course = await getCourse(thread.courseId);
 
-  if (!canManageCourse(course, user)) {
-    fail(403, "Only the course instructor or an admin can moderate");
+  // If action is "flag" (reporting inappropriate content), any user with course access can report
+  if (data.action === "flag") {
+    await ensureCourseAccess(course, user);
+  } else {
+    // Other moderation actions (hide, unhide, lock, unlock, unflag) require instructor or admin
+    if (!canManageCourse(course, user)) {
+      fail(403, "Only the course instructor or an admin can moderate discussions");
+    }
   }
 
   const now = new Date();
@@ -148,15 +206,28 @@ const moderateDiscussion = async (threadId, data, user) => {
       case "unlock":
         thread.isLocked = false;
         break;
+      case "flag":
+        thread.isFlagged = true;
+        thread.flagReason = data.reason || "Reported by user";
+        break;
+      case "unflag":
+        thread.isFlagged = false;
+        thread.flagReason = "";
+        break;
       default:
         fail(400, "This action is not supported for threads");
     }
 
-    thread.moderatedBy = user._id;
-    thread.moderatedAt = now;
+    if (data.action !== "flag") {
+      thread.moderatedBy = user._id;
+      thread.moderatedAt = now;
+    }
     await thread.save();
 
-    return thread;
+    return DiscussionThread.findById(thread._id)
+      .populate("createdBy", "fullName name email role avatarUrl")
+      .populate("posts.userId", "fullName name email role avatarUrl")
+      .lean();
   }
 
   if (data.target !== "post") {
@@ -168,7 +239,6 @@ const moderateDiscussion = async (threadId, data, user) => {
   }
 
   const post = thread.posts.id(data.postId);
-
   if (!post) fail(404, "Discussion reply not found");
 
   switch (data.action) {
@@ -180,19 +250,62 @@ const moderateDiscussion = async (threadId, data, user) => {
       break;
     case "flag":
       post.isFlagged = true;
+      post.flagReason = data.reason || "Reported by user";
       break;
     case "unflag":
       post.isFlagged = false;
+      post.flagReason = "";
       break;
     default:
       fail(400, "This action is not supported for posts");
   }
 
-  post.moderatedBy = user._id;
-  post.moderatedAt = now;
+  if (data.action !== "flag") {
+    post.moderatedBy = user._id;
+    post.moderatedAt = now;
+  }
 
   await thread.save();
-  return thread;
+
+  return DiscussionThread.findById(thread._id)
+    .populate("createdBy", "fullName name email role avatarUrl")
+    .populate("posts.userId", "fullName name email role avatarUrl")
+    .lean();
+};
+
+const listModerationQueue = async (user, filter = "flagged") => {
+  if (user.role !== "admin" && user.role !== "instructor") {
+    fail(403, "Access restricted to administrators and instructors");
+  }
+
+  let courseIds = null;
+  if (user.role === "instructor") {
+    const courses = await Course.find({ instructorId: user._id }).select("_id").lean();
+    courseIds = courses.map((c) => c._id);
+  }
+
+  const query = {};
+  if (courseIds) {
+    query.courseId = { $in: courseIds };
+  }
+
+  if (filter === "flagged") {
+    query.$or = [{ isFlagged: true }, { "posts.isFlagged": true }];
+  } else if (filter === "hidden") {
+    query.$or = [{ isHidden: true }, { "posts.isHidden": true }];
+  } else if (filter === "locked") {
+    query.isLocked = true;
+  }
+
+  const threads = await DiscussionThread.find(query)
+    .populate("courseId", "title thumbnailUrl")
+    .populate("createdBy", "fullName name email role avatarUrl")
+    .populate("posts.userId", "fullName name email role avatarUrl")
+    .populate("moderatedBy", "fullName name email role avatarUrl")
+    .sort({ updatedAt: -1 })
+    .lean();
+
+  return threads;
 };
 
 module.exports = {
@@ -200,4 +313,5 @@ module.exports = {
   listThreads,
   replyToThread,
   moderateDiscussion,
+  listModerationQueue,
 };

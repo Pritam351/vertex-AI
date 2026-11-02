@@ -1,4 +1,3 @@
-
 const mongoose = require("mongoose");
 
 const discussionPostSchema = new mongoose.Schema(
@@ -22,6 +21,11 @@ const discussionPostSchema = new mongoose.Schema(
     isFlagged: {
       type: Boolean,
       default: false,
+    },
+    flagReason: {
+      type: String,
+      trim: true,
+      default: "",
     },
     isHidden: {
       type: Boolean,
@@ -47,6 +51,16 @@ const discussionThreadSchema = new mongoose.Schema(
       ref: "Course",
       required: true,
       index: true,
+    },
+    lectureId: {
+      type: String,
+      default: null,
+      index: true,
+    },
+    lectureTitle: {
+      type: String,
+      trim: true,
+      default: "",
     },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
@@ -75,6 +89,15 @@ const discussionThreadSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    isFlagged: {
+      type: Boolean,
+      default: false,
+    },
+    flagReason: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     isHidden: {
       type: Boolean,
       default: false,
@@ -93,5 +116,7 @@ const discussionThreadSchema = new mongoose.Schema(
 );
 
 discussionThreadSchema.index({ courseId: 1, createdAt: -1 });
+discussionThreadSchema.index({ courseId: 1, lectureId: 1 });
+discussionThreadSchema.index({ isFlagged: 1, isHidden: 1 });
 
 module.exports = mongoose.model("DiscussionThread", discussionThreadSchema);

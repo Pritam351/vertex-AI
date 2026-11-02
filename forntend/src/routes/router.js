@@ -22,7 +22,7 @@ import { mountStudentQuizzes } from "../pages/quizzes/quiz.js";
 import { mountStudentCertificates } from "../pages/certificates/certificates.js";
 
 // Admin
-import { mountAdminDashboard, mountAdminCourses, mountAdminUsers, showAdminView } from "../pages/admin-panel/admin.js";
+import { mountAdminDashboard, mountAdminCourses, mountAdminUsers, mountAdminModeration, showAdminView } from "../pages/admin-panel/admin.js";
 
 // Export backward compatible loader
 export { loadInstructorFragments as loadInstructorPages };
@@ -38,7 +38,8 @@ const TEMPLATES = {
   studentCertificates: new URL("../pages/certificates/certificates.html", import.meta.url),
   adminDashboard: new URL("../pages/admin-panel/dashboard.html", import.meta.url),
   adminCourses: new URL("../pages/admin-panel/courses.html", import.meta.url),
-  adminUsers: new URL("../pages/admin-panel/users.html", import.meta.url)
+  adminUsers: new URL("../pages/admin-panel/users.html", import.meta.url),
+  adminModeration: new URL("../pages/admin-panel/moderation.html", import.meta.url)
 };
 
 async function fetchHtml(url) {
@@ -172,7 +173,12 @@ export async function navigate() {
     });
 
     // Update topbar title
-    const sectionTitles = { dashboard: "Overview", courses: "Course Approvals", users: "User Directory" };
+    const sectionTitles = {
+      dashboard: "Overview",
+      courses: "Course Approvals",
+      users: "User Directory",
+      moderation: "Forum Content Moderation"
+    };
     const pageTitleEl = activeAppContainer.querySelector("#page-title");
     if (pageTitleEl) pageTitleEl.textContent = sectionTitles[subSection] || "Admin Panel";
 
@@ -186,6 +192,9 @@ export async function navigate() {
     } else if (subSection === "users") {
       container.innerHTML = await fetchHtml(TEMPLATES.adminUsers);
       await mountAdminUsers(container);
+    } else if (subSection === "moderation") {
+      container.innerHTML = await fetchHtml(TEMPLATES.adminModeration);
+      await mountAdminModeration(container);
     }
     return;
   }

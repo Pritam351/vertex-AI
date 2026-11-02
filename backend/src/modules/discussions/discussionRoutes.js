@@ -1,4 +1,3 @@
-
 const express = require("express");
 const authMiddleware = require("../../middleware/authMiddleware");
 const requireRole = require("../../middleware/roleMiddleware");
@@ -8,11 +7,12 @@ const {
   getCourseThreads,
   createReply,
   moderateThread,
+  getModerationQueue,
 } = require("./discussionController");
 
 const router = express.Router();
 
-// List discussions for an approved course.
+// List discussions for an approved course
 router.get(
   "/courses/:courseId/discussions",
   authMiddleware,
@@ -20,7 +20,7 @@ router.get(
   getCourseThreads
 );
 
-// Create a discussion thread.
+// Create a discussion thread
 router.post(
   "/discussions",
   authMiddleware,
@@ -28,7 +28,7 @@ router.post(
   createDiscussionThread
 );
 
-// Reply to a thread.
+// Reply to a thread
 router.post(
   "/discussions/:threadId/replies",
   authMiddleware,
@@ -36,12 +36,20 @@ router.post(
   createReply
 );
 
-// Moderate a thread or a reply.
+// Moderate or report (flag) a thread or a reply
 router.patch(
   "/discussions/:threadId/moderation",
   authMiddleware,
-  requireRole("instructor", "admin"),
+  requireRole("student", "instructor", "admin"),
   moderateThread
+);
+
+// Admin & Instructor Moderation Queue (flagged/hidden threads across courses)
+router.get(
+  "/discussions/moderation",
+  authMiddleware,
+  requireRole("instructor", "admin"),
+  getModerationQueue
 );
 
 module.exports = router;

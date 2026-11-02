@@ -1,5 +1,6 @@
 import { courseService } from "../../services/courseService.js";
 import { adminService } from "../../services/adminService.js";
+import { discussionService } from "../../services/discussionService.js";
 import { $, escapeHtml } from "../../utils/dom.js";
 import { toast } from "../../components/common/toast.js";
 import { setBusy } from "../../components/common/loading.js";
@@ -781,4 +782,168 @@ export async function mountAdminUsers(container) {
 
   // ── Initial Load ──────────────────────────────────────────────────────────
   await loadUsers();
+}
+
+// ─── Forum Moderation ───────────────────────────────────────────────────────
+export async function mountAdminModeration(container) {
+  const filterSelect = $("#moderation-filter-select", container);
+  const refreshBtn = $("#btn-refresh-moderation", container);
+  const countPill = $("#mod-queue-count", container);
+  const loadingEl = $("#mod-queue-loading", container);
+  const emptyEl = $("#mod-queue-empty", container);
+  const queueContainer = $("#mod-queue-container", container);
+
+  async function loadQueue() {
+    if (loadingEl) loadingEl.hidden = false;
+    if (emptyEl) emptyEl.hidden = true;
+    if (queueContainer) queueContainer.innerHTML = "";
+
+    const filter = filterSelect?.value || "flagged";
+    try {
+      const res = await discussionService.getModerationQueue(filter);
+      const items = res?.data || [];
+      if (countPill) countPill.textContent = `${items.length} ${items.length === 1 ? "item" : "items"}`;
+
+      if (!items.length) {
+        if (emptyEl) emptyEl.hidden = false;
+        return;
+      }
+
+      if (emptyEl) emptyEl.hidden = true;
+      queueContainer.innerHTML = items.map((thread) => {
+        const courseTitle = escapeHtml(thread.courseId?.title || "Course");
+        const authorName = escapeHtml(thread.createdBy?.name || "User");
+        const authorRole = escapeHtml(thread.createdBy?.role || "student");
+        const title = escapeHtml(thread.title);
+        const content = escapeHtml(thread.content).replace(/\n/g, "<br>");
+        const dateStr = thread.createdAt ? new Date(thread.createdAt).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+          hour: "2-digit",
+          minute: "2-digit"
+        }) : "";
+
+        // Collect flagged or hidden posts in this thread
+        const flaggedPosts = (thread.posts || []).filter(p => p.isFlagged || p.isHidden);
+
+        return `
+          <div class="panel form-panel" style="background:#11192d; border:1px solid ${thread.isFlagged ? "rgba(245,158,11,0.4)" : "#27314b"}; border-radius:10px; padding:1.25rem;">
+            <!-- Header -->
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:0.75rem;">
+              <div style="display:flex; flex-direction:column; gap:0.25rem;">
+                <span style="font-size:0.75rem; color:#818cf8; font-weight:600;">📚 ${courseTitle}</span>
+                <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
+                  <strong style="font-size:0.95rem; color:#f8fafc;">${title}</strong>
+                  ${thread.isFlagged ? `<span class="status" style="background:rgba(245,158,11,0.18); color:#fbbf24; font-size:0.65rem; padding:0.15rem 0.45rem; font-weight:700;">🚩 FLAGGED THREAD</span>` : ""}
+                  ${thread.isHidden ? `<span class="status" style="background:rgba(100,116,139,0.25); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; font-weight:700;">👁 HIDDEN</span>` : ""}
+                  ${thread.isLocked ? `<span class="status" style="background:rgba(239,68,68,0.18); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; font-weight:700;">🔒 LOCKED</span>` : ""}
+                </div>
+              </div>
+              <span style="font:500 0.68rem 'DM Mono', monospace; color:#9da4c2;">${dateStr}</span>
+            </div>
+
+            <!-- Thread Content -->
+            <div style="margin-top:0.75rem;">
+              <div style="font-size:0.75rem; color:#9da4c2; margin-bottom:0.35rem;">
+                Created by <strong>${authorName}</strong> (${authorRole})
+                ${thread.flagReason ? `<span style="color:#fbbf24; margin-left:0.5rem;">• Report reason: <em>${escapeHtml(thread.flagReason)}</em></span>` : ""}
+              </div>
+              <div style="font-size:0.84rem; line-height:1.6; color:#cbd5e1; background:rgba(0,0,0,0.15); padding:0.75rem; border-radius:6px;">
+                ${content}
+              </div>
+            </div>
+
+            <!-- Thread Moderation Actions -->
+            <div style="display:flex; justify-content:flex-end; align-items:center; gap:0.5rem; margin-top:0.75rem; padding-top:0.6rem; border-top:1px solid rgba(255,255,255,0.06);">
+              ${thread.isFlagged ? `
+                <button type="button" class="mini-button" data-mod-action="unflag" data-mod-target="thread" data-thread-id="${thread._id}" style="color:#34d399; border-color:rgba(52,211,153,0.4);">
+                  ✓ Dismiss Report
+                </button>
+              ` : ""}
+              <button type="button" class="mini-button" data-mod-action="${thread.isHidden ? "unhide" : "hide"}" data-mod-target="thread" data-thread-id="${thread._id}">
+                ${thread.isHidden ? "👁 Restore (Unhide)" : "👁 Hide Thread"}
+              </button>
+              <button type="button" class="mini-button" data-mod-action="${thread.isLocked ? "unlock" : "lock"}" data-mod-target="thread" data-thread-id="${thread._id}">
+                ${thread.isLocked ? "🔓 Unlock" : "🔒 Lock"}
+              </button>
+            </div>
+
+            <!-- Flagged Replies in this Thread -->
+            ${flaggedPosts.length > 0 ? `
+              <div style="margin-top:1rem; border-top:1px dashed rgba(255,255,255,0.1); padding-top:0.75rem;">
+                <h5 style="margin:0 0 0.5rem 0; font-size:0.8rem; color:#fca5a5;">Flagged Replies (${flaggedPosts.length})</h5>
+                <div style="display:flex; flex-direction:column; gap:0.5rem;">
+                  ${flaggedPosts.map(post => {
+                    const pName = escapeHtml(post.userId?.name || "User");
+                    const pRole = escapeHtml(post.userId?.role || "student");
+                    const pContent = escapeHtml(post.content).replace(/\n/g, "<br>");
+                    return `
+                      <div style="background:#0b1022; border:1px solid #1e293b; border-radius:8px; padding:0.75rem; display:flex; flex-direction:column; gap:0.4rem;">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                          <div style="font-size:0.75rem; color:#9da4c2;">
+                            Reply by <strong>${pName}</strong> (${pRole})
+                            ${post.isFlagged ? `<span style="color:#fbbf24; margin-left:0.4rem;">🚩 Flagged: <em>${escapeHtml(post.flagReason || "Reported")}</em></span>` : ""}
+                            ${post.isHidden ? `<span style="color:#94a3b8; margin-left:0.4rem;">👁 Hidden</span>` : ""}
+                          </div>
+                          <div style="display:flex; gap:0.4rem;">
+                            ${post.isFlagged ? `
+                              <button type="button" class="mini-button" data-mod-action="unflag" data-mod-target="post" data-thread-id="${thread._id}" data-post-id="${post._id}" style="color:#34d399; font-size:0.7rem; padding:0.2rem 0.5rem;">
+                                ✓ Dismiss
+                              </button>
+                            ` : ""}
+                            <button type="button" class="mini-button" data-mod-action="${post.isHidden ? "unhide" : "hide"}" data-mod-target="post" data-thread-id="${thread._id}" data-post-id="${post._id}" style="font-size:0.7rem; padding:0.2rem 0.5rem;">
+                              ${post.isHidden ? "Unhide" : "Hide"}
+                            </button>
+                          </div>
+                        </div>
+                        <div style="font-size:0.8rem; color:#cbd5e1; line-height:1.5;">
+                          ${pContent}
+                        </div>
+                      </div>
+                    `;
+                  }).join("")}
+                </div>
+              </div>
+            ` : ""}
+          </div>
+        `;
+      }).join("");
+    } catch (err) {
+      toast(`Failed to load moderation queue: ${errorText(err)}`, "error");
+    } finally {
+      if (loadingEl) loadingEl.hidden = true;
+    }
+  }
+
+  // Filter change
+  filterSelect?.addEventListener("change", loadQueue);
+  refreshBtn?.addEventListener("click", loadQueue);
+
+  // Moderation action delegation
+  queueContainer?.addEventListener("click", async (e) => {
+    const btn = e.target.closest("[data-mod-action]");
+    if (!btn) return;
+    const action = btn.dataset.modAction;
+    const target = btn.dataset.modTarget;
+    const threadId = btn.dataset.threadId;
+    const postId = btn.dataset.postId || null;
+
+    btn.disabled = true;
+    try {
+      await discussionService.moderateDiscussion(threadId, {
+        action,
+        target,
+        postId
+      });
+      toast(`Action applied: ${action} ${target}.`);
+      await loadQueue();
+    } catch (err) {
+      toast(`Moderation failed: ${errorText(err)}`, "error");
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  await loadQueue();
 }

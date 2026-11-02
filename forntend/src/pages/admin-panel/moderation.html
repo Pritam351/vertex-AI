@@ -1,0 +1,51 @@
+<section class="view is-active" id="admin-moderation">
+  <div class="section-intro">
+    <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+      <div>
+        <p class="eyebrow">COMMUNITY &amp; SAFETY</p>
+        <h2>Forum Content Moderation</h2>
+        <p>Review flagged questions, reported comments, and enforce community standards across all course discussions.</p>
+      </div>
+      <div class="analytics-toolbar">
+        <label for="moderation-filter-select" class="analytics-select-label" style="font-size:0.8rem; color:#9da4c2;">Filter:</label>
+        <select id="moderation-filter-select" class="generator-select" style="min-width:190px;">
+          <option value="flagged" selected>Reported / Flagged</option>
+          <option value="hidden">Hidden Content</option>
+          <option value="locked">Locked Threads</option>
+          <option value="all">All Discussions</option>
+        </select>
+        <button class="button button-secondary" type="button" id="btn-refresh-moderation" style="padding:0.45rem 0.85rem; font-size:0.8rem;">
+          <span>↻ Refresh</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <section aria-labelledby="mod-queue-heading" class="courses-section" style="margin-top:1.5rem;">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">MODERATION QUEUE</p>
+        <h3 id="mod-queue-heading">Discussions Under Review</h3>
+      </div>
+      <div style="display:flex; align-items:center; gap:0.75rem;">
+        <span class="count-pill" id="mod-queue-count">0 items</span>
+      </div>
+    </div>
+
+    <div id="mod-queue-loading" class="courses-loading-state">
+      <div class="courses-spinner" aria-hidden="true"></div>
+      <p>Loading moderation queue…</p>
+    </div>
+
+    <div id="mod-queue-empty" class="empty-state" hidden style="padding:3rem 1rem; text-align:center;">
+      <div class="empty-icon" aria-hidden="true" style="font-size:2.5rem; margin-bottom:0.75rem;">🛡️</div>
+      <h3>All clear!</h3>
+      <p>No reported posts or flagged threads in this category.</p>
+    </div>
+
+    <div id="mod-queue-container" style="display:flex; flex-direction:column; gap:1rem; margin-top:1rem;">
+      <!-- Cards rendered dynamically -->
+    </div>
+  </section>
+</section>
+
