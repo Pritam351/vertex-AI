@@ -3,6 +3,7 @@ import { assignmentService } from "../../services/assignmentService.js";
 import { certificateService } from "../../services/certificateService.js";
 import { gamificationService } from "../../services/gamificationService.js";
 import { openCertificateModal } from "../../components/common/certificate-modal.js";
+import { openAssignmentModal } from "../../components/common/assignment-modal.js";
 import { getUser } from "../../store/session.js";
 import { $, escapeHtml } from "../../utils/dom.js";
 import { formatDate } from "../../utils/formatters.js";
@@ -29,6 +30,11 @@ export async function mountStudentDashboard(container) {
   const recContainer = $("#recommendations-container", container);
   const badgesContainer = $("#badges-grid-container", container);
   const badgesCount = $("#student-badges-count", container);
+
+  const availableCount = $("#available-assignments-count", container);
+  const availableEmpty = $("#available-assignments-empty", container);
+  const availableWrapper = $("#available-assignments-wrapper", container);
+  const availableTbody = $("#available-assignments-tbody", container);
 
   const subsCount = $("#student-submissions-count", container);
   const subsEmpty = $("#student-submissions-empty", container);
@@ -271,74 +277,165 @@ export async function mountStudentDashboard(container) {
     }
   }
 
-  // ── 5. Load and render student's assignment submissions ─────────────────────
-  try {
-    const subPayload = await assignmentService.getMySubmissions();
-    const submissions = subPayload?.data?.submissions || [];
+  // ── 5. Load and render available assignments & student submissions ─────────
+  let enrolledAssignmentsList = [];
 
-    if (subsCount) {
-      subsCount.textContent = `${submissions.length} submitted`;
-    }
+  async function renderAvailableAssignments() {
+    try {
+      const res = await assignmentService.getEnrolledAssignments();
+      enrolledAssignmentsList = res?.data?.assignments || [];
 
-    if (submissions.length === 0) {
-      if (subsEmpty) subsEmpty.hidden = false;
-      if (subsWrapper) subsWrapper.hidden = true;
-    } else {
-      if (subsEmpty) subsEmpty.hidden = true;
-      if (subsWrapper) subsWrapper.hidden = false;
-
-      if (subsTbody) {
-        subsTbody.innerHTML = submissions
-          .map((sub) => {
-            const assignment = sub.assignmentId || {};
-            const course = assignment.courseId || {};
-            const assignmentTitle = assignment.title || "Assignment";
-            const courseTitle = course.title || "Enrolled Course";
-            const dueDateDisplay = assignment.dueDate ? formatDate(assignment.dueDate) : "No deadline";
-
-            const submittedDate = sub.submittedAt
-              ? formatDate(sub.submittedAt)
-              : sub.createdAt
-              ? formatDate(sub.createdAt)
-              : "Recently";
-
-            const isGraded = sub.grade !== null && sub.grade !== undefined;
-            const statusBadge = isGraded
-              ? `<span class="status-badge-graded">✓ Graded: ${sub.grade}/100</span>`
-              : `<span class="status-badge-pending">⏳ Pending Review</span>`;
-
-            const workLink = sub.fileUrl
-              ? `<a href="${escapeHtml(sub.fileUrl)}" target="_blank" rel="noopener noreferrer" class="work-link">📎 View Work ↗</a>`
-              : `<span style="color:var(--muted); font-size:0.8rem;">No link</span>`;
-
-            const feedbackDisplay = sub.feedback
-              ? `<span style="color:#e2e8f0; font-size:0.85rem;">“${escapeHtml(sub.feedback)}”</span>`
-              : `<span style="color:var(--muted); font-size:0.8rem;">Awaiting instructor feedback</span>`;
-
-            return `
-              <tr>
-                <td>
-                  <div style="display:flex; flex-direction:column; gap:0.2rem;">
-                    <strong style="color:#f8fafc;">${escapeHtml(assignmentTitle)}</strong>
-                    <span style="font-size:0.75rem; color:var(--violet-light);">${escapeHtml(courseTitle)}</span>
-                  </div>
-                </td>
-                <td>
-                  <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:#fca5a5;">📅 ${dueDateDisplay}</span>
-                </td>
-                <td>
-                  <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted);">🕒 ${submittedDate}</span>
-                </td>
-                <td>${statusBadge}</td>
-                <td>${workLink}</td>
-                <td>${feedbackDisplay}</td>
-              </tr>
-            `;
-          })
-          .join("");
+      if (availableCount) {
+        availableCount.textContent = `${enrolledAssignmentsList.length} available`;
       }
+
+      if (enrolledAssignmentsList.length === 0) {
+        if (availableEmpty) availableEmpty.hidden = false;
+        if (availableWrapper) availableWrapper.hidden = true;
+      } else {
+        if (availableEmpty) availableEmpty.hidden = true;
+        if (availableWrapper) availableWrapper.hidden = false;
+
+        if (availableTbody) {
+          availableTbody.innerHTML = enrolledAssignmentsList
+            .map((asgn) => {
+              const course = asgn.course || asgn.courseId || {};
+              const courseTitle = course.title || "Enrolled Course";
+              const isPastDeadline = asgn.dueDate && new Date(asgn.dueDate) <= new Date();
+              const dueDateDisplay = asgn.dueDate ? formatDate(asgn.dueDate) : "No deadline";
+
+              let statusBadge = "";
+              if (asgn.isGraded) {
+                statusBadge = `<span class="status-badge-graded">✓ Graded: ${asgn.grade}/100</span>`;
+              } else if (asgn.isSubmitted) {
+                statusBadge = `<span class="status-badge-pending">⏳ Submitted</span>`;
+              } else if (isPastDeadline) {
+                statusBadge = `<span style="font-family:'DM Mono',monospace; font-size:0.75rem; color:#f87171; background:rgba(239,68,68,0.15); padding:0.2rem 0.5rem; border-radius:4px; border:1px solid rgba(239,68,68,0.3);">⚠️ Closed</span>`;
+              } else {
+                statusBadge = `<span style="font-family:'DM Mono',monospace; font-size:0.75rem; color:#38bdf8; background:rgba(56,189,248,0.15); padding:0.2rem 0.5rem; border-radius:4px; border:1px solid rgba(56,189,248,0.3);">📝 Pending</span>`;
+              }
+
+              const actionBtn = isPastDeadline && !asgn.isSubmitted
+                ? `<span style="color:var(--muted); font-size:0.8rem;">Deadline passed</span>`
+                : `<button type="button" class="button ${asgn.isSubmitted ? 'button-secondary' : 'button-primary'}" data-action="open-assign-modal" data-id="${asgn._id}" style="padding:0.4rem 0.85rem; font-size:0.8rem; cursor:pointer;">
+                    ${asgn.isSubmitted ? "✏️ View / Resubmit" : "📤 View & Submit"}
+                  </button>`;
+
+              return `
+                <tr>
+                  <td>
+                    <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                      <strong style="color:#f8fafc;">${escapeHtml(asgn.title || "Assignment")}</strong>
+                      <span style="font-size:0.75rem; color:var(--violet-light);">${escapeHtml(courseTitle)}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:${isPastDeadline ? '#f87171' : '#fca5a5'};">
+                      📅 ${dueDateDisplay}
+                    </span>
+                  </td>
+                  <td>${statusBadge}</td>
+                  <td>${actionBtn}</td>
+                </tr>
+              `;
+            })
+            .join("");
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load available assignments:", err);
     }
-  } catch (err) {
-    console.warn("Could not load student submissions:", err);
   }
+
+  availableTbody?.addEventListener("click", (e) => {
+    const btn = e.target.closest('[data-action="open-assign-modal"]');
+    if (!btn) return;
+    const assignId = btn.dataset.id;
+    const assignment = enrolledAssignmentsList.find((a) => String(a._id) === String(assignId));
+    if (assignment) {
+      openAssignmentModal({
+        assignment,
+        onSubmitted: async () => {
+          await renderAvailableAssignments();
+          await renderStudentSubmissions();
+        },
+      });
+    }
+  });
+
+  async function renderStudentSubmissions() {
+    try {
+      const subPayload = await assignmentService.getMySubmissions();
+      const submissions = subPayload?.data?.submissions || [];
+
+      if (subsCount) {
+        subsCount.textContent = `${submissions.length} submitted`;
+      }
+
+      if (submissions.length === 0) {
+        if (subsEmpty) subsEmpty.hidden = false;
+        if (subsWrapper) subsWrapper.hidden = true;
+      } else {
+        if (subsEmpty) subsEmpty.hidden = true;
+        if (subsWrapper) subsWrapper.hidden = false;
+
+        if (subsTbody) {
+          subsTbody.innerHTML = submissions
+            .map((sub) => {
+              const assignment = sub.assignmentId || {};
+              const course = assignment.courseId || {};
+              const assignmentTitle = assignment.title || "Assignment";
+              const courseTitle = course.title || "Enrolled Course";
+              const dueDateDisplay = assignment.dueDate ? formatDate(assignment.dueDate) : "No deadline";
+
+              const submittedDate = sub.submittedAt
+                ? formatDate(sub.submittedAt)
+                : sub.createdAt
+                ? formatDate(sub.createdAt)
+                : "Recently";
+
+              const isGraded = sub.grade !== null && sub.grade !== undefined;
+              const statusBadge = isGraded
+                ? `<span class="status-badge-graded">✓ Graded: ${sub.grade}/100</span>`
+                : `<span class="status-badge-pending">⏳ Pending Review</span>`;
+
+              const workLink = sub.fileUrl
+                ? `<a href="${escapeHtml(sub.fileUrl)}" target="_blank" rel="noopener noreferrer" class="work-link">📎 View Work ↗</a>`
+                : `<span style="color:var(--muted); font-size:0.8rem;">No link</span>`;
+
+              const feedbackDisplay = sub.feedback
+                ? `<span style="color:#e2e8f0; font-size:0.85rem;">“${escapeHtml(sub.feedback)}”</span>`
+                : `<span style="color:var(--muted); font-size:0.8rem;">Awaiting instructor feedback</span>`;
+
+              return `
+                <tr>
+                  <td>
+                    <div style="display:flex; flex-direction:column; gap:0.2rem;">
+                      <strong style="color:#f8fafc;">${escapeHtml(assignmentTitle)}</strong>
+                      <span style="font-size:0.75rem; color:var(--violet-light);">${escapeHtml(courseTitle)}</span>
+                    </div>
+                  </td>
+                  <td>
+                    <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:#fca5a5;">📅 ${dueDateDisplay}</span>
+                  </td>
+                  <td>
+                    <span style="font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted);">🕒 ${submittedDate}</span>
+                  </td>
+                  <td>${statusBadge}</td>
+                  <td>${workLink}</td>
+                  <td>${feedbackDisplay}</td>
+                </tr>
+              `;
+            })
+            .join("");
+        }
+      }
+    } catch (err) {
+      console.warn("Could not load student submissions:", err);
+    }
+  }
+
+  // Initial load
+  await renderAvailableAssignments();
+  await renderStudentSubmissions();
 }

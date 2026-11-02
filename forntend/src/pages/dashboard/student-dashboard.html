@@ -94,6 +94,41 @@
     </div>
   </section>
 
+  <!-- Available Course Assignments Section -->
+  <section class="submissions-review-section" aria-labelledby="available-assignments-heading" style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--line);">
+    <div class="section-heading">
+      <div>
+        <p class="eyebrow">COURSE TASKS</p>
+        <h3 id="available-assignments-heading">Available Assignments to Submit</h3>
+        <p style="margin:0.25rem 0 0 0; font-size:0.85rem; color:var(--muted);">
+          Review project details, deadlines, and rubrics. Upload PDF, ZIP, or code files to complete your coursework.
+        </p>
+      </div>
+      <span class="count-pill" id="available-assignments-count">0 available</span>
+    </div>
+
+    <div id="available-assignments-empty" class="empty-state" hidden>
+      <div class="empty-icon" aria-hidden="true">📂</div>
+      <h3>No assignments yet</h3>
+      <p>When your instructors publish assignments for your enrolled courses, they will appear here ready to submit.</p>
+    </div>
+
+    <div class="table-responsive-wrapper" id="available-assignments-wrapper" hidden>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Assignment &amp; Course</th>
+            <th>Deadline</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="available-assignments-tbody">
+        </tbody>
+      </table>
+    </div>
+  </section>
+
   <!-- Student Submissions & Work Section -->
   <section class="submissions-review-section" aria-labelledby="student-submissions-heading" style="margin-top:2.5rem; padding-top:2rem; border-top:1px solid var(--line);">
     <div class="section-heading">

@@ -226,6 +226,83 @@ const listCourseSubmissions = async (courseId, user) => {
     .lean();
 };
 
+const getEnrolledAssignments = async (user) => {
+  const enrollments = await Enrollment.find({ userId: user._id }).select("courseId").lean();
+  const courseIds = enrollments.map((e) => e.courseId);
+
+  const approvedCourses = await Course.find({
+    _id: { $in: courseIds },
+    status: "approved",
+  }).select("_id title category thumbnail instructorId").lean();
+
+  const approvedCourseIds = approvedCourses.map((c) => c._id);
+  const courseMap = {};
+  approvedCourses.forEach((c) => {
+    courseMap[c._id.toString()] = c;
+  });
+
+  const assignments = await Assignment.find({ courseId: { $in: approvedCourseIds } })
+    .sort({ dueDate: 1 })
+    .lean();
+
+  const submissions = await Submission.find({
+    userId: user._id,
+    assignmentId: { $in: assignments.map((a) => a._id) },
+  }).lean();
+
+  const submissionMap = {};
+  submissions.forEach((s) => {
+    submissionMap[s.assignmentId.toString()] = s;
+  });
+
+  return assignments.map((a) => {
+    const sub = submissionMap[a._id.toString()] || null;
+    return {
+      ...a,
+      course: courseMap[a.courseId.toString()] || null,
+      submission: sub,
+      isSubmitted: Boolean(sub),
+      isGraded: sub ? sub.grade !== null && sub.grade !== undefined : false,
+      grade: sub?.grade ?? null,
+      feedback: sub?.feedback ?? null,
+      submittedAt: sub?.submittedAt ?? null,
+      submissionFileUrl: sub?.fileUrl ?? null,
+    };
+  });
+};
+
+const getAssignmentById = async (id, user) => {
+  if (!validId(id)) fail(400, "Invalid assignment ID");
+
+  const assignment = await Assignment.findById(id).populate("courseId", "title category instructorId status").lean();
+  if (!assignment) fail(404, "Assignment not found");
+
+  if (user.role === "student") {
+    const enrolled = await Enrollment.exists({
+      userId: user._id,
+      courseId: assignment.courseId._id,
+    });
+    if (!enrolled) fail(403, "Enroll in this course before viewing assignment details");
+  } else if (
+    user.role !== "admin" &&
+    assignment.courseId.instructorId.toString() !== user._id.toString()
+  ) {
+    fail(403, "You cannot view assignments for another instructor's course");
+  }
+
+  const submission = await Submission.findOne({
+    assignmentId: assignment._id,
+    userId: user._id,
+  }).lean();
+
+  return {
+    ...assignment,
+    submission: submission || null,
+    isSubmitted: Boolean(submission),
+    isGraded: submission ? submission.grade !== null && submission.grade !== undefined : false,
+  };
+};
+
 module.exports = {
   createAssignment,
   listCourseAssignments,
@@ -233,4 +310,6 @@ module.exports = {
   gradeSubmission,
   getMySubmissions,
   listCourseSubmissions,
+  getEnrolledAssignments,
+  getAssignmentById,
 };

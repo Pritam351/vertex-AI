@@ -1,4 +1,3 @@
-
 const { z } = require("zod");
 
 const httpUrlSchema = z.string().trim().max(2048).url().refine(
@@ -21,9 +20,20 @@ const createAssignmentSchema = z.object({
   dueDate: z.string().datetime({ offset: true }),
 });
 
-const submitAssignmentSchema = z.object({
-  fileUrl: httpUrlSchema,
-});
+const submitAssignmentSchema = z
+  .object({
+    fileUrl: z.string().trim().max(2048).optional(),
+    fileName: z.string().trim().max(255).optional(),
+    fileData: z.string().optional(),
+    notes: z.string().trim().max(5000).optional(),
+  })
+  .refine(
+    (data) => Boolean((data.fileUrl && data.fileUrl.length > 0) || (data.fileData && data.fileData.length > 0)),
+    {
+      message: "Please provide a file upload (PDF, ZIP, or code) or a file URL",
+      path: ["fileUrl"],
+    }
+  );
 
 const gradeSubmissionSchema = z.object({
   grade: z.number().min(0).max(100),

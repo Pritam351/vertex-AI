@@ -6,6 +6,7 @@ import { formatDate }        from "../../utils/formatters.js";
 import { toast }             from "../../components/common/toast.js";
 import { setBusy }           from "../../components/common/loading.js";
 import { openModal }         from "../../components/common/modal.js";
+import { openAssignmentModal } from "../../components/common/assignment-modal.js";
 import { errorText }         from "../../utils/validation.js";
 
 // ─── Score circle SVG helper ───────────────────────────────────────────────────
@@ -247,6 +248,8 @@ export async function mountStudentQuizzes(container) {
   }
 
   // ── Load assignments ──────────────────────────────────────────────────────
+  let loadedAssignments = [];
+
   async function loadAssignments() {
     try {
       const enrollRes   = await enrollmentService.getMyEnrollments();
@@ -279,6 +282,7 @@ export async function mountStudentQuizzes(container) {
       });
 
       const allAssignments = (await Promise.all(assignPromises)).flat();
+      loadedAssignments = allAssignments;
 
       if (assignCount) assignCount.textContent = `${allAssignments.length} assignment${allAssignments.length !== 1 ? "s" : ""}`;
       if (assignEmpty) assignEmpty.hidden = allAssignments.length > 0;
@@ -422,49 +426,15 @@ export async function mountStudentQuizzes(container) {
     if (submitBtn) {
       const assignmentId    = submitBtn.dataset.submitAssignment;
       const assignmentTitle = submitBtn.dataset.assignmentTitle || "Assignment";
+      const asgn = loadedAssignments.find(a => String(a._id) === String(assignmentId)) || {
+        _id: assignmentId,
+        title: assignmentTitle,
+      };
 
-      openModal({
-        title: `📤 Submit: ${escapeHtml(assignmentTitle)}`,
-        contentHtml: `
-          <div class="assignment-submit-form">
-            <label class="assignment-submit-label" for="assign-file-url">
-              Submission Link <span style="color:#ff9b9b;">*</span>
-              <small style="color:var(--muted); display:block; margin-top:0.2rem;">
-                Paste a Google Drive, GitHub, or any public URL to your work.
-              </small>
-            </label>
-            <input type="url" id="assign-file-url" class="assignment-submit-input"
-              placeholder="https://drive.google.com/your-file" autocomplete="off" />
-
-            <label class="assignment-submit-label" for="assign-notes" style="margin-top:1rem;">
-              Notes for instructor <small style="color:var(--muted);">(optional)</small>
-            </label>
-            <textarea id="assign-notes" class="notes-textarea"
-              style="min-height:90px;"
-              placeholder="Any context or notes about your submission…"></textarea>
-          </div>`,
-        confirmText: "Submit Assignment ✓",
-        onConfirm: async (backdrop, close) => {
-          const fileUrl = backdrop.querySelector("#assign-file-url")?.value.trim();
-          const notes   = backdrop.querySelector("#assign-notes")?.value.trim();
-          const btn     = backdrop.querySelector(".modal-confirm");
-
-          if (!fileUrl) {
-            toast("Please paste a submission link.", "error");
-            return;
-          }
-
-          if (btn) setBusy(btn, true, "Submitting…");
-
-          try {
-            await assignmentService.submitAssignment(assignmentId, { fileUrl, notes });
-            toast("Assignment submitted successfully! 🎉");
-            close();
-            await loadAssignments();
-          } catch (err) {
-            toast(`Submission failed: ${errorText(err)}`, "error");
-            if (btn) setBusy(btn, false);
-          }
+      openAssignmentModal({
+        assignment: asgn,
+        onSubmitted: async () => {
+          await loadAssignments();
         }
       });
       return;

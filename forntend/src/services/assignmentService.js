@@ -1,6 +1,14 @@
 import { api } from "./apiClient.js";
 
 export const assignmentService = {
+  async getEnrolledAssignments() {
+    return api("/assignments/enrolled");
+  },
+
+  async getAssignment(id) {
+    return api(`/assignments/${id}`);
+  },
+
   async listCourseAssignments(courseId) {
     return api(`/courses/${courseId}/assignments`);
   },

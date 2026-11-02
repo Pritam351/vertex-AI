@@ -1,4 +1,3 @@
-
 const express = require("express");
 
 const authMiddleware = require("../../middleware/authMiddleware");
@@ -7,6 +6,8 @@ const requireRole = require("../../middleware/roleMiddleware");
 const {
   createAssignment,
   listCourseAssignments,
+  getEnrolledAssignments,
+  getAssignment,
   submitAssignment,
   getMySubmissions,
   gradeSubmission,
@@ -14,6 +15,21 @@ const {
 } = require("./assignmentController");
 
 const router = express.Router();
+
+// Read assignments for all enrolled courses of current student
+router.get(
+  "/assignments/enrolled",
+  authMiddleware,
+  requireRole("student"),
+  getEnrolledAssignments
+);
+
+// Read single assignment details
+router.get(
+  "/assignments/:id",
+  authMiddleware,
+  getAssignment
+);
 
 // Read assignments for an enrolled student or authorized course owner.
 router.get(

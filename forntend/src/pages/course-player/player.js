@@ -563,7 +563,7 @@ function renderPlayerDiscussions() {
   try {
     const session = getSession();
     const currentUser = session?.user;
-    const isInstructorOrAdmin = currentUser && (currentUser.role === "admin" || (currentCourse && String(currentCourse.instructorId?._id || currentCourse.instructorId) === String(currentUser.id || currentUser._id)));
+    const isAdmin = currentUser && currentUser.role === "admin";
 
     // Filter threads strictly for the active lecture (and include previous legacy comments)
     let threads = (courseDiscussions || []).filter(t => {
@@ -668,7 +668,7 @@ function renderPlayerDiscussions() {
                 <button type="button" class="mini-button button-subtle" data-action="report-post" data-thread-id="${thread._id}" data-post-id="${post._id}" title="Report inappropriate reply" style="padding:0.1rem 0.35rem; font-size:0.65rem; border:none; background:transparent; color:#9da4c2; cursor:pointer;">
                   🚩
                 </button>
-                ${isInstructorOrAdmin ? `
+                ${isAdmin ? `
                   <button type="button" class="mini-button button-subtle" data-action="toggle-hide-post" data-thread-id="${thread._id}" data-post-id="${post._id}" data-is-hidden="${post.isHidden ? "true" : "false"}" style="padding:0.1rem 0.35rem; font-size:0.65rem;">
                     ${post.isHidden ? "Unhide" : "Hide"}
                   </button>
@@ -720,7 +720,7 @@ function renderPlayerDiscussions() {
             </button>
           </div>
 
-          ${isInstructorOrAdmin ? `
+          ${isAdmin ? `
             <div style="display:flex; align-items:center; gap:0.4rem;">
               <button type="button" class="mini-button" data-action="toggle-lock-thread" data-thread-id="${thread._id}" data-is-locked="${thread.isLocked ? "true" : "false"}" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
                 ${thread.isLocked ? "🔓 Unlock" : "🔒 Lock"}

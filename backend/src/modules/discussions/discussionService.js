@@ -189,8 +189,17 @@ const moderateDiscussion = async (threadId, data, user) => {
   // If action is "flag" (reporting inappropriate content), any user with course access can report
   if (data.action === "flag") {
     await ensureCourseAccess(course, user);
+  } else if (
+    data.action === "lock" ||
+    data.action === "unlock" ||
+    data.action === "hide" ||
+    data.action === "unhide"
+  ) {
+    if (user.role !== "admin") {
+      fail(403, "Only administrators can lock, unlock, or hide discussions");
+    }
   } else {
-    // Other moderation actions (hide, unhide, lock, unlock, unflag) require instructor or admin
+    // Other moderation actions (e.g. unflag/dismiss report) require instructor or admin
     if (!canManageCourse(course, user)) {
       fail(403, "Only the course instructor or an admin can moderate discussions");
     }
@@ -215,16 +224,21 @@ const moderateDiscussion = async (threadId, data, user) => {
       case "flag":
         thread.isFlagged = true;
         thread.flagReason = data.reason || "Reported by user";
+        // If reported by instructor, hide from public discussions immediately until admin reviews
+        if (user.role === "instructor") {
+          thread.isHidden = true;
+        }
         break;
       case "unflag":
         thread.isFlagged = false;
         thread.flagReason = "";
+        thread.isHidden = false;
         break;
       default:
         fail(400, "This action is not supported for threads");
     }
 
-    if (data.action !== "flag") {
+    if (data.action !== "flag" || user.role === "instructor") {
       thread.moderatedBy = user._id;
       thread.moderatedAt = now;
     }
@@ -257,16 +271,21 @@ const moderateDiscussion = async (threadId, data, user) => {
     case "flag":
       post.isFlagged = true;
       post.flagReason = data.reason || "Reported by user";
+      // If reported by instructor, hide from public discussions immediately until admin reviews
+      if (user.role === "instructor") {
+        post.isHidden = true;
+      }
       break;
     case "unflag":
       post.isFlagged = false;
       post.flagReason = "";
+      post.isHidden = false;
       break;
     default:
       fail(400, "This action is not supported for posts");
   }
 
-  if (data.action !== "flag") {
+  if (data.action !== "flag" || user.role === "instructor") {
     post.moderatedBy = user._id;
     post.moderatedAt = now;
   }

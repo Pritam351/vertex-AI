@@ -33,6 +33,7 @@ import { quizService } from "../../services/quizService.js";
 import { courseService } from "../../services/courseService.js";
 import { announcementService } from "../../services/announcementService.js";
 import { discussionService } from "../../services/discussionService.js";
+import { openReportModal } from "../../components/common/report-modal.js";
 import { getMegaphoneSvg } from "../../components/common/icons.js";
 
 const state = {
@@ -982,20 +983,20 @@ async function handleTogglePinAnnouncement(announcementId) {
 function populateInstructorDiscussionsCourseSelect() {
   const select = $("#instructor-discussions-course-select");
   if (!select) return;
-  const course = activeCourse();
 
   if (!state.instructorCourses.length) {
     select.innerHTML = '<option value="">No courses created yet</option>';
     select.disabled = true;
   } else {
     select.disabled = false;
-    const currentSelected = select.value || course?._id || state.instructorCourses[0]._id;
-    select.innerHTML = state.instructorCourses
-      .map(
-        (c) =>
-          `<option value="${escapeHtml(c._id)}" ${c._id === currentSelected ? "selected" : ""}>${escapeHtml(c.title)} (${getCourseStatusLabel(c)})</option>`
-      )
-      .join("");
+    const currentSelected = select.value || "all";
+    select.innerHTML = `<option value="all" ${currentSelected === "all" ? "selected" : ""}>All Courses</option>` +
+      state.instructorCourses
+        .map(
+          (c) =>
+            `<option value="${escapeHtml(c._id)}" ${c._id === currentSelected ? "selected" : ""}>${escapeHtml(c.title)} (${getCourseStatusLabel(c)})</option>`
+        )
+        .join("");
   }
 }
 
@@ -1015,17 +1016,17 @@ async function loadInstructorDiscussions(courseId) {
   const empty = $("#inst-discussions-empty");
   const feed = $("#inst-discussions-feed");
 
-  if (!courseId) {
-    renderInstructorDiscussionsEmpty();
-    return;
-  }
-
   if (loading) loading.hidden = false;
   if (empty) empty.hidden = true;
   if (feed) feed.innerHTML = "";
 
   try {
-    const res = await discussionService.getCourseDiscussions(courseId);
+    let res;
+    if (courseId === "all" || !courseId) {
+      res = await discussionService.getUserDiscussions({ courseId: "all" });
+    } else {
+      res = await discussionService.getCourseDiscussions(courseId);
+    }
     state.discussions = res?.data || [];
     renderInstructorDiscussionsFeed();
   } catch (err) {
@@ -1070,6 +1071,7 @@ function renderInstructorDiscussionsFeed() {
   if (empty) empty.hidden = true;
 
   feed.innerHTML = threads.map((thread) => {
+    const courseTitle = escapeHtml(thread.courseId?.title || "Course");
     const authorName = escapeHtml(thread.createdBy?.fullName || thread.createdBy?.name || "Student");
     const authorRole = escapeHtml(thread.createdBy?.role || "student");
     const title = escapeHtml(thread.title);
@@ -1093,17 +1095,20 @@ function renderInstructorDiscussionsFeed() {
       <div class="panel form-panel" style="background:#11192d; border:1px solid ${thread.isFlagged ? "rgba(245,158,11,0.4)" : "#27314b"}; border-radius:10px; padding:1.25rem;">
         <!-- Header -->
         <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:0.75rem;">
-          <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
-            <span style="background:rgba(99,102,241,0.22); color:#c7d2fe; width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.78rem;">
-              ${authorName.charAt(0).toUpperCase()}
-            </span>
-            <strong style="font-size:0.9rem; color:#f8fafc;">${authorName}</strong>
-            <span style="font-size:0.65rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.15rem 0.4rem; border-radius:4px;">${authorRole.toUpperCase()}</span>
-            ${lectureTag}
-            ${thread.isLocked ? `<span class="status" style="background:rgba(239,68,68,0.15); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🔒 LOCKED</span>` : ""}
-            ${thread.isHidden ? `<span class="status" style="background:rgba(100,116,139,0.2); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">👁 HIDDEN</span>` : ""}
-            ${thread.isFlagged ? `<span class="status" style="background:rgba(245,158,11,0.18); color:#fbbf24; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🚩 REPORTED</span>` : ""}
-            ${!isAnswered ? `<span class="status" style="background:rgba(245,158,11,0.12); color:#fde047; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:600;">Needs Answer</span>` : `<span class="status" style="background:rgba(34,197,94,0.12); color:#86efac; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:600;">✓ Answered (${posts.length})</span>`}
+          <div style="display:flex; flex-direction:column; gap:0.3rem;">
+            <span style="font-size:0.75rem; color:#818cf8; font-weight:600;">📚 ${courseTitle}</span>
+            <div style="display:flex; align-items:center; gap:0.6rem; flex-wrap:wrap;">
+              <span style="background:rgba(99,102,241,0.22); color:#c7d2fe; width:28px; height:28px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:0.78rem;">
+                ${authorName.charAt(0).toUpperCase()}
+              </span>
+              <strong style="font-size:0.9rem; color:#f8fafc;">${authorName}</strong>
+              <span style="font-size:0.65rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.15rem 0.4rem; border-radius:4px;">${authorRole.toUpperCase()}</span>
+              ${lectureTag}
+              ${thread.isLocked ? `<span class="status" style="background:rgba(239,68,68,0.15); color:#fca5a5; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🔒 LOCKED</span>` : ""}
+              ${thread.isHidden ? `<span class="status" style="background:rgba(100,116,139,0.2); color:#94a3b8; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">👁 HIDDEN</span>` : ""}
+              ${thread.isFlagged ? `<span class="status" style="background:rgba(245,158,11,0.18); color:#fbbf24; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:700;">🚩 REPORTED</span>` : ""}
+              ${!isAnswered ? `<span class="status" style="background:rgba(245,158,11,0.12); color:#fde047; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:600;">Needs Answer</span>` : `<span class="status" style="background:rgba(34,197,94,0.12); color:#86efac; font-size:0.65rem; padding:0.15rem 0.45rem; border-radius:4px; font-weight:600;">✓ Answered (${posts.length})</span>`}
+            </div>
           </div>
           <span style="font:500 0.68rem 'DM Mono', monospace; color:#9da4c2;">${dateStr}</span>
         </div>
@@ -1116,25 +1121,15 @@ function renderInstructorDiscussionsFeed() {
           </div>
         </div>
 
-        <!-- Controls toolbar -->
+        <!-- Controls toolbar: Lock & Hide removed, Report added -->
         <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:0.5rem; margin-top:0.85rem; padding-top:0.65rem; border-top:1px solid rgba(255,255,255,0.06);">
-          <div style="display:flex; align-items:center; gap:0.5rem;">
+          <div style="display:flex; align-items:center; gap:0.6rem;">
             <button type="button" class="mini-button" data-action="toggle-instructor-replies" data-thread-id="${thread._id}" style="display:inline-flex; align-items:center; gap:0.35rem; padding:0.3rem 0.65rem;">
               <span>💬</span>
               <span>${posts.length} ${posts.length === 1 ? "Reply" : "Replies"}</span>
             </button>
-            ${thread.isFlagged ? `
-              <button type="button" class="mini-button button-subtle" data-action="dismiss-thread-report" data-thread-id="${thread._id}" style="font-size:0.75rem; color:#86efac; cursor:pointer;">
-                ✓ Dismiss Report
-              </button>
-            ` : ""}
-          </div>
-          <div style="display:flex; align-items:center; gap:0.4rem;">
-            <button type="button" class="mini-button button-secondary" data-action="toggle-lock-thread" data-thread-id="${thread._id}" data-is-locked="${thread.isLocked ? "true" : "false"}" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
-              ${thread.isLocked ? "🔓 Unlock" : "🔒 Lock"}
-            </button>
-            <button type="button" class="mini-button button-secondary" data-action="toggle-hide-thread" data-thread-id="${thread._id}" data-is-hidden="${thread.isHidden ? "true" : "false"}" style="padding:0.25rem 0.55rem; font-size:0.72rem;">
-              ${thread.isHidden ? "👁 Unhide" : "👁 Hide"}
+            <button type="button" class="mini-button button-subtle" data-action="report-instructor-thread" data-thread-id="${thread._id}" title="Report question to administrators" style="border:none; background:transparent; color:#9da4c2; font-size:0.75rem; cursor:pointer;">
+              🚩 Report Question
             </button>
           </div>
         </div>
@@ -1162,13 +1157,13 @@ function renderInstructorDiscussionsFeed() {
                       </span>
                       <strong style="font-size:0.82rem; color:#f8fafc;">${pAuthor}</strong>
                       ${pIsInst ? `<span class="status published" style="font-size:0.6rem; padding:0.1rem 0.35rem; font-weight:700;">INSTRUCTOR</span>` : `<span style="font-size:0.62rem; color:#9da4c2; background:rgba(255,255,255,0.05); padding:0.1rem 0.35rem; border-radius:3px;">STUDENT</span>`}
-                      ${p.isFlagged ? `<span style="color:#fbbf24; font-size:0.65rem;">🚩 Flagged</span>` : ""}
+                      ${p.isFlagged ? `<span style="color:#fbbf24; font-size:0.65rem;">🚩 Reported</span>` : ""}
                       ${p.isHidden ? `<span style="color:#94a3b8; font-size:0.65rem;">👁 Hidden</span>` : ""}
                     </div>
                     <div style="display:flex; align-items:center; gap:0.4rem;">
                       <span style="font:500 0.65rem 'DM Mono', monospace; color:#9da4c2;">${pDate}</span>
-                      <button type="button" class="mini-button button-subtle" data-action="toggle-hide-reply" data-thread-id="${thread._id}" data-post-id="${p._id}" data-is-hidden="${p.isHidden ? "true" : "false"}" style="padding:0.1rem 0.35rem; font-size:0.65rem;">
-                        ${p.isHidden ? "Unhide" : "Hide"}
+                      <button type="button" class="mini-button button-subtle" data-action="report-instructor-reply" data-thread-id="${thread._id}" data-post-id="${p._id}" title="Report reply to administrators" style="padding:0.1rem 0.35rem; font-size:0.7rem; border:none; background:transparent; color:#9da4c2; cursor:pointer;">
+                        🚩 Report
                       </button>
                     </div>
                   </div>
@@ -1247,13 +1242,9 @@ export function showView(id) {
     const urlParams = new URLSearchParams(window.location.hash.split("?")[1] || "");
     const paramCourseId = urlParams.get("courseId");
     const select = $("#instructor-discussions-course-select");
-    const selectedCourseId = paramCourseId || select?.value || activeCourse()?._id || state.instructorCourses[0]?._id;
-    if (selectedCourseId) {
-      if (select) select.value = selectedCourseId;
-      loadInstructorDiscussions(selectedCourseId);
-    } else {
-      renderInstructorDiscussionsEmpty();
-    }
+    const selectedCourseId = paramCourseId || select?.value || "all";
+    if (select) select.value = selectedCourseId;
+    loadInstructorDiscussions(selectedCourseId);
   }
 
   if (id === "analytics") {
@@ -2974,84 +2965,48 @@ function bindGlobalClickHandlers() {
       return;
     }
 
-    // Toggle lock thread
-    const toggleLockBtn = event.target.closest('[data-action="toggle-lock-thread"]');
-    if (toggleLockBtn) {
+    // Report thread to administrators (temporarily hides content from students)
+    const reportThreadBtn = event.target.closest('[data-action="report-instructor-thread"]');
+    if (reportThreadBtn) {
       event.preventDefault();
-      const threadId = toggleLockBtn.dataset.threadId;
-      const isLocked = toggleLockBtn.dataset.isLocked === "true";
-      try {
-        await discussionService.moderateDiscussion(threadId, {
-          action: isLocked ? "unlock" : "lock",
-          target: "thread"
-        });
-        toast(`Thread ${isLocked ? "unlocked" : "locked"}.`);
-        const select = $("#instructor-discussions-course-select");
-        if (select?.value) await loadInstructorDiscussions(select.value);
-      } catch (err) {
-        toast(`Moderation error: ${errorText(err)}`, "error");
-      }
+      const threadId = reportThreadBtn.dataset.threadId;
+      openReportModal({
+        targetType: "thread",
+        onSubmit: async (reason) => {
+          try {
+            await discussionService.reportThread(threadId, reason);
+            toast("Report submitted to administrators. Content temporarily hidden from learners pending review.", "info");
+            const select = $("#instructor-discussions-course-select");
+            const courseId = select?.value || "all";
+            await loadInstructorDiscussions(courseId);
+          } catch (err) {
+            toast(`Could not report thread: ${errorText(err)}`, "error");
+          }
+        }
+      });
       return;
     }
 
-    // Toggle hide thread
-    const toggleHideBtn = event.target.closest('[data-action="toggle-hide-thread"]');
-    if (toggleHideBtn) {
+    // Report reply to administrators (temporarily hides content from students)
+    const reportReplyBtn = event.target.closest('[data-action="report-instructor-reply"]');
+    if (reportReplyBtn) {
       event.preventDefault();
-      const threadId = toggleHideBtn.dataset.threadId;
-      const isHidden = toggleHideBtn.dataset.isHidden === "true";
-      try {
-        await discussionService.moderateDiscussion(threadId, {
-          action: isHidden ? "unhide" : "hide",
-          target: "thread"
-        });
-        toast(`Thread ${isHidden ? "unhidden" : "hidden"}.`);
-        const select = $("#instructor-discussions-course-select");
-        if (select?.value) await loadInstructorDiscussions(select.value);
-      } catch (err) {
-        toast(`Moderation error: ${errorText(err)}`, "error");
-      }
-      return;
-    }
-
-    // Dismiss thread report
-    const dismissReportBtn = event.target.closest('[data-action="dismiss-thread-report"]');
-    if (dismissReportBtn) {
-      event.preventDefault();
-      const threadId = dismissReportBtn.dataset.threadId;
-      try {
-        await discussionService.moderateDiscussion(threadId, {
-          action: "unflag",
-          target: "thread"
-        });
-        toast("Report dismissed.");
-        const select = $("#instructor-discussions-course-select");
-        if (select?.value) await loadInstructorDiscussions(select.value);
-      } catch (err) {
-        toast(`Error: ${errorText(err)}`, "error");
-      }
-      return;
-    }
-
-    // Toggle hide reply
-    const toggleHideReplyBtn = event.target.closest('[data-action="toggle-hide-reply"]');
-    if (toggleHideReplyBtn) {
-      event.preventDefault();
-      const threadId = toggleHideReplyBtn.dataset.threadId;
-      const postId = toggleHideReplyBtn.dataset.postId;
-      const isHidden = toggleHideReplyBtn.dataset.isHidden === "true";
-      try {
-        await discussionService.moderateDiscussion(threadId, {
-          action: isHidden ? "unhide" : "hide",
-          target: "post",
-          postId
-        });
-        toast(`Reply ${isHidden ? "unhidden" : "hidden"}.`);
-        const select = $("#instructor-discussions-course-select");
-        if (select?.value) await loadInstructorDiscussions(select.value);
-      } catch (err) {
-        toast(`Error: ${errorText(err)}`, "error");
-      }
+      const threadId = reportReplyBtn.dataset.threadId;
+      const postId = reportReplyBtn.dataset.postId;
+      openReportModal({
+        targetType: "comment",
+        onSubmit: async (reason) => {
+          try {
+            await discussionService.reportPost(threadId, postId, reason);
+            toast("Report submitted to administrators. Comment temporarily hidden from learners pending review.", "info");
+            const select = $("#instructor-discussions-course-select");
+            const courseId = select?.value || "all";
+            await loadInstructorDiscussions(courseId);
+          } catch (err) {
+            toast(`Could not report comment: ${errorText(err)}`, "error");
+          }
+        }
+      });
       return;
     }
 
