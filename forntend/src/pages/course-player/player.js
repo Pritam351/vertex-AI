@@ -181,10 +181,11 @@ function renderCurriculum() {
   tree.querySelectorAll(".curriculum-module-header").forEach(header => {
     header.addEventListener("click", () => {
       const idx  = header.dataset.modIdx;
-      const body = qs(`#mod-body-${idx}`);
+      const body = tree.querySelector(`#mod-body-${idx}`);
       const expanded = header.getAttribute("aria-expanded") === "true";
       header.setAttribute("aria-expanded", String(!expanded));
-      header.querySelector(".curriculum-module-chevron").textContent = expanded ? "▸" : "▾";
+      const chevron = header.querySelector(".curriculum-module-chevron");
+      if (chevron) chevron.textContent = expanded ? "▸" : "▾";
       if (body) body.hidden = expanded;
     });
   });
@@ -201,6 +202,14 @@ function renderCurriculum() {
     item.addEventListener("click", handler);
     item.addEventListener("keydown", e => { if (e.key === "Enter" || e.key === " ") handler(); });
   });
+
+  // Auto-scroll active lecture into view
+  setTimeout(() => {
+    const activeItem = tree.querySelector(".curriculum-lecture-item.is-active-lecture");
+    if (activeItem) {
+      activeItem.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    }
+  }, 50);
 }
 
 // ─── Video helpers ────────────────────────────────────────────────────────────
