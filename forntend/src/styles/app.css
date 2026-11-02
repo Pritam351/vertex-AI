@@ -2297,9 +2297,14 @@
 
 
 /* ─── Instructor & Student Announcements ───────────────────────────────────────── */
+#announcement-tools {
+  grid-template-columns: 1fr 1fr;
+  gap: 1.2rem;
+}
+
 @media (max-width: 900px) {
-  .announcement-layout-grid {
-    grid-template-columns: 1fr !important;
+  #announcement-tools {
+    grid-template-columns: 1fr;
   }
 }
 

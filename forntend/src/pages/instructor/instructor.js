@@ -32,6 +32,7 @@ import { aiService } from "../../services/aiService.js";
 import { quizService } from "../../services/quizService.js";
 import { courseService } from "../../services/courseService.js";
 import { announcementService } from "../../services/announcementService.js";
+import { getMegaphoneSvg } from "../../components/common/icons.js";
 
 const state = {
   session: null,
@@ -828,45 +829,47 @@ function renderInstructorAnnouncements() {
     }) : "";
 
     const pinnedBadge = ann.isPinned
-      ? `<span style="background:rgba(234,179,8,0.15);color:#fbbf24;border:1px solid rgba(234,179,8,0.3);font-size:0.75rem;padding:0.2rem 0.5rem;border-radius:9999px;font-weight:600;">📌 Pinned</span>`
+      ? `<span class="status" style="color:#ffd68f; background:rgba(255,183,77,0.13); font-size:0.62rem; padding:0.2rem 0.45rem; font-weight:700;">PINNED</span>`
       : "";
 
+    const megaphoneMini = getMegaphoneSvg({ size: 13, color: "#9da4c2" });
+
     return `
-      <div class="announcement-item" style="background:rgba(255,255,255,0.02);border:1px solid ${ann.isPinned ? "rgba(234,179,8,0.4)" : "var(--border-subtle)"};border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
-          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+      <div class="created-item announcement-item" style="display:flex; flex-direction:column; gap:0.65rem; padding:0.95rem; background:#11192d; border:1px solid ${ann.isPinned ? "rgba(234,179,8,0.4)" : "#27314b"}; border-radius:0.55rem;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; width:100%; gap:0.5rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap; flex:1; min-width:0;">
             ${pinnedBadge}
-            <h4 style="margin:0;font-size:1.05rem;font-weight:600;color:var(--text-primary);">${title}</h4>
+            <strong style="font-size:0.86rem; color:#f8fafc; font-weight:700; word-break:break-word;">${title}</strong>
           </div>
-          <span style="font-size:0.8rem;color:var(--text-secondary);">${dateStr}</span>
+          <span style="color:#9da4c2; font:500 0.65rem 'DM Mono', monospace; flex-shrink:0;">${dateStr}</span>
         </div>
-        <div style="font-size:0.9rem;line-height:1.6;color:var(--text-secondary);">
+        <div style="font-size:0.78rem; line-height:1.6; color:#cbd5e1; word-break:break-word;">
           ${content}
         </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.25rem;padding-top:0.75rem;border-top:1px solid rgba(255,255,255,0.06);">
-          <span style="font-size:0.8rem;color:var(--text-secondary);display:inline-flex;align-items:center;gap:0.35rem;">
-            <span>📢</span> Broadcasted to enrolled learners
+        <div style="display:flex; justify-content:space-between; align-items:center; width:100%; margin-top:0.2rem; padding-top:0.55rem; border-top:1px solid rgba(255,255,255,0.06);">
+          <span style="color:#9da4c2; font-size:0.72rem; display:inline-flex; align-items:center; gap:0.35rem;">
+            ${megaphoneMini}
+            <span>Broadcasted to enrolled learners</span>
           </span>
-          <div style="display:flex;align-items:center;gap:0.5rem;">
+          <div style="display:flex; gap:0.4rem; align-items:center;">
             <button 
               type="button" 
-              class="button button-secondary mini-button" 
+              class="mini-button" 
               data-action="toggle-pin-announcement" 
               data-announcement-id="${ann._id}"
               title="${ann.isPinned ? "Unpin this announcement" : "Pin this announcement"}"
-              style="padding:0.3rem 0.65rem;font-size:0.75rem;"
             >
-              ${ann.isPinned ? "📍 Unpin" : "📌 Pin"}
+              ${ann.isPinned ? "Unpin" : "Pin"}
             </button>
             <button 
               type="button" 
-              class="button button-danger mini-button" 
+              class="mini-button" 
               data-action="delete-announcement" 
               data-announcement-id="${ann._id}"
               title="Delete this announcement"
-              style="padding:0.3rem 0.65rem;font-size:0.75rem;"
+              style="border-color:rgba(239,68,68,0.4); color:#fca5a5;"
             >
-              🗑 Delete
+              Delete
             </button>
           </div>
         </div>
@@ -877,9 +880,12 @@ function renderInstructorAnnouncements() {
 
 async function handlePostAnnouncement(event) {
   event.preventDefault();
+  const form = event.currentTarget;
   const select = $("#announcement-course-select");
   const courseId = select?.value;
+  const messageEl = form.querySelector('[data-message="announcement"]');
   if (!courseId) {
+    message(messageEl, "Please select a course to post an announcement.", "error");
     toast("Please select a course to post an announcement.", "error");
     return;
   }
@@ -888,25 +894,24 @@ async function handlePostAnnouncement(event) {
   const contentInput = $("#announcement-content");
   const pinnedInput = $("#announcement-pinned");
   const submitBtn = $("#btn-post-announcement");
-  const feedbackEl = $("#announcement-feedback");
 
   const title = titleInput?.value?.trim();
   const content = contentInput?.value?.trim();
   const isPinned = Boolean(pinnedInput?.checked);
 
   if (!title || title.length < 3) {
-    toast("Title must be at least 3 characters", "error");
+    message(messageEl, "Title must be at least 3 characters", "error");
     titleInput?.focus();
     return;
   }
   if (!content || content.length < 5) {
-    toast("Content must be at least 5 characters", "error");
+    message(messageEl, "Content must be at least 5 characters", "error");
     contentInput?.focus();
     return;
   }
 
   setBusy(submitBtn, true);
-  if (feedbackEl) feedbackEl.style.display = "none";
+  if (messageEl) message(messageEl, "", "");
 
   try {
     const res = await announcementService.createAnnouncement(courseId, {
@@ -917,19 +922,11 @@ async function handlePostAnnouncement(event) {
 
     const notifiedCount = res?.data?.notifiedCount ?? 0;
     const msg = notifiedCount > 0
-      ? `📢 Announcement published! ${notifiedCount} student(s) received notifications.`
-      : `📢 Announcement published successfully!`;
+      ? `Announcement published and ${notifiedCount} student(s) notified.`
+      : `Announcement published successfully.`;
 
+    message(messageEl, msg, "success");
     toast(msg, "success");
-
-    if (feedbackEl) {
-      feedbackEl.style.display = "block";
-      feedbackEl.style.background = "rgba(16,185,129,0.15)";
-      feedbackEl.style.color = "#34d399";
-      feedbackEl.style.border = "1px solid rgba(16,185,129,0.3)";
-      feedbackEl.textContent = msg;
-      setTimeout(() => { if (feedbackEl) feedbackEl.style.display = "none"; }, 5000);
-    }
 
     // Reset inputs
     if (titleInput) titleInput.value = "";
@@ -940,14 +937,8 @@ async function handlePostAnnouncement(event) {
     await loadInstructorAnnouncements(courseId);
   } catch (err) {
     console.error("Failed to post announcement:", err);
+    message(messageEl, errorText(err), "error");
     toast(`Failed to publish announcement: ${errorText(err)}`, "error");
-    if (feedbackEl) {
-      feedbackEl.style.display = "block";
-      feedbackEl.style.background = "rgba(239,68,68,0.15)";
-      feedbackEl.style.color = "#f87171";
-      feedbackEl.style.border = "1px solid rgba(239,68,68,0.3)";
-      feedbackEl.textContent = errorText(err);
-    }
   } finally {
     setBusy(submitBtn, false);
   }
@@ -972,7 +963,7 @@ async function handleTogglePinAnnouncement(announcementId) {
   try {
     const res = await announcementService.togglePinAnnouncement(announcementId);
     const isPinned = res?.data?.isPinned;
-    toast(`Announcement ${isPinned ? "pinned 📌" : "unpinned"}.`);
+    toast(`Announcement ${isPinned ? "pinned" : "unpinned"}.`);
     const select = $("#announcement-course-select");
     const courseId = select?.value;
     if (courseId) {

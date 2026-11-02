@@ -475,23 +475,23 @@ function renderPlayerAnnouncements() {
     }) : "";
 
     const pinnedBadge = ann.isPinned
-      ? `<span style="display:inline-flex;align-items:center;gap:0.25rem;background:rgba(234,179,8,0.15);color:#fbbf24;border:1px solid rgba(234,179,8,0.3);font-size:0.75rem;padding:0.2rem 0.5rem;border-radius:9999px;font-weight:600;">📌 Pinned</span>`
+      ? `<span class="status" style="color:#ffd68f; background:rgba(255,183,77,0.13); font-size:0.62rem; padding:0.2rem 0.45rem; font-weight:700;">PINNED</span>`
       : "";
 
     return `
-      <div style="background:var(--bg-card);border:1px solid ${ann.isPinned ? "rgba(234,179,8,0.4)" : "var(--border-subtle)"};border-radius:10px;padding:1.25rem;display:flex;flex-direction:column;gap:0.75rem;box-shadow:0 4px 12px rgba(0,0,0,0.15);">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.5rem;">
-          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+      <div style="background:#11192d; border:1px solid ${ann.isPinned ? "rgba(234,179,8,0.4)" : "#27314b"}; border-radius:0.55rem; padding:1.15rem; display:flex; flex-direction:column; gap:0.75rem;">
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:0.5rem;">
+          <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap:wrap;">
             ${pinnedBadge}
-            <h4 style="margin:0;font-size:1.05rem;font-weight:600;color:var(--text-primary);">${title}</h4>
+            <h4 style="margin:0; font-size:0.95rem; font-weight:700; color:#f8fafc;">${title}</h4>
           </div>
-          <span style="font-size:0.8rem;color:var(--text-secondary);">${dateStr}</span>
+          <span style="font:500 0.68rem 'DM Mono', monospace; color:#9da4c2;">${dateStr}</span>
         </div>
-        <div style="font-size:0.9rem;line-height:1.6;color:var(--text-secondary);">
+        <div style="font-size:0.82rem; line-height:1.6; color:#cbd5e1; word-break:break-word;">
           ${content}
         </div>
-        <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.25rem;font-size:0.8rem;color:var(--text-secondary);border-top:1px solid rgba(255,255,255,0.06);padding-top:0.6rem;">
-          <span style="background:rgba(99,102,241,0.2);color:#818cf8;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-weight:bold;font-size:0.75rem;">
+        <div style="display:flex; align-items:center; gap:0.5rem; margin-top:0.2rem; font-size:0.75rem; color:#9da4c2; border-top:1px solid rgba(255,255,255,0.06); padding-top:0.55rem;">
+          <span style="background:rgba(99,102,241,0.2); color:#818cf8; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:bold; font-size:0.72rem;">
             ${instructorName.charAt(0).toUpperCase()}
           </span>
           <span>Posted by <strong>${instructorName}</strong></span>

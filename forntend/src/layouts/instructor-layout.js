@@ -1,5 +1,6 @@
 import { renderSidebar } from "../components/common/sidebar.js";
 import { renderNavbar, bindNavbarEvents } from "../components/common/navbar.js";
+import { getMegaphoneSvg } from "../components/common/icons.js";
 
 export function renderInstructorLayout(user, activeSection = "overview") {
   const sidebarHtml = renderSidebar({
@@ -8,7 +9,7 @@ export function renderInstructorLayout(user, activeSection = "overview") {
       { id: "overview", href: "#/instructor/overview", label: "Overview", icon: "◈", isActive: activeSection === "overview" },
       { id: "course-builder", href: "#/instructor/course-builder", label: "Course builder", icon: "▣", isActive: activeSection === "course-builder" },
       { id: "assessments", href: "#/instructor/assessments", label: "Assessments", icon: "◇", isActive: activeSection === "assessments" },
-      { id: "announcements", href: "#/instructor/announcements", label: "Announcements", icon: "📢", isActive: activeSection === "announcements" },
+      { id: "announcements", href: "#/instructor/announcements", label: "Announcements", icon: getMegaphoneSvg({ size: 16 }), isActive: activeSection === "announcements" },
       { id: "analytics", href: "#/instructor/analytics", label: "Analytics", icon: "Δ", isActive: activeSection === "analytics" }
     ]
   });
