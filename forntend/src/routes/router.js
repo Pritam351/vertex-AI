@@ -45,7 +45,9 @@ const TEMPLATES = {
 };
 
 async function fetchHtml(url) {
-  const res = await fetch(url);
+  const u = new URL(url.toString());
+  u.searchParams.set("_v", Date.now());
+  const res = await fetch(u, { cache: "no-store" });
   if (!res.ok) throw new Error(`Could not load template from ${url.pathname}`);
   return res.text();
 }

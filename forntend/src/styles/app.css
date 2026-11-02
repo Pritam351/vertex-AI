@@ -249,13 +249,13 @@
 
 @media (max-width: 768px) {
   .player-layout {
-    grid-template-columns: minmax(0, 1fr) 250px;
-    gap: 0.5rem;
+    grid-template-columns: minmax(0, 1fr) 240px !important;
+    gap: 0.5rem !important;
   }
 }
 
-/* Only on very small mobile screens (< 540px) stack gracefully */
-@media (max-width: 540px) {
+/* Only on very small mobile phone portrait screens (< 420px) stack gracefully */
+@media (max-width: 420px) {
   .player-layout {
     display: flex !important;
     flex-direction: column !important;
