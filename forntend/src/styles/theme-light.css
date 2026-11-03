@@ -319,20 +319,57 @@
   font-weight: 800 !important;
 }
 
-[data-theme="light"] .course-card-item {
+[data-theme="light"] .course-card-item,
+[data-theme="light"] .enrolled-course-card {
   background: #ffffff !important;
   border: 1px solid #e2e8f0 !important;
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
 }
 
-[data-theme="light"] .course-card-item:hover {
+[data-theme="light"] .course-card-item:hover,
+[data-theme="light"] .enrolled-course-card:hover {
   border-color: #c7d2fe !important;
   box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1) !important;
 }
 
-[data-theme="light"] .course-card-item.is-completed-card {
+[data-theme="light"] .course-card-item.is-completed-card,
+[data-theme="light"] .enrolled-course-card.is-completed-card {
   border-color: rgba(16, 185, 129, 0.35) !important;
   background: #f0fdf4 !important;
+}
+
+[data-theme="light"] .enrolled-course-info h3 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .enrolled-course-info p {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .course-badge {
+  background: #ede9fe !important;
+  color: #6d28d9 !important;
+  border: 1px solid #c4b5fd !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .enrolled-course-card .progress-bar-wrapper span {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .enrolled-course-card .progress-bar-wrapper strong {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .enrolled-course-card.is-completed-card .progress-bar-wrapper strong {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .enrolled-course-card .progress-bar-wrapper > div:last-child {
+  background: #e2e8f0 !important;
 }
 
 [data-theme="light"] .course-card-thumb {
@@ -639,7 +676,13 @@
   font-weight: 600 !important;
 }
 
-/* ── Discussions & Comments in Light Mode ── */
+/* ── Discussions & Comments in Light Mode (Student, Instructor & Player) ── */
+[data-theme="light"] #std-discussions-feed .panel,
+[data-theme="light"] #std-discussions-feed > div,
+[data-theme="light"] #inst-discussions-feed .panel,
+[data-theme="light"] #inst-discussions-feed > div,
+[data-theme="light"] #player-discussions-list .discussion-thread-item,
+[data-theme="light"] #player-discussions-list > div,
 [data-theme="light"] #student-new-thread-panel,
 [data-theme="light"] #new-thread-panel,
 [data-theme="light"] .discussion-thread-card {
@@ -648,19 +691,225 @@
   box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
 }
 
+[data-theme="light"] #std-discussions-feed .panel:hover,
+[data-theme="light"] #inst-discussions-feed .panel:hover,
+[data-theme="light"] #player-discussions-list .discussion-thread-item:hover {
+  border-color: #c7d2fe !important;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.08) !important;
+}
+
+/* Discussion Card Headings & Titles */
+[data-theme="light"] #std-discussions-feed h4,
+[data-theme="light"] #inst-discussions-feed h4,
+[data-theme="light"] #player-discussions-list h4,
+[data-theme="light"] #student-new-thread-panel h3,
+[data-theme="light"] #new-thread-panel h4,
 [data-theme="light"] .discussion-thread-card h4,
 [data-theme="light"] .discussion-thread-card h3 {
   color: #0f172a !important;
   font-weight: 700 !important;
 }
 
-[data-theme="light"] .discussion-thread-card p {
-  color: #334155 !important;
-}
-
+/* Discussion Author Names */
+[data-theme="light"] #std-discussions-feed strong,
+[data-theme="light"] #inst-discussions-feed strong,
+[data-theme="light"] #player-discussions-list strong,
 [data-theme="light"] .discussion-thread-card .thread-author {
   color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+/* Discussion Body Content */
+[data-theme="light"] #std-discussions-feed div[style*="word-break"],
+[data-theme="light"] #inst-discussions-feed div[style*="word-break"],
+[data-theme="light"] #player-discussions-list div[style*="word-break"],
+[data-theme="light"] #std-discussions-feed div[style*="color:#cbd5e1"],
+[data-theme="light"] #inst-discussions-feed div[style*="color:#cbd5e1"],
+[data-theme="light"] #player-discussions-list div[style*="color:#cbd5e1"],
+[data-theme="light"] .discussion-thread-card p {
+  color: #334155 !important;
+  line-height: 1.6 !important;
+}
+
+/* Course Title Label in Discussions */
+[data-theme="light"] #std-discussions-feed span[style*="color:#818cf8"],
+[data-theme="light"] #inst-discussions-feed span[style*="color:#818cf8"],
+[data-theme="light"] #player-disc-lecture-name {
+  color: #4f46e5 !important;
+  font-weight: 700 !important;
+}
+
+/* Author Avatar Circles */
+[data-theme="light"] #std-discussions-feed span[style*="border-radius:50%"],
+[data-theme="light"] #inst-discussions-feed span[style*="border-radius:50%"],
+[data-theme="light"] #player-discussions-list span[style*="border-radius:50%"] {
+  background: #e0e7ff !important;
+  color: #4338ca !important;
+  border: 1px solid #c7d2fe !important;
+}
+
+/* Timestamps / Dates */
+[data-theme="light"] #std-discussions-feed span[style*="DM Mono"],
+[data-theme="light"] #inst-discussions-feed span[style*="DM Mono"],
+[data-theme="light"] #player-discussions-list span[style*="DM Mono"],
+[data-theme="light"] #std-discussions-feed span[style*="color:#9da4c2"],
+[data-theme="light"] #inst-discussions-feed span[style*="color:#9da4c2"],
+[data-theme="light"] #player-discussions-list span[style*="color:#9da4c2"] {
+  color: #64748b !important;
+  font-weight: 500 !important;
+}
+
+/* Internal Dividers / Borders in Cards */
+[data-theme="light"] #std-discussions-feed div[style*="border-bottom"],
+[data-theme="light"] #std-discussions-feed div[style*="border-top"],
+[data-theme="light"] #inst-discussions-feed div[style*="border-bottom"],
+[data-theme="light"] #inst-discussions-feed div[style*="border-top"],
+[data-theme="light"] #player-discussions-list div[style*="border-bottom"],
+[data-theme="light"] #player-discussions-list div[style*="border-top"],
+[data-theme="light"] .discussion-replies-wrapper,
+[data-theme="light"] .instructor-replies-drawer {
+  border-color: #e2e8f0 !important;
+}
+
+/* Badges: Student role */
+[data-theme="light"] #std-discussions-feed span[style*="rgba(255,255,255,0.05)"],
+[data-theme="light"] #inst-discussions-feed span[style*="rgba(255,255,255,0.05)"],
+[data-theme="light"] #player-discussions-list span[style*="rgba(255,255,255,0.05)"] {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border: 1px solid #cbd5e1 !important;
   font-weight: 600 !important;
+}
+
+/* Badges: Lecture tag */
+[data-theme="light"] #std-discussions-feed span[style*="rgba(99,102,241,0.12)"],
+[data-theme="light"] #inst-discussions-feed span[style*="rgba(99,102,241,0.12)"],
+[data-theme="light"] #player-discussions-list span[style*="rgba(99,102,241,0.12)"] {
+  background: #ede9fe !important;
+  color: #6d28d9 !important;
+  border: 1px solid #c4b5fd !important;
+  font-weight: 600 !important;
+}
+
+/* Badges: Needs Answer */
+[data-theme="light"] #std-discussions-feed span[style*="rgba(245,158,11,0.12)"],
+[data-theme="light"] #inst-discussions-feed span[style*="rgba(245,158,11,0.12)"] {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+  font-weight: 600 !important;
+}
+
+/* Badges: Answered */
+[data-theme="light"] #std-discussions-feed span[style*="rgba(34,197,94,0.12)"],
+[data-theme="light"] #inst-discussions-feed span[style*="rgba(34,197,94,0.12)"] {
+  background: #d1fae5 !important;
+  color: #047857 !important;
+  border: 1px solid #a7f3d0 !important;
+  font-weight: 600 !important;
+}
+
+/* Badges: Locked */
+[data-theme="light"] #std-discussions-feed span[style*="rgba(239,68,68,0.15)"],
+[data-theme="light"] #inst-discussions-feed span[style*="rgba(239,68,68,0.15)"],
+[data-theme="light"] #player-discussions-list span[style*="rgba(239,68,68,0.15)"] {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border: 1px solid #fca5a5 !important;
+  font-weight: 700 !important;
+}
+
+/* Badges: Hidden & Reported */
+[data-theme="light"] span[style*="rgba(100,116,139,0.2)"] {
+  background: #f1f5f9 !important;
+  color: #64748b !important;
+  border: 1px solid #cbd5e1 !important;
+}
+
+[data-theme="light"] span[style*="rgba(245,158,11,0.18)"] {
+  background: #fef3c7 !important;
+  color: #92400e !important;
+  border: 1px solid #fde68a !important;
+}
+
+/* Reply Items & Drawer */
+[data-theme="light"] .discussion-reply-item,
+[data-theme="light"] #std-discussions-feed div[style*="background:#0b1022"],
+[data-theme="light"] #inst-discussions-feed div[style*="background:#0b1022"],
+[data-theme="light"] #player-discussions-list div[style*="background:#0b1022"],
+[data-theme="light"] .instructor-replies-drawer > div > div {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .discussion-reply-item strong,
+[data-theme="light"] #std-discussions-feed div[style*="background:#0b1022"] strong,
+[data-theme="light"] #inst-discussions-feed div[style*="background:#0b1022"] strong,
+[data-theme="light"] #player-discussions-list div[style*="background:#0b1022"] strong {
+  color: #0f172a !important;
+}
+
+/* Reply Textarea & Forms */
+[data-theme="light"] .student-reply-input,
+[data-theme="light"] .discussion-reply-input,
+[data-theme="light"] .instructor-reply-input {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .student-reply-input:focus,
+[data-theme="light"] .discussion-reply-input:focus,
+[data-theme="light"] .instructor-reply-input:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+/* Buttons in Discussions */
+[data-theme="light"] button[data-action*="replies"] {
+  background: #f8fafc !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] button[data-action*="replies"]:hover {
+  background: #eef2ff !important;
+  border-color: #6366f1 !important;
+  color: #4f46e5 !important;
+}
+
+[data-theme="light"] button[data-action*="report"] {
+  color: #64748b !important;
+}
+
+[data-theme="light"] button[data-action*="report"]:hover {
+  color: #dc2626 !important;
+}
+
+/* Discussions Filter Group (Tabs) */
+[data-theme="light"] .discussions-filter-group {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .discussions-filter-group button.mini-button {
+  background: transparent !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .discussions-filter-group button.mini-button.is-active {
+  background: #6366f1 !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* Not Enrolled Notice in Discussions */
+[data-theme="light"] #std-discussions-feed div[style*="border:1px dashed"],
+[data-theme="light"] #std-discussions-feed div[style*="border: 1px dashed"] {
+  background: #f8fafc !important;
+  border: 1px dashed #cbd5e1 !important;
+  color: #475569 !important;
 }
 
 /* ── Course Player in Light Mode ── */
