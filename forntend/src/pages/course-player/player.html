@@ -1,4 +1,4 @@
-<section class="view is-active" id="course-player">
+﻿<section class="view is-active" id="course-player">
 
   <!-- ── Top progress strip ─────────────────────────────────────── -->
   <div class="player-topbar" id="player-topbar">
@@ -30,10 +30,10 @@
   </div>
 
   <!-- ── Two-column player layout ──────────────────────────────── -->
-  <div class="player-layout" id="player-layout" style="display: flex !important; flex-direction: row !important; flex-wrap: nowrap !important; gap: 1.25rem !important; align-items: flex-start !important; width: 100% !important; box-sizing: border-box !important;">
+  <div class="player-layout" id="player-layout">
 
     <!-- LEFT: video + controls + lecture header + tabs -->
-    <div class="player-main" id="player-main" style="flex: 1 1 0% !important; min-width: 0 !important; width: 0 !important; display: flex; flex-direction: column; box-sizing: border-box !important;">
+    <div class="player-main" id="player-main">
 
       <!-- Video wrapper -->
       <div class="player-video-wrapper" id="player-video-container">
@@ -346,8 +346,13 @@
       </div><!-- /.player-tabs-container -->
     </div><!-- /.player-main -->
 
+    <!-- Mobile-only curriculum drawer toggle -->
+    <button class="player-curriculum-toggle" id="player-curriculum-toggle" type="button" aria-expanded="false" aria-controls="player-sidebar">
+      <span><span class="toggle-label">&#x1F4DA; Course Curriculum</span></span>
+      <span class="toggle-chevron" aria-hidden="true">&#9660;</span>
+    </button>
     <!-- RIGHT: Curriculum sidebar -->
-    <aside class="player-sidebar" id="player-sidebar" aria-label="Course curriculum" style="flex: 0 0 360px !important; width: 360px !important; min-width: 280px !important; max-width: 420px !important; display: block !important; visibility: visible !important; opacity: 1 !important; position: sticky !important; top: 1rem !important; max-height: calc(100vh - 2rem) !important; overflow-y: auto !important; box-sizing: border-box !important;">
+    <aside class="player-sidebar" id="player-sidebar" aria-label="Course curriculum">
       <div class="sidebar-panel" style="background: var(--surface-2, #131b2e); border: 1px solid var(--line, #232f48); border-radius: 0.75rem; width: 100%; box-sizing: border-box; overflow: hidden;">
         <div class="sidebar-panel-header" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem; border-bottom: 1px solid var(--line, #232f48); background: rgba(0, 0, 0, 0.25);">
           <div>

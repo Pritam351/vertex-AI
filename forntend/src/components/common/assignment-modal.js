@@ -203,7 +203,7 @@ export function openAssignmentModal({ assignment, onSubmitted }) {
 
             <!-- Modal Action Buttons -->
             <div style="display:flex; justify-content:flex-end; gap:0.75rem; margin-top:0.5rem;">
-              <button type="button" class="button button-outline modal-cancel" style="padding:0.6rem 1.25rem; font-size:0.875rem; cursor:pointer;">Cancel</button>
+              <button type="button" class="button button-primary button-outline modal-cancel" style="padding:0.6rem 1.25rem; font-size:0.875rem; cursor:pointer;">Cancel</button>
               <button type="submit" id="modal-submit-btn" class="button button-primary" style="padding:0.6rem 1.5rem; font-size:0.875rem; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:0.4rem;">
                 <span>🚀</span>
                 <span id="modal-submit-btn-text">${prevSub ? "Update Submission" : "Submit Assignment"}</span>

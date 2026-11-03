@@ -1,4 +1,4 @@
-/**
+﻿/**
  * player.js — VertexLearn AI Course Player (complete rewrite)
  *
  * Features:
@@ -1499,6 +1499,44 @@ function wireEvents(courseId) {
   // Prev/Next (controls bar)
   qs("#btn-prev-lecture-ctrl")?.addEventListener("click", goToPrev);
   qs("#btn-next-lecture-ctrl")?.addEventListener("click", goToNext);
+
+  // ── Mobile curriculum toggle ──────────────────────────────────────────────
+  const currToggleBtn = qs("#player-curriculum-toggle");
+  const currSidebar   = document.querySelector("#player-sidebar") || document.querySelector(".player-sidebar");
+  if (currToggleBtn && currSidebar) {
+    // Start collapsed on mobile
+    function applyMobileCollapseState() {
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      if (!isMobile) {
+        currSidebar.classList.remove("is-mobile-collapsed");
+        currToggleBtn.classList.remove("is-open");
+        currToggleBtn.setAttribute("aria-expanded", "true");
+        return;
+      }
+      // On mobile: default collapsed
+      if (!currSidebar.classList.contains("is-mobile-collapsed")) {
+        currSidebar.classList.add("is-mobile-collapsed");
+        currToggleBtn.setAttribute("aria-expanded", "false");
+      }
+    }
+    applyMobileCollapseState();
+    window.addEventListener("resize", applyMobileCollapseState);
+
+    currToggleBtn.addEventListener("click", () => {
+      const isMobile = window.matchMedia("(max-width: 768px)").matches;
+      if (!isMobile) return;
+      const isCollapsed = currSidebar.classList.contains("is-mobile-collapsed");
+      if (isCollapsed) {
+        currSidebar.classList.remove("is-mobile-collapsed");
+        currToggleBtn.classList.add("is-open");
+        currToggleBtn.setAttribute("aria-expanded", "true");
+      } else {
+        currSidebar.classList.add("is-mobile-collapsed");
+        currToggleBtn.classList.remove("is-open");
+        currToggleBtn.setAttribute("aria-expanded", "false");
+      }
+    });
+  }
 
   
 
