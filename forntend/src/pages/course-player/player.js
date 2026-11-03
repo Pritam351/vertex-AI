@@ -116,19 +116,6 @@ function renderCurriculum() {
     return;
   }
 
-  // Populate or refresh Jump selector
-  const jumpSelect = qs("#player-jump-select");
-  if (jumpSelect && flatLectures.length) {
-    const currentVal = activeLecture?._id || "";
-    jumpSelect.innerHTML = `<option value="">⚡ Jump to lesson (${flatLectures.length} total)…</option>` +
-      flatLectures.map((fl, idx) => {
-        const isSel = String(fl.lec._id) === String(currentVal) ? "selected" : "";
-        const prog = lectureProgressMap.get(fl.lec._id);
-        const check = prog?.completed ? "✓ " : "";
-        return `<option value="${fl.lec._id}" ${isSel}>${check}Lesson ${idx + 1}: ${escapeHtml(fl.lec.title)}</option>`;
-      }).join("");
-  }
-
   tree.innerHTML = currentModules.map((mod, modIdx) => {
     const lectures = mod.lectures || [];
     const modCompleted = lectures.filter(l => lectureProgressMap.get(l._id)?.completed).length;
@@ -139,8 +126,6 @@ function renderCurriculum() {
       const completed = !!prog.completed;
       const isActive  = activeLecture?._id === lec._id;
       const dur       = lec.durationSeconds ? formatDuration(lec.durationSeconds) : "";
-      const globalIdx = flatLectures.findIndex(fl => String(fl.lec._id) === String(lec._id));
-      const lessonNumber = globalIdx !== -1 ? (globalIdx + 1) : (lecIdx + 1);
 
       const circleInner = completed
         ? `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -163,7 +148,7 @@ function renderCurriculum() {
           title="${escapeHtml(lec.title)}"
         >
           <span class="lecture-completion-circle">${circleInner}</span>
-          <span class="lecture-item-title">${lessonNumber}. ${escapeHtml(lec.title)}</span>
+          <span class="lecture-item-title">${lecIdx + 1}. ${escapeHtml(lec.title)}</span>
           ${dur ? `<span class="lecture-item-dur">${dur}</span>` : ""}
         </div>
       `;
@@ -1344,12 +1329,6 @@ async function selectLecture(lecture, moduleTitle) {
   // 10. Prev/Next button enable/disable
   updatePrevNextButtons();
 
-  // Update jump selector value
-  const jumpSel = qs("#player-jump-select");
-  if (jumpSel && lecture?._id) {
-    jumpSel.value = lecture._id;
-  }
-
   // 11. Load notes (async, non-blocking)
   loadNotes(lecture._id);
 
@@ -1418,16 +1397,6 @@ function wireEvents(courseId) {
   // Prev/Next (controls bar)
   qs("#btn-prev-lecture-ctrl")?.addEventListener("click", goToPrev);
   qs("#btn-next-lecture-ctrl")?.addEventListener("click", goToNext);
-
-  // Quick jump directly to any lesson across the course
-  qs("#player-jump-select")?.addEventListener("change", (e) => {
-    const targetId = e.target.value;
-    if (!targetId) return;
-    const target = flatLectures.find(fl => String(fl.lec._id) === String(targetId));
-    if (target) {
-      selectLecture(target.lec, target.modTitle);
-    }
-  });
 
   // Playback speed
   qs("#player-speed-select")?.addEventListener("change", e => {
@@ -1795,7 +1764,7 @@ function wireEvents(courseId) {
 
   // Hash change: clean up if leaving player
   window.addEventListener("hashchange", () => {
-    if (!window.location.hash.startsWith("#/student/player")) {
+    if (!window.location.hash.startsWith("#/student/course-player")) {
       stopProgressInterval();
     }
   });
