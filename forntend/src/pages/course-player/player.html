@@ -84,9 +84,6 @@
           <small class="player-lecture-sub" id="player-lecture-meta">Module • Lecture</small>
         </div>
         <div class="player-lecture-nav">
-          <select id="player-jump-select-top" class="speed-select" title="Jump directly to any lesson" style="max-width:210px; font-weight:600; color:#c7d2fe; background:#131d36; border:1px solid #3b4668; border-radius:6px; padding:0.35rem 0.6rem; cursor:pointer;">
-            <option value="">⚡ Jump to lesson…</option>
-          </select>
           <button class="button button-secondary mini-button" id="btn-prev-lecture" type="button" disabled>
             ← Previous
           </button>
@@ -350,9 +347,9 @@
     </div><!-- /.player-main -->
 
     <!-- RIGHT: Curriculum sidebar -->
-    <aside class="player-sidebar" id="player-sidebar" aria-label="Course curriculum" style="flex: 0 0 360px !important; width: 360px !important; min-width: 280px !important; max-width: 400px !important; display: flex !important; flex-direction: column !important; visibility: visible !important; opacity: 1 !important; position: sticky !important; top: 1rem !important; max-height: calc(100vh - 2rem) !important; overflow-y: auto !important; box-sizing: border-box !important;">
-      <div class="sidebar-panel" style="background: var(--surface-2, #131b2e); border: 1px solid var(--line, #232f48); border-radius: 0.75rem; overflow: hidden; display: flex; flex-direction: column; width: 100%;">
-        <div class="sidebar-panel-header" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem; border-bottom: 1px solid var(--line, #232f48); background: rgba(0, 0, 0, 0.2);">
+    <aside class="player-sidebar" id="player-sidebar" aria-label="Course curriculum" style="flex: 0 0 360px !important; width: 360px !important; min-width: 280px !important; max-width: 420px !important; display: block !important; visibility: visible !important; opacity: 1 !important; position: sticky !important; top: 1rem !important; max-height: calc(100vh - 2rem) !important; overflow-y: auto !important; box-sizing: border-box !important;">
+      <div class="sidebar-panel" style="background: var(--surface-2, #131b2e); border: 1px solid var(--line, #232f48); border-radius: 0.75rem; width: 100%; box-sizing: border-box; overflow: hidden;">
+        <div class="sidebar-panel-header" style="display: flex; align-items: center; justify-content: space-between; padding: 0.85rem 1rem; border-bottom: 1px solid var(--line, #232f48); background: rgba(0, 0, 0, 0.25);">
           <div>
             <h3 class="sidebar-panel-title" style="font-size: 0.8rem; font-weight: 700; letter-spacing: 0.07em; text-transform: uppercase; color: var(--muted, #94a3b8); margin: 0 0 0.2rem 0;">COURSE CURRICULUM</h3>
             <div id="sidebar-counts-badge" style="font-size: 0.75rem; font-family: 'DM Mono', monospace; color: var(--violet-light, #a78bfa); font-weight: 600;">
@@ -363,7 +360,7 @@
             ✦ AI Tutor
           </button>
         </div>
-        <div class="player-progress-summary" id="sidebar-progress-summary" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--line, #232f48); background: rgba(255, 255, 255, 0.01);">
+        <div class="player-progress-summary" id="sidebar-progress-summary" style="padding: 0.75rem 1rem; border-bottom: 1px solid var(--line, #232f48); background: rgba(255, 255, 255, 0.015);">
           <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
             <small id="sidebar-progress-text" class="sidebar-progress-text" style="font-size: 0.78rem; font-family: 'DM Mono', monospace; color: var(--muted, #94a3b8); font-weight: 600;">
               0% Course Progress
@@ -373,12 +370,7 @@
             <div class="player-progress-fill" id="sidebar-progress-fill" style="width: 0%; height: 100%; background: linear-gradient(90deg, #7b61ff, #52d8c2); border-radius: 999px; transition: width 0.3s ease;"></div>
           </div>
         </div>
-        <div style="padding: 0.6rem 0.85rem; border-bottom: 1px solid var(--line, #232f48); background: rgba(0, 0, 0, 0.12);">
-          <select id="player-jump-select" class="speed-select" title="Jump directly to any lecture" style="width: 100%; font-size: 0.78rem; font-weight: 600; color: #c7d2fe; background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 0.4rem 0.6rem; cursor: pointer;">
-            <option value="">⚡ Jump directly to lesson…</option>
-          </select>
-        </div>
-        <div id="player-curriculum-tree" class="player-curriculum-list" style="padding: 0; overflow-y: auto; max-height: calc(100vh - 14rem);">
+        <div id="player-curriculum-tree" class="player-curriculum-list" style="padding: 0; margin: 0;">
           <p style="color:var(--muted);font-size:0.85rem;padding:1rem;">Loading modules and lectures…</p>
         </div>
       </div>
