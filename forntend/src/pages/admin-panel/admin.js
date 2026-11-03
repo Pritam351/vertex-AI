@@ -39,9 +39,14 @@ export function showAdminView(sectionId) {
   const pageTitle = document.querySelector("#page-title");
   if (pageTitle) pageTitle.textContent = titles[sectionId] || "Admin Panel";
 
-  // Close mobile sidebar
+  // Close mobile sidebar + hide backdrop
   document.querySelector("#sidebar")?.classList.remove("is-open");
   document.querySelector("#menu-toggle")?.setAttribute("aria-expanded", "false");
+  const sidebarBackdrop = document.querySelector("#sidebar-backdrop");
+  if (sidebarBackdrop) {
+    sidebarBackdrop.style.opacity = "0";
+    setTimeout(() => { sidebarBackdrop.style.display = "none"; }, 200);
+  }
 }
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────

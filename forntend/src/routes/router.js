@@ -87,6 +87,17 @@ async function _doNavigate() {
   const session = getSession();
   const user = session?.user || null;
 
+  // Helper: close mobile sidebar + backdrop on any route change
+  function _closeMobileSidebar() {
+    const sidebar = document.querySelector("#sidebar");
+    if (sidebar?.classList.contains("is-open")) {
+      sidebar.classList.remove("is-open");
+      document.querySelector("#menu-toggle")?.setAttribute("aria-expanded", "false");
+      const bd = document.querySelector("#sidebar-backdrop");
+      if (bd) { bd.style.opacity = "0"; setTimeout(() => { bd.style.display = "none"; }, 200); }
+    }
+  }
+
   // 0. Homepage Routing (public - no auth required)
   if (hash === "" || hash === "#" || hash === "#/" || hash === "#home") {
     document.title = "VertexLearn AI | Home";
@@ -128,6 +139,9 @@ async function _doNavigate() {
       const { showView } = await import("../pages/instructor/instructor.js");
       showView(subSection);
     }
+
+    // Close mobile sidebar + backdrop on navigation
+    _closeMobileSidebar();
     return;
   }
 
@@ -142,6 +156,9 @@ async function _doNavigate() {
       bindStudentLayoutEvents(activeAppContainer);
       currentRenderedLayout = "student";
     }
+
+    // Close mobile sidebar + backdrop on navigation
+    _closeMobileSidebar();
 
     // Update sidebar active state for current section
     activeAppContainer.querySelectorAll("#sidebar .nav-link").forEach((link) => {
@@ -200,6 +217,9 @@ async function _doNavigate() {
       bindAdminLayoutEvents(activeAppContainer);
       currentRenderedLayout = "admin";
     }
+
+    // Always close mobile sidebar + backdrop on any admin navigation
+    _closeMobileSidebar();
 
     const container = activeAppContainer.querySelector("#admin-page-container");
     if (!container) return;
