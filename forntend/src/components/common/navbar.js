@@ -147,12 +147,52 @@ export function bindNavbarEvents(container = document) {
     window.location.hash = "#/login";
   });
 
-  // Mobile sidebar toggle
-  container.querySelector("#menu-toggle")?.addEventListener("click", () => {
+  // Mobile sidebar toggle + backdrop overlay for close-on-outside-tap
+  const menuToggle = container.querySelector("#menu-toggle");
+  menuToggle?.addEventListener("click", () => {
     const sidebar = document.querySelector("#sidebar");
     const isOpen = sidebar?.classList.toggle("is-open");
-    document.querySelector("#menu-toggle")?.setAttribute("aria-expanded", String(isOpen));
+    menuToggle.setAttribute("aria-expanded", String(isOpen));
+
+    // Create/show backdrop overlay when sidebar opens
+    let backdrop = document.querySelector("#sidebar-backdrop");
+    if (!backdrop) {
+      backdrop = document.createElement("div");
+      backdrop.id = "sidebar-backdrop";
+      backdrop.style.cssText = [
+        "position:fixed", "inset:0", "z-index:39",
+        "background:rgba(0,0,0,0.55)", "display:none",
+        "transition:opacity 0.2s"
+      ].join(";");
+      backdrop.addEventListener("click", closeSidebar);
+      document.body.appendChild(backdrop);
+    }
+    if (isOpen) {
+      backdrop.style.display = "block";
+      requestAnimationFrame(() => { backdrop.style.opacity = "1"; });
+    } else {
+      closeSidebar();
+    }
   });
+
+  /** Shared helper — close sidebar + hide backdrop */
+  function closeSidebar() {
+    const sidebar = document.querySelector("#sidebar");
+    sidebar?.classList.remove("is-open");
+    document.querySelector("#menu-toggle")?.setAttribute("aria-expanded", "false");
+    const backdrop = document.querySelector("#sidebar-backdrop");
+    if (backdrop) {
+      backdrop.style.opacity = "0";
+      setTimeout(() => { backdrop.style.display = "none"; }, 200);
+    }
+  }
+
+  // Close sidebar on Escape key
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.querySelector("#sidebar")?.classList.contains("is-open")) {
+      closeSidebar();
+    }
+  }, { once: false });
 
   // ── Notification bell logic ──────────────────────────────────────────────────
   const bellBtn = container.querySelector("#notif-bell-btn");

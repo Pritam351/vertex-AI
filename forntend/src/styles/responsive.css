@@ -81,9 +81,15 @@ body {
     display: none;
   }
 
-  /* Compact account menu — hide name/role text */
-  .account-menu > div {
+  /* Compact account menu — hide name/role text (the user avatar text block) */
+  .account-menu > div:not(.notif-bell-wrapper) {
     display: none;
+  }
+
+  /* ALWAYS keep the notification bell visible on mobile */
+  .notif-bell-wrapper {
+    display: flex !important;
+    align-items: center;
   }
 
   /* Notification dropdown – wider on mobile */
@@ -137,32 +143,59 @@ body {
 
 /* ─────────────────────────────────────────────────────────────────────────────
    4.  AUTH SCREENS
+   ─────────────────────────────────────────────────────────────────────────────
+   The auth page already has responsive rules in public/assets/css/app.css
+   that collapse to 1-column at ≤800px. We only add small tweaks here;
+   we do NOT hide .auth-brand (the user wants the original 2-column look).
    ───────────────────────────────────────────────────────────────────────── */
 
-@media (max-width: 768px) {
+@media (max-width: 800px) {
+  /* Stack: show brand above form card */
   .auth-screen {
-    grid-template-columns: 1fr;
-    padding: 1.5rem;
+    grid-template-columns: 1fr !important;
+    padding: 2rem 1.25rem;
     gap: 2rem;
+    align-items: start;
+    min-height: 100vh;
   }
 
+  /* Keep brand visible, but make it compact */
   .auth-brand {
-    display: none;
+    display: block;
+  }
+
+  .auth-brand h1 {
+    font-size: clamp(1.8rem, 6vw, 2.8rem);
+    max-width: 100%;
+  }
+
+  .auth-copy {
+    font-size: 0.92rem;
+    margin: 0.85rem 0;
+  }
+
+  .auth-points {
+    display: none; /* hide bullet list on small screens to save space */
   }
 
   .auth-card {
     max-width: 100%;
-    margin: 0 auto;
+    margin: 0;
   }
 }
 
 @media (max-width: 480px) {
   .auth-screen {
-    padding: 1rem;
+    padding: 1.25rem 1rem;
+    gap: 1.5rem;
+  }
+
+  .auth-brand {
+    display: none; /* Only fully hide brand on very small phones — show only form */
   }
 
   .auth-card {
-    padding: 1.25rem;
+    padding: 1.5rem 1.25rem;
   }
 }
 
@@ -1431,46 +1464,15 @@ body {
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-   29.  INSTRUCTOR SIDEBAR NAVIGATION (instructor-layout)
+   29.  SIDEBAR NAVIGATION — mobile overlay (handled by public/assets/css/app.css)
+        The sidebar slide-in transform is already defined in the base CSS.
+        We only ensure the sidebar z-index stays above the backdrop (z:39).
    ───────────────────────────────────────────────────────────────────────── */
 
 @media (max-width: 800px) {
-  /* Sidebar should slide in from left (overlay) on mobile */
-  .sidebar {
-    position: fixed !important;
-    left: -100% !important;
-    top: 0 !important;
-    height: 100% !important;
-    z-index: 9999 !important;
-    transition: left 0.25s ease !important;
-    box-shadow: 4px 0 24px rgba(0, 0, 0, 0.4);
-  }
-
-  .sidebar.is-open {
-    left: 0 !important;
-  }
-
-  /* Sidebar backdrop overlay */
-  .sidebar-backdrop {
-    display: block !important;
-    position: fixed;
-    inset: 0;
-    background: rgba(0, 0, 0, 0.55);
-    z-index: 9998;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.25s;
-  }
-
-  .sidebar-backdrop.is-visible {
-    opacity: 1;
-    pointer-events: all;
-  }
-
-  /* Content area takes full width when sidebar is closed */
-  .workspace-body {
-    margin-left: 0 !important;
-    width: 100% !important;
+  /* Ensure sidebar is above backdrop (z-index: 39) but below modals */
+  #workspace .sidebar {
+    z-index: 40;
   }
 }
 

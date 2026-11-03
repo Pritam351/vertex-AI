@@ -50,9 +50,11 @@ export function bindStudentLayoutEvents(container = document) {
     link.addEventListener("click", () => {
       container.querySelectorAll("#sidebar .nav-link").forEach((l) => l.classList.remove("is-active"));
       link.classList.add("is-active");
-      // Close mobile sidebar on nav
+      // Close mobile sidebar on nav click (also hides backdrop)
       document.querySelector("#sidebar")?.classList.remove("is-open");
       document.querySelector("#menu-toggle")?.setAttribute("aria-expanded", "false");
+      const backdrop = document.querySelector("#sidebar-backdrop");
+      if (backdrop) { backdrop.style.opacity = "0"; setTimeout(() => { backdrop.style.display = "none"; }, 200); }
     });
   });
 }
