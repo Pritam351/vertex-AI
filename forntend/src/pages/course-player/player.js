@@ -103,6 +103,17 @@ function renderTopbar() {
   const sf  = qs("#sidebar-progress-fill");
   const st  = qs("#sidebar-progress-text");
   if (sf) sf.style.width = `${percent}%`;
+  const countsBadge = qs("#sidebar-counts-badge");
+  const totalMods = currentModules.length;
+  const totalLecs = flatLectures.length;
+  if (countsBadge) {
+    countsBadge.textContent = `${totalMods} ${totalMods === 1 ? "Module" : "Modules"} • ${totalLecs} ${totalLecs === 1 ? "Lecture" : "Lectures"}`;
+  }
+  const stText = qs("#sidebar-progress-text");
+  if (stText) {
+    const totalCompleted = flatLectures.filter(fl => lectureProgressMap.get(fl.lec._id)?.completed).length;
+    stText.textContent = `${totalCompleted}/${totalLecs} Completed (${Math.round(percent)}%)`;
+  }
   if (st) st.textContent = `${Math.round(percent)}% Course Progress`;
 }
 
@@ -116,16 +127,35 @@ function renderCurriculum() {
     return;
   }
 
+  // Populate or refresh Jump selectors
+  const jumpSelectors = [qs("#player-jump-select"), qs("#player-jump-select-top")].filter(Boolean);
+  if (jumpSelectors.length && flatLectures.length) {
+    const currentVal = activeLecture?._id || "";
+    const optionsHtml = `<option value="">⚡ Jump to lesson (${flatLectures.length} total)…</option>` +
+      flatLectures.map((fl, idx) => {
+        const isSel = String(fl.lec._id) === String(currentVal) ? "selected" : "";
+        const prog = lectureProgressMap.get(fl.lec._id);
+        const check = prog?.completed ? "✓ " : "";
+        return `<option value="${fl.lec._id}" ${isSel}>${check}Lesson ${idx + 1}: ${escapeHtml(fl.lec.title)}</option>`;
+      }).join("");
+    jumpSelectors.forEach(sel => { sel.innerHTML = optionsHtml; });
+  }
+
   tree.innerHTML = currentModules.map((mod, modIdx) => {
     const lectures = mod.lectures || [];
     const modCompleted = lectures.filter(l => lectureProgressMap.get(l._id)?.completed).length;
     const modTotal     = lectures.length;
+
+    // Check if this module contains the currently active lecture
+    const containsActive = activeLecture && lectures.some(l => String(l._id) === String(activeLecture._id));
 
     const lecturesHtml = lectures.map((lec, lecIdx) => {
       const prog      = lectureProgressMap.get(lec._id) || {};
       const completed = !!prog.completed;
       const isActive  = activeLecture?._id === lec._id;
       const dur       = lec.durationSeconds ? formatDuration(lec.durationSeconds) : "";
+      const globalIdx = flatLectures.findIndex(fl => String(fl.lec._id) === String(lec._id));
+      const lessonNumber = globalIdx !== -1 ? (globalIdx + 1) : (lecIdx + 1);
 
       const circleInner = completed
         ? `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -133,7 +163,7 @@ function renderCurriculum() {
              <path d="M6 10.5l2.5 2.5 5-5" stroke="#52d8c2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
            </svg>`
         : `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-             <circle cx="10" cy="10" r="9" stroke="var(--muted)" stroke-width="1.5" fill="none"/>
+             <circle cx="10" cy="10" r="9" stroke="var(--muted, #94a3b8)" stroke-width="1.5" fill="none"/>
            </svg>`;
 
       return `
@@ -144,33 +174,45 @@ function renderCurriculum() {
           data-lec-idx="${lecIdx}"
           role="button"
           tabindex="0"
-          aria-label="${escapeHtml(lec.title)}${completed ? " (completed)" : ""}"
-          title="${escapeHtml(lec.title)}"
+          aria-label="Lesson ${lessonNumber}: ${escapeHtml(lec.title)}${completed ? " (completed)" : ""}"
+          title="Lesson ${lessonNumber}: ${escapeHtml(lec.title)}"
+          style="display: flex; align-items: center; gap: 0.65rem; padding: 0.6rem 1rem 0.6rem 1.1rem; cursor: pointer; transition: background 0.15s; border-left: 3px solid ${isActive ? "var(--violet, #7b61ff)" : "transparent"}; background: ${isActive ? "rgba(123, 97, 255, 0.12)" : "transparent"};"
         >
-          <span class="lecture-completion-circle">${circleInner}</span>
-          <span class="lecture-item-title">${lecIdx + 1}. ${escapeHtml(lec.title)}</span>
-          ${dur ? `<span class="lecture-item-dur">${dur}</span>` : ""}
+          <span class="lecture-completion-circle" style="width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${circleInner}</span>
+          <span class="lecture-item-title" style="flex: 1; min-width: 0; font-size: 0.82rem; line-height: 1.35; color: ${isActive ? "var(--violet-light, #c4b5fd)" : "var(--ink, #f1f5f9)"}; font-weight: ${isActive ? "600" : "500"}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+            ${lessonNumber}. ${escapeHtml(lec.title)}
+          </span>
+          ${dur ? `<span class="lecture-item-dur" style="font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted, #94a3b8); flex-shrink: 0;">${dur}</span>` : ""}
         </div>
       `;
     }).join("");
 
     return `
-      <div class="curriculum-module-group" id="mod-group-${modIdx}">
+      <div class="curriculum-module-group" id="mod-group-${modIdx}" style="border-bottom: 1px solid var(--line, #232f48);">
         <button
           class="curriculum-module-header"
           type="button"
           aria-expanded="true"
           data-mod-idx="${modIdx}"
           title="Toggle module"
+          style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0.75rem 1rem; background: rgba(255,255,255,0.02); border: none; cursor: pointer; text-align: left; transition: background 0.15s;"
         >
-          <span class="curriculum-module-title">
-            <span class="curriculum-module-num">Module ${mod.orderIndex ?? modIdx + 1}</span>
-            ${escapeHtml(mod.title)}
-          </span>
-          <span class="curriculum-module-meta">${modCompleted}/${modTotal}</span>
-          <span class="curriculum-module-chevron" aria-hidden="true">▾</span>
+          <div style="flex: 1; min-width: 0; padding-right: 0.5rem;">
+            <span class="curriculum-module-num" style="display: block; font-size: 0.7rem; font-family: 'DM Mono', monospace; color: var(--violet-light, #a78bfa); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.15rem;">
+              MODULE ${mod.orderIndex ?? modIdx + 1}
+            </span>
+            <span class="curriculum-module-title" style="font-size: 0.84rem; font-weight: 600; color: var(--ink, #f1f5f9); line-height: 1.35; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+              ${escapeHtml(mod.title)}
+            </span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0;">
+            <span class="curriculum-module-meta" style="font-size: 0.74rem; font-family: 'DM Mono', monospace; color: var(--muted, #94a3b8);">
+              ${modCompleted}/${modTotal}
+            </span>
+            <span class="curriculum-module-chevron" aria-hidden="true" style="font-size: 0.75rem; color: var(--muted, #94a3b8); transition: transform 0.2s;">▾</span>
+          </div>
         </button>
-        <div class="curriculum-module-body" id="mod-body-${modIdx}">
+        <div class="curriculum-module-body" id="mod-body-${modIdx}" style="display: flex; flex-direction: column;">
           ${lecturesHtml || '<p style="color:var(--muted);font-size:0.83rem;padding:0.5rem;">No lectures yet.</p>'}
         </div>
       </div>
@@ -211,7 +253,6 @@ function renderCurriculum() {
     }
   }, 50);
 }
-
 // ─── Video helpers ────────────────────────────────────────────────────────────
 function getVideoEl() {
   return qs("#player-video-container video");
@@ -1329,6 +1370,14 @@ async function selectLecture(lecture, moduleTitle) {
   // 10. Prev/Next button enable/disable
   updatePrevNextButtons();
 
+  // Sync jump selectors
+  const jumpSel1 = qs("#player-jump-select");
+  const jumpSel2 = qs("#player-jump-select-top");
+  if (lecture?._id) {
+    if (jumpSel1) jumpSel1.value = lecture._id;
+    if (jumpSel2) jumpSel2.value = lecture._id;
+  }
+
   // 11. Load notes (async, non-blocking)
   loadNotes(lecture._id);
 
@@ -1397,6 +1446,18 @@ function wireEvents(courseId) {
   // Prev/Next (controls bar)
   qs("#btn-prev-lecture-ctrl")?.addEventListener("click", goToPrev);
   qs("#btn-next-lecture-ctrl")?.addEventListener("click", goToNext);
+
+  // Quick jump directly to any lecture across the course
+  const onJumpChange = (e) => {
+    const targetId = e.target.value;
+    if (!targetId) return;
+    const target = flatLectures.find(fl => String(fl.lec._id) === String(targetId));
+    if (target) {
+      selectLecture(target.lec, target.modTitle);
+    }
+  };
+  qs("#player-jump-select")?.addEventListener("change", onJumpChange);
+  qs("#player-jump-select-top")?.addEventListener("change", onJumpChange);
 
   // Playback speed
   qs("#player-speed-select")?.addEventListener("change", e => {
