@@ -1,0 +1,850 @@
+/* ==========================================================================
+   VertexLearn AI - Light Mode Theme
+   Applied strictly when [data-theme="light"] is on documentElement
+   (Available for Student & Instructor Workspaces only)
+   ========================================================================== */
+
+/* ── Light Mode Color Variables Override ── */
+[data-theme="light"] {
+  --ink: #0f172a;
+  --muted: #64748b;
+  --canvas: #f8fafc;
+  --surface: #ffffff;
+  --surface-2: #f1f5f9;
+  --line: #e2e8f0;
+  --violet: #6366f1;
+  --violet-light: #4f46e5;
+  --aqua: #0d9488;
+  --danger: #ef4444;
+  --success: #10b981;
+  --shadow: 0 10px 30px rgba(15, 23, 42, 0.07);
+  color-scheme: light;
+}
+
+/* ── Global Elements in Light Mode ── */
+[data-theme="light"] body {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] h1,
+[data-theme="light"] h2,
+[data-theme="light"] h3,
+[data-theme="light"] h4,
+[data-theme="light"] h5,
+[data-theme="light"] h6 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] p {
+  color: #334155;
+}
+
+[data-theme="light"] small {
+  color: #64748b;
+}
+
+[data-theme="light"] strong {
+  color: #0f172a;
+}
+
+[data-theme="light"] label {
+  color: #334155;
+}
+
+[data-theme="light"] .eyebrow {
+  color: #6366f1 !important;
+  font-weight: 700 !important;
+}
+
+/* ── Theme Toggle Button (Topbar) ── */
+.theme-toggle-btn {
+  display: grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 50%;
+  background: #2b245c;
+  color: #d9d4ff;
+  border: none;
+  outline: none;
+  cursor: pointer;
+  position: relative;
+  padding: 0;
+  transition: background 0.18s ease, color 0.18s ease, transform 0.15s ease;
+}
+
+.theme-toggle-btn:hover {
+  background: #393075;
+  color: #ffffff;
+  transform: scale(1.06);
+}
+
+.theme-toggle-btn svg {
+  display: block;
+  width: 17px;
+  height: 17px;
+}
+
+[data-theme="light"] .theme-toggle-btn {
+  background: #e0e7ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+}
+
+[data-theme="light"] .theme-toggle-btn:hover {
+  background: #c7d2fe;
+  color: #312e81;
+}
+
+/* ── Workspace & Layout in Light Mode ── */
+[data-theme="light"] .workspace {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .workspace-body {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .content {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .sidebar {
+  background: #ffffff !important;
+  border-right: 1px solid #e2e8f0 !important;
+  box-shadow: 2px 0 14px rgba(15, 23, 42, 0.03) !important;
+}
+
+[data-theme="light"] .sidebar .brand {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .sidebar-label {
+  color: #94a3b8 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .nav-link {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .nav-link:hover {
+  background: rgba(99, 102, 241, 0.08) !important;
+  color: #4f46e5 !important;
+}
+
+[data-theme="light"] .nav-link.is-active {
+  background: #eef2ff !important;
+  color: #4f46e5 !important;
+  border-left: 3px solid #6366f1 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .sidebar-note {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #64748b !important;
+}
+
+[data-theme="light"] .sidebar-note strong {
+  color: #0f172a !important;
+}
+
+/* ── Topbar in Light Mode ── */
+[data-theme="light"] .topbar {
+  background: rgba(255, 255, 255, 0.94) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-theme="light"] .page-context h1,
+[data-theme="light"] #page-title {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .account-menu strong,
+[data-theme="light"] #user-name {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .account-menu small,
+[data-theme="light"] #user-role {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .avatar {
+  background: #e0e7ff !important;
+  color: #4338ca !important;
+  font-weight: 700 !important;
+  border: 1px solid #c7d2fe !important;
+}
+
+[data-theme="light"] .notif-bell-btn {
+  background: #e0e7ff !important;
+  color: #4338ca !important;
+  border: 1px solid #c7d2fe !important;
+}
+
+[data-theme="light"] .notif-bell-btn:hover {
+  background: #c7d2fe !important;
+  color: #312e81 !important;
+}
+
+[data-theme="light"] .text-button#sign-out {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .text-button#sign-out:hover {
+  color: #ef4444 !important;
+}
+
+[data-theme="light"] .user-streak-pill {
+  background: #fef3c7 !important;
+  border: 1px solid #fde68a !important;
+  color: #92400e !important;
+  font-weight: 700 !important;
+}
+
+/* ── Notification Dropdown in Light Mode ── */
+[data-theme="light"] .notif-dropdown {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 12px 36px rgba(15, 23, 42, 0.12) !important;
+}
+
+[data-theme="light"] .notif-dropdown-header {
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .notif-dropdown-header span {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .notif-mark-all {
+  color: #6366f1 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .notif-item {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+[data-theme="light"] .notif-item:hover {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .notif-item.is-unread {
+  background: #f5f3ff !important;
+}
+
+[data-theme="light"] .notif-item-title {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .notif-item-msg {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .notif-item-time {
+  color: #94a3b8 !important;
+}
+
+/* ── Welcome Banner & Section Headers ── */
+[data-theme="light"] .welcome-row h2 {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .welcome-row p {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .section-heading h2,
+[data-theme="light"] .section-heading h3 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .section-intro h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .section-intro p {
+  color: #475569 !important;
+}
+
+/* ── Panels, Cards & Surfaces in Light Mode ── */
+[data-theme="light"] .panel {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+[data-theme="light"] .panel-title h3 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .panel-title p {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .stats-overview .panel {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-theme="light"] #stat-enrolled,
+[data-theme="light"] #stat-active {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] #stat-completed {
+  color: #059669 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] #stat-streak {
+  color: #d97706 !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .course-card-item {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-theme="light"] .course-card-item:hover {
+  border-color: #c7d2fe !important;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1) !important;
+}
+
+[data-theme="light"] .course-card-item.is-completed-card {
+  border-color: rgba(16, 185, 129, 0.35) !important;
+  background: #f0fdf4 !important;
+}
+
+[data-theme="light"] .course-card-thumb {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .count-pill {
+  background: #ede9fe !important;
+  color: #6d28d9 !important;
+  border: 1px solid #c4b5fd !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .empty-state {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .empty-state h3 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .empty-state p {
+  color: #64748b !important;
+}
+
+/* ── Gamification, Badges & Recommendations ── */
+[data-theme="light"] .badge-card,
+[data-theme="light"] .recommendation-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-theme="light"] .badge-card h4,
+[data-theme="light"] .recommendation-card h4 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .badge-card p,
+[data-theme="light"] .recommendation-card p {
+  color: #475569 !important;
+}
+
+/* ── KPI & Stat Cards in Instructor Studio ── */
+[data-theme="light"] .kpi-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+[data-theme="light"] .kpi-card:hover {
+  border-color: #c7d2fe !important;
+  box-shadow: 0 8px 24px rgba(99, 102, 241, 0.1) !important;
+}
+
+[data-theme="light"] .kpi-value {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .kpi-value.status-approved {
+  color: #059669 !important;
+}
+
+[data-theme="light"] .kpi-value.status-pending {
+  color: #d97706 !important;
+}
+
+[data-theme="light"] .kpi-value.status-rejected {
+  color: #dc2626 !important;
+}
+
+[data-theme="light"] .kpi-value.status-enrolled {
+  color: #4f46e5 !important;
+}
+
+[data-theme="light"] .kpi-label {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .active-spotlight-panel {
+  background: linear-gradient(145deg, #ffffff, #f8faff) !important;
+  border: 1px solid #c7d2fe !important;
+  box-shadow: 0 8px 28px rgba(99, 102, 241, 0.07) !important;
+}
+
+[data-theme="light"] #spotlight-course-title {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] #spotlight-course-desc {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .spotlight-metric {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .spotlight-metric .metric-num {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] .spotlight-metric .metric-name {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .an-kpi-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-theme="light"] .an-kpi-card .an-kpi-value,
+[data-theme="light"] .kpi-value {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .analytics-course-banner {
+  background: linear-gradient(135deg, #ffffff, #f8faff) !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.05) !important;
+}
+
+[data-theme="light"] .analytics-select-label {
+  color: #475569 !important;
+  font-weight: 600 !important;
+}
+
+/* ── Course Builder (Modules & Lectures) ── */
+[data-theme="light"] .module-row {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
+}
+
+[data-theme="light"] .module-row:hover {
+  border-color: #c7d2fe !important;
+}
+
+[data-theme="light"] .module-title {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .module-order {
+  color: #6366f1 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .lecture-row {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.03) !important;
+}
+
+[data-theme="light"] .lecture-row:hover {
+  border-color: #c7d2fe !important;
+}
+
+[data-theme="light"] .lecture-title {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .lecture-order {
+  color: #4f46e5 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .badge {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .badge.active-pill {
+  background: #ede9fe !important;
+  border-color: #c4b5fd !important;
+  color: #6d28d9 !important;
+  font-weight: 600 !important;
+}
+
+/* ── Forms, Inputs & Selects in Light Mode ── */
+[data-theme="light"] input,
+[data-theme="light"] textarea,
+[data-theme="light"] select,
+[data-theme="light"] .generator-select,
+[data-theme="light"] .speed-select {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] input:focus,
+[data-theme="light"] textarea:focus,
+[data-theme="light"] select:focus {
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15) !important;
+}
+
+[data-theme="light"] input::placeholder,
+[data-theme="light"] textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* ── Buttons in Light Mode ── */
+[data-theme="light"] .button-primary {
+  background: linear-gradient(135deg, #6366f1, #4f46e5) !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.3) !important;
+}
+
+[data-theme="light"] .button-secondary {
+  background: #ffffff !important;
+  border: 1px solid #cbd5e1 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .button-secondary:hover {
+  background: #f8fafc !important;
+  border-color: #94a3b8 !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .button-subtle {
+  background: #f1f5f9 !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .button-subtle:hover {
+  background: #e2e8f0 !important;
+  border-color: #6366f1 !important;
+  color: #4f46e5 !important;
+}
+
+[data-theme="light"] .button-ghost {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .button-ghost:hover {
+  background: rgba(99, 102, 241, 0.08) !important;
+  color: #4f46e5 !important;
+}
+
+/* ── Tables & Submissions in Light Mode ── */
+[data-theme="light"] table {
+  color: #1e293b !important;
+  background: #ffffff !important;
+}
+
+[data-theme="light"] table th {
+  background: #f8fafc !important;
+  color: #475569 !important;
+  border-bottom: 2px solid #e2e8f0 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] table td {
+  border-bottom: 1px solid #f1f5f9 !important;
+  color: #1e293b !important;
+  background: #ffffff !important;
+}
+
+[data-theme="light"] table tr:hover td {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .status-badge-graded {
+  background: rgba(16, 185, 129, 0.15) !important;
+  color: #047857 !important;
+  border: 1px solid rgba(16, 185, 129, 0.3) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .status-badge-pending {
+  background: rgba(245, 158, 11, 0.15) !important;
+  color: #b45309 !important;
+  border: 1px solid rgba(245, 158, 11, 0.3) !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .status.in-progress {
+  color: #1d4ed8 !important;
+  background: #dbeafe !important;
+  border: 1px solid #bfdbfe !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .status.completed {
+  color: #047857 !important;
+  background: #d1fae5 !important;
+  border: 1px solid #a7f3d0 !important;
+  font-weight: 600 !important;
+}
+
+/* ── Discussions & Comments in Light Mode ── */
+[data-theme="light"] #student-new-thread-panel,
+[data-theme="light"] #new-thread-panel,
+[data-theme="light"] .discussion-thread-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.05) !important;
+}
+
+[data-theme="light"] .discussion-thread-card h4,
+[data-theme="light"] .discussion-thread-card h3 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .discussion-thread-card p {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .discussion-thread-card .thread-author {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+}
+
+/* ── Course Player in Light Mode ── */
+[data-theme="light"] .player-topbar {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .player-breadcrumb-course,
+[data-theme="light"] .player-breadcrumb-module,
+[data-theme="light"] .player-breadcrumb-lecture {
+  color: #1e293b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .player-breadcrumb-link {
+  color: #6366f1 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] #player-lecture-title {
+  color: #0f172a !important;
+  font-weight: 800 !important;
+}
+
+[data-theme="light"] #player-lecture-meta {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .player-yt-note {
+  background: #fef3c7 !important;
+  border: 1px solid #fde68a !important;
+  color: #92400e !important;
+}
+
+[data-theme="light"] .player-sidebar .sidebar-panel {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.06) !important;
+}
+
+[data-theme="light"] .sidebar-panel-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .sidebar-panel-title {
+  color: #475569 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] #sidebar-counts-badge {
+  color: #4f46e5 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .player-progress-summary {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .sidebar-progress-text {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .curriculum-module-header {
+  background: #f8fafc !important;
+  border-bottom: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .curriculum-module-header:hover {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .curriculum-module-num {
+  color: #6366f1 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .curriculum-module-title {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .curriculum-module-meta {
+  background: #ede9fe !important;
+  color: #6d28d9 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .curriculum-lecture-item {
+  border-bottom: 1px solid #f1f5f9 !important;
+}
+
+[data-theme="light"] .curriculum-lecture-item:hover {
+  background: #f8fafc !important;
+}
+
+[data-theme="light"] .curriculum-lecture-item.is-active-lecture {
+  background: #ede9fe !important;
+  border-left: 3px solid #6366f1 !important;
+}
+
+[data-theme="light"] .curriculum-lecture-item.is-active-lecture .lecture-item-title {
+  color: #4f46e5 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .lecture-item-title {
+  color: #1e293b !important;
+  font-weight: 500 !important;
+}
+
+[data-theme="light"] .lecture-item-dur {
+  color: #64748b !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .player-tab-btn {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .player-tab-btn.is-active {
+  color: #4f46e5 !important;
+  border-bottom: 2px solid #6366f1 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .player-tab-content {
+  color: #1e293b !important;
+}
+
+[data-theme="light"] .overview-section,
+[data-theme="light"] .ai-takeaways-panel,
+[data-theme="light"] .notes-panel,
+[data-theme="light"] .ai-chat-panel {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04) !important;
+}
+
+[data-theme="light"] .overview-section-title {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] #overview-transcript-content {
+  color: #334155 !important;
+  line-height: 1.6 !important;
+}
+
+[data-theme="light"] .player-controls-bar {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+[data-theme="light"] .player-ctrl-btn {
+  background: #f8fafc !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .player-ctrl-btn:hover {
+  background: #eef2ff !important;
+  border-color: #6366f1 !important;
+  color: #4f46e5 !important;
+}
+
+/* ── Modals in Light Mode ── */
+[data-theme="light"] .modal-content,
+[data-theme="light"] .modal-card {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .modal-header h3 {
+  color: #0f172a !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .modal-close {
+  color: #64748b !important;
+}

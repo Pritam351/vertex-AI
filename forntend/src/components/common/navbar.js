@@ -3,6 +3,8 @@ import { authService } from "../../services/authService.js";
 import { notificationService } from "../../services/notificationService.js";
 import { gamificationService } from "../../services/gamificationService.js";
 import { toast } from "./toast.js";
+import { getSession } from "../../store/session.js";
+import { getTheme, toggleTheme, initTheme, updateAllThemeButtons, SUN_ICON_SVG, MOON_ICON_SVG } from "../../utils/theme.js";
 
 // ─── Notification type → emoji icon map ───────────────────────────────────────
 const NOTIF_ICONS = {
@@ -31,6 +33,10 @@ export function renderNavbar({ title = "Workspace", eyebrow = "STUDIO", user = n
   const userInitials = initials(user?.fullName || "User");
   const userName = user?.fullName || "User";
   const userRole = (user?.role || "Member").toUpperCase();
+  const rawRole = (user?.role || "").toLowerCase();
+  const isEligibleForTheme = rawRole === "student" || rawRole === "instructor";
+  const currentTheme = getTheme();
+  const isLight = currentTheme === "light";
 
   return `
     <header class="topbar">
@@ -45,6 +51,21 @@ export function renderNavbar({ title = "Workspace", eyebrow = "STUDIO", user = n
         <a class="user-streak-pill" id="user-streak-pill" href="#/student/dashboard" hidden title="Daily active study streak">
           🔥 <span id="user-streak-days">0</span>d
         </a>
+
+        ${isEligibleForTheme ? `
+        <!-- Theme toggle (Dark & Light mode for Student & Instructor) -->
+        <button
+          class="theme-toggle-btn"
+          id="theme-toggle-btn"
+          type="button"
+          aria-label="${isLight ? "Switch to Dark mode" : "Switch to Light mode"}"
+          title="${isLight ? "Switch to Dark mode" : "Switch to Light mode"}"
+        >
+          <span class="theme-toggle-icon" id="theme-toggle-icon" aria-hidden="true">
+            ${isLight ? MOON_ICON_SVG : SUN_ICON_SVG}
+          </span>
+        </button>
+        ` : ""}
 
         <!-- Notification bell -->
         <div class="notif-bell-wrapper" id="notif-bell-wrapper">
@@ -107,7 +128,20 @@ function renderNotifItem(notif) {
 export function bindNavbarEvents(container = document) {
 
   // Sign-out
+  // Theme toggle logic (Student & Instructor only)
+  const themeBtn = container.querySelector("#theme-toggle-btn");
+  if (themeBtn) {
+    const session = getSession();
+    const role = session?.user?.role?.toLowerCase();
+    themeBtn.addEventListener("click", () => {
+      toggleTheme(role);
+      updateAllThemeButtons();
+    });
+  }
+
+  // Sign-out
   container.querySelector("#sign-out")?.addEventListener("click", () => {
+    initTheme(null); // Reset theme on sign-out
     toast("Signed out successfully.");
     authService.logout();
     window.location.hash = "#/login";

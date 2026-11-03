@@ -1,6 +1,7 @@
 import { getSession } from "../store/session.js";
 import { checkRouteAccess } from "./route-guards.js";
 import { DEFAULT_ROUTES } from "./route-config.js";
+import { initTheme } from "../utils/theme.js";
 
 // Layouts
 import { renderAuthLayout } from "../layouts/auth-layout.js";
@@ -87,6 +88,7 @@ export async function navigate() {
   // 2. Instructor Routing
   if (hash.startsWith("#/instructor")) {
     document.title = "Instructor Studio | VertexLearn AI";
+    initTheme("instructor");
     const subSection = hash.split("/")[2] || "overview";
 
     if (currentRenderedLayout !== "instructor") {
@@ -106,6 +108,7 @@ export async function navigate() {
   // 3. Student Routing
   if (hash.startsWith("#/student")) {
     document.title = "Student Workspace | VertexLearn AI";
+    initTheme("student");
     const subSection = hash.split("/")[2] || "dashboard";
 
     if (currentRenderedLayout !== "student") {
@@ -160,6 +163,7 @@ export async function navigate() {
   // 4. Admin Routing
   if (hash.startsWith("#/admin")) {
     document.title = "Admin Panel | VertexLearn AI";
+    initTheme("admin");
     const subSection = hash.split("/")[2] || "dashboard";
 
     // Only rebuild the shell if we're switching from a different layout.

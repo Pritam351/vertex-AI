@@ -1,6 +1,7 @@
 @import "../../public/assets/css/app.css";
 @import "./instructor.css";
 @import "./admin.css";
+@import "./theme-light.css";
 
 /* Additional multi-role utility classes */
 [hidden] {
