@@ -51,7 +51,17 @@ let courseDiscussions = [];
 let discussionsFilter = "all";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
-const qs = (sel) => container?.querySelector(sel);
+const qs = (sel) => {
+  // First try: search within #course-player (where sidebar actually lives)
+  const coursePlayer = document.querySelector("#course-player");
+  if (coursePlayer) {
+    const found = coursePlayer.querySelector(sel);
+    if (found) return found;
+  }
+
+  // Fallback: search within container
+  return container?.querySelector(sel);
+};
 
 function formatDuration(seconds) {
   if (!seconds || isNaN(seconds)) return "0:00";
@@ -119,8 +129,35 @@ function renderTopbar() {
 
 // ─── Curriculum ───────────────────────────────────────────────────────────────
 function renderCurriculum() {
-  const tree = qs("#player-curriculum-tree");
-  if (!tree) return;
+  let tree = qs("#player-curriculum-tree");
+
+  // If element doesn't exist in DOM, create it dynamically
+  if (!tree) {
+    console.warn("⚠️ #player-curriculum-tree missing from DOM - creating it dynamically");
+    const sidebar = document.querySelector("#player-sidebar") || document.querySelector(".player-sidebar");
+
+    if (!sidebar) {
+      console.error("❌ Cannot create curriculum tree: sidebar not found");
+      return;
+    }
+
+    // Find the sidebar panel's inner container
+    const sidebarPanel = sidebar.querySelector(".sidebar-panel");
+    if (!sidebarPanel) {
+      console.error("❌ Cannot create curriculum tree: .sidebar-panel not found");
+      return;
+    }
+
+    // Create the curriculum tree element
+    tree = document.createElement("div");
+    tree.id = "player-curriculum-tree";
+    tree.className = "player-curriculum-list";
+    tree.style.padding = "0";
+    tree.style.margin = "0";
+
+    // Append it as the last child of the sidebar panel
+    sidebarPanel.appendChild(tree);
+  }
 
   if (!currentModules.length) {
     tree.innerHTML = '<p style="color:var(--muted);font-size:0.85rem;padding:1rem;">No modules added yet.</p>';
@@ -1929,6 +1966,14 @@ export async function mountCoursePlayer(cont) {
     // Render topbar + curriculum
     renderTopbar();
     renderCurriculum();
+
+    // Debug: Check if curriculum was actually rendered
+    const treeCheck = document.querySelector("#course-player")?.querySelector("#player-curriculum-tree");
+    
+    
+
+    const sidebar = document.querySelector("#course-player")?.querySelector("#player-sidebar");
+    
 
     // Determine which lecture to start on: resume from localStorage or first
     const lastData  = (() => {
