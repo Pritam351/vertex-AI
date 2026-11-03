@@ -32,6 +32,7 @@ import { openReportModal }   from "../../components/common/report-modal.js";
 let container        = null;
 let currentCourse    = null;
 let currentModules   = [];           // [{ _id, title, orderIndex, lectures:[…] }]
+let expandedModuleIndices = new Set(); // tracks expanded module indices
 let activeLecture    = null;
 let activeModuleTitle = "";
 let flatLectures     = [];           // ordered flat list for prev/next
@@ -112,7 +113,7 @@ function renderTopbar() {
   const stText = qs("#sidebar-progress-text");
   if (stText) {
     const totalCompleted = flatLectures.filter(fl => lectureProgressMap.get(fl.lec._id)?.completed).length;
-    stText.textContent = `${totalCompleted}/${totalLecs} Completed (${Math.round(percent)}%)`;
+    stText.textContent = `Course Progress: ${Math.round(percent)}%`;
   }
 }
 
@@ -126,24 +127,28 @@ function renderCurriculum() {
     return;
   }
 
+  let overallLectureIndex = 0;
   tree.innerHTML = currentModules.map((mod, modIdx) => {
     const lectures = mod.lectures || [];
     const modCompleted = lectures.filter(l => lectureProgressMap.get(l._id)?.completed).length;
     const modTotal     = lectures.length;
+    const isExpanded   = expandedModuleIndices.has(modIdx);
 
     const lecturesHtml = lectures.map((lec, lecIdx) => {
+      overallLectureIndex += 1;
+      const lessonNumber = overallLectureIndex;
       const prog      = lectureProgressMap.get(lec._id) || {};
       const completed = !!prog.completed;
       const isActive  = activeLecture?._id === lec._id;
       const dur       = lec.durationSeconds ? formatDuration(lec.durationSeconds) : "";
 
       const circleInner = completed
-        ? `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-             <circle cx="10" cy="10" r="9" stroke="#52d8c2" stroke-width="1.5" fill="rgba(82,216,194,0.12)"/>
-             <path d="M6 10.5l2.5 2.5 5-5" stroke="#52d8c2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        ? `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;">
+             <circle cx="10" cy="10" r="9" stroke="#52d8c2" stroke-width="1.6" fill="rgba(82,216,194,0.15)"/>
+             <path d="M6 10.5l2.5 2.5 5-5" stroke="#52d8c2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
            </svg>`
-        : `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-             <circle cx="10" cy="10" r="9" stroke="var(--muted, #94a3b8)" stroke-width="1.5" fill="none"/>
+        : `<svg viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:18px;height:18px;">
+             <circle cx="10" cy="10" r="8.5" stroke="var(--muted, #94a3b8)" stroke-width="1.6" fill="none"/>
            </svg>`;
 
       return `
@@ -154,13 +159,13 @@ function renderCurriculum() {
           data-lec-idx="${lecIdx}"
           role="button"
           tabindex="0"
-          aria-label="Lecture ${lecIdx + 1}: ${escapeHtml(lec.title)}${completed ? " (completed)" : ""}"
+          aria-label="Lecture ${lessonNumber}: ${escapeHtml(lec.title)}${completed ? " (completed)" : ""}"
           title="${escapeHtml(lec.title)}"
-          style="display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 1rem 0.65rem 1.25rem; cursor: pointer; transition: all 0.15s ease; border-left: 3px solid ${isActive ? "var(--violet, #7b61ff)" : "transparent"}; background: ${isActive ? "rgba(123, 97, 255, 0.14)" : "transparent"}; border-bottom: 1px solid rgba(255,255,255,0.03);"
+          style="display: flex; align-items: center; gap: 0.7rem; padding: 0.65rem 1rem 0.65rem 1.25rem; cursor: pointer; transition: all 0.15s ease; border-left: 3px solid ${isActive ? "var(--violet, #7b61ff)" : "transparent"}; background: ${isActive ? "rgba(123, 97, 255, 0.16)" : "transparent"}; border-bottom: 1px solid rgba(255,255,255,0.03);"
         >
           <span class="lecture-completion-circle" style="width: 20px; height: 20px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;">${circleInner}</span>
           <span class="lecture-item-title" style="flex: 1; min-width: 0; font-size: 0.83rem; line-height: 1.35; color: ${isActive ? "#c4b5fd" : "#f1f5f9"}; font-weight: ${isActive ? "600" : "500"}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
-            ${lecIdx + 1}. ${escapeHtml(lec.title)}
+            ${lessonNumber}. ${escapeHtml(lec.title)}
           </span>
           ${dur ? `<span class="lecture-item-dur" style="font-size: 0.72rem; font-family: 'DM Mono', monospace; color: var(--muted, #94a3b8); flex-shrink: 0;">${dur}</span>` : ""}
         </div>
@@ -172,7 +177,7 @@ function renderCurriculum() {
         <button
           class="curriculum-module-header"
           type="button"
-          aria-expanded="true"
+          aria-expanded="${isExpanded ? "true" : "false"}"
           data-mod-idx="${modIdx}"
           title="Toggle module"
           style="display: flex; align-items: center; justify-content: space-between; width: 100%; padding: 0.85rem 1rem; background: rgba(255,255,255,0.03); border: none; cursor: pointer; text-align: left; transition: background 0.15s;"
@@ -189,10 +194,10 @@ function renderCurriculum() {
             <span class="curriculum-module-meta" style="font-size: 0.74rem; font-family: 'DM Mono', monospace; color: var(--muted, #94a3b8); background: rgba(255,255,255,0.05); padding: 0.2rem 0.5rem; border-radius: 4px;">
               ${modCompleted}/${modTotal}
             </span>
-            <span class="curriculum-module-chevron" aria-hidden="true" style="font-size: 0.75rem; color: var(--muted, #94a3b8); transition: transform 0.2s;">▾</span>
+            <span class="curriculum-module-chevron" aria-hidden="true" style="font-size: 0.75rem; color: var(--muted, #94a3b8); transition: transform 0.2s;">${isExpanded ? "▾" : "▸"}</span>
           </div>
         </button>
-        <div class="curriculum-module-body" id="mod-body-${modIdx}" style="display: flex; flex-direction: column;">
+        <div class="curriculum-module-body" id="mod-body-${modIdx}" style="display: ${isExpanded ? "flex" : "none"}; flex-direction: column;">
           ${lecturesHtml || '<p style="color:var(--muted);font-size:0.83rem;padding:0.75rem 1rem;">No lectures in this module.</p>'}
         </div>
       </div>
@@ -202,14 +207,22 @@ function renderCurriculum() {
   // Collapse/expand module headers
   tree.querySelectorAll(".curriculum-module-header").forEach(header => {
     header.addEventListener("click", () => {
-      const idx  = header.dataset.modIdx;
+      const idx  = Number(header.dataset.modIdx);
       const body = tree.querySelector(`#mod-body-${idx}`);
-      const isHidden = body ? body.hidden : false;
-      const willExpand = isHidden;
-      header.setAttribute("aria-expanded", String(willExpand));
       const chevron = header.querySelector(".curriculum-module-chevron");
-      if (chevron) chevron.textContent = willExpand ? "▾" : "▸";
-      if (body) body.hidden = !willExpand;
+      const isCurrentlyExpanded = expandedModuleIndices.has(idx);
+
+      if (isCurrentlyExpanded) {
+        expandedModuleIndices.delete(idx);
+        header.setAttribute("aria-expanded", "false");
+        if (chevron) chevron.textContent = "▸";
+        if (body) body.style.display = "none";
+      } else {
+        expandedModuleIndices.add(idx);
+        header.setAttribute("aria-expanded", "true");
+        if (chevron) chevron.textContent = "▾";
+        if (body) body.style.display = "flex";
+      }
     });
   });
 
@@ -236,21 +249,6 @@ function renderCurriculum() {
     });
   });
 
-  // Ensure active lecture module is expanded and active item is in view
-  if (activeLecture) {
-    currentModules.forEach((mod, modIdx) => {
-      const hasActive = (mod.lectures || []).some(l => String(l._id) === String(activeLecture._id));
-      if (hasActive) {
-        const body = tree.querySelector(`#mod-body-${modIdx}`);
-        const header = tree.querySelector(`.curriculum-module-header[data-mod-idx="${modIdx}"]`);
-        const chevron = header?.querySelector(".curriculum-module-chevron");
-        if (body) body.hidden = false;
-        if (header) header.setAttribute("aria-expanded", "true");
-        if (chevron) chevron.textContent = "▾";
-      }
-    });
-  }
-
   setTimeout(() => {
     const activeItem = tree.querySelector(".curriculum-lecture-item.is-active-lecture");
     if (activeItem) {
@@ -258,6 +256,7 @@ function renderCurriculum() {
     }
   }, 50);
 }
+
 // ─── Video helpers ────────────────────────────────────────────────────────────
 function getVideoEl() {
   return qs("#player-video-container video");
@@ -1370,6 +1369,24 @@ async function selectLecture(lecture, moduleTitle) {
   renderTopbar();
 
   // 9. Curriculum: highlight active
+  // Ensure active lecture module is expanded
+  const activeModIdx = currentModules.findIndex(m => (m.lectures || []).some(l => String(l._id) === String(lecture._id)));
+  if (activeModIdx !== -1) {
+    expandedModuleIndices.add(activeModIdx);
+  }
+
+  // Update URL hash state with lectureId without page reload
+  try {
+    const currentHash = window.location.hash;
+    const [path, queryString] = currentHash.split("?");
+    const params = new URLSearchParams(queryString || "");
+    params.set("lectureId", lecture._id);
+    const newHash = `${path}?${params.toString()}`;
+    if (window.location.hash !== newHash) {
+      history.replaceState(null, "", newHash);
+    }
+  } catch { /* ignore */ }
+
   renderCurriculum();
 
   // 10. Prev/Next button enable/disable
@@ -1848,6 +1865,7 @@ export async function mountCoursePlayer(cont) {
   const hashParts = window.location.hash.split("?");
   const params    = new URLSearchParams(hashParts[1] || "");
   const courseId  = params.get("courseId");
+  const requestedLectureId = params.get("lectureId");
 
   if (!courseId) {
     toast("No course specified.", "error");
@@ -1903,6 +1921,7 @@ export async function mountCoursePlayer(cont) {
 
     // Build flat list for prev/next
     buildFlatLectures();
+    expandedModuleIndices = new Set(currentModules.map((_, i) => i));
 
     // Wire UI events
     wireEvents(courseId);
@@ -1919,7 +1938,14 @@ export async function mountCoursePlayer(cont) {
     let startLecture = null;
     let startModTitle = "";
 
-    if (lastData?.lectureId) {
+    if (requestedLectureId) {
+      for (const mod of currentModules) {
+        const found = (mod.lectures || []).find(l => String(l._id) === String(requestedLectureId));
+        if (found) { startLecture = found; startModTitle = mod.title; break; }
+      }
+    }
+
+    if (!startLecture && lastData?.lectureId) {
       for (const mod of currentModules) {
         const found = (mod.lectures || []).find(l => String(l._id) === String(lastData.lectureId));
         if (found) { startLecture = found; startModTitle = mod.title; break; }
@@ -1947,6 +1973,18 @@ export async function mountCoursePlayer(cont) {
 
   } catch (err) {
     toast(`Failed to load course: ${errorText(err)}`, "error");
-    if (currTree) currTree.innerHTML = `<p style="color:var(--error);font-size:0.85rem;">Error loading curriculum.</p>`;
+    if (currTree) {
+      currTree.innerHTML = `
+        <div style="padding:1.5rem 1rem; text-align:center;">
+          <p style="color:var(--error, #ef4444);font-size:0.85rem;margin-bottom:0.75rem;">Failed to load course curriculum.</p>
+          <button class="button button-secondary mini-button" id="btn-retry-curriculum" type="button" style="padding:0.4rem 0.8rem; font-size:0.8rem;">
+            ↻ Retry
+          </button>
+        </div>
+      `;
+      currTree.querySelector("#btn-retry-curriculum")?.addEventListener("click", () => {
+        mountCoursePlayer(container);
+      });
+    }
   }
 }
