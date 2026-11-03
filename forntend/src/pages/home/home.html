@@ -1,0 +1,866 @@
+<title>VertexLearn AI | Home</title>
+
+<style>
+  /* Layout: Modern educational SaaS landing page with hero, feature showcase, course grid */
+
+  :root {
+    /* Colors - Dark theme (existing brand) */
+    --ink: #f7f7ff;
+    --muted: #a8abc3;
+    --canvas: #0b1020;
+    --surface: #131a2c;
+    --surface-2: #19213a;
+    --line: #29334d;
+    --violet: #6e59f8;
+    --violet-light: #b6aaff;
+    --aqua: #52d8c2;
+    --danger: #ff9ca5;
+    --success: #6ce5b6;
+
+    /* Typography */
+    --font-display: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-body: 'Manrope', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+  }
+
+  * {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+  }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--canvas);
+    color: var(--ink);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Navigation */
+  .home-nav {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    background: rgba(11, 16, 32, 0.9);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .nav-container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 1rem max(16px, env(safe-area-inset-left, 0px)) 1rem max(16px, env(safe-area-inset-right, 0px));
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+  }
+
+  .nav-brand {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    text-decoration: none;
+    color: var(--ink);
+    font-weight: 700;
+    font-size: 1.25rem;
+  }
+
+  .nav-brand-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, var(--violet), var(--aqua));
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 800;
+    font-size: 18px;
+  }
+
+  .nav-links {
+    display: flex;
+    align-items: center;
+    gap: 2rem;
+    list-style: none;
+  }
+
+  .nav-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.95rem;
+    font-weight: 500;
+    transition: color 0.2s;
+  }
+
+  .nav-links a:hover {
+    color: var(--ink);
+  }
+
+  .nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .btn {
+    padding: 0.625rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    text-decoration: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: inline-block;
+  }
+
+  .btn-primary {
+    background: var(--violet);
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background: var(--violet-light);
+    transform: translateY(-1px);
+  }
+
+  .btn-secondary {
+    background: var(--surface-2);
+    color: var(--ink);
+    border: 1px solid var(--line);
+  }
+
+  .btn-secondary:hover {
+    background: var(--surface);
+  }
+
+  /* Hero Section */
+  .hero {
+    padding: 5rem max(16px, env(safe-area-inset-left, 0px)) 4rem max(16px, env(safe-area-inset-right, 0px));
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 800px;
+    background: radial-gradient(circle, rgba(110, 89, 248, 0.15) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .hero-content {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+
+  .hero h1 {
+    font-family: var(--font-display);
+    font-size: clamp(2.5rem, 5vw, 4rem);
+    font-weight: 800;
+    line-height: 1.1;
+    margin-bottom: 1.5rem;
+    background: linear-gradient(135deg, var(--ink), var(--violet-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .hero p {
+    font-size: 1.25rem;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .hero-cta {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Section Styles */
+  section {
+    padding: 4rem max(16px, env(safe-area-inset-left, 0px)) 4rem max(16px, env(safe-area-inset-right, 0px));
+  }
+
+  .section-header {
+    text-align: center;
+    max-width: 700px;
+    margin: 0 auto 3rem;
+  }
+
+  .section-header h2 {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 4vw, 3rem);
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .section-header p {
+    font-size: 1.125rem;
+    color: var(--muted);
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+  }
+
+  /* Course Grid */
+  .courses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 2rem;
+  }
+
+  .course-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+  }
+
+  .course-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+  }
+
+  .course-thumbnail {
+    width: 100%;
+    height: 180px;
+    background: linear-gradient(135deg, var(--surface-2), var(--surface));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .course-thumbnail img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .course-thumbnail-placeholder {
+    font-size: 3rem;
+    opacity: 0.3;
+  }
+
+  .course-content {
+    padding: 1.5rem;
+  }
+
+  .course-meta {
+    display: flex;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+
+  .course-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  .badge-category {
+    background: rgba(110, 89, 248, 0.15);
+    color: var(--violet-light);
+  }
+
+  .badge-difficulty {
+    background: rgba(82, 216, 194, 0.15);
+    color: var(--aqua);
+  }
+
+  .course-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    color: var(--ink);
+  }
+
+  .course-instructor {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+  }
+
+  .course-description {
+    font-size: 0.95rem;
+    color: var(--muted);
+    line-height: 1.5;
+    margin-bottom: 1.25rem;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .course-action {
+    width: 100%;
+  }
+
+  /* Feature Cards */
+  .features-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+
+  .feature-card {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 2rem;
+    transition: transform 0.2s, border-color 0.2s;
+  }
+
+  .feature-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--violet);
+  }
+
+  .feature-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, var(--violet), var(--aqua));
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    margin-bottom: 1.5rem;
+  }
+
+  .feature-card h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+  }
+
+  .feature-card p {
+    color: var(--muted);
+    line-height: 1.6;
+  }
+
+  /* Loading & Empty States */
+  .loading-skeleton {
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+
+  .empty-state-icon {
+    font-size: 4rem;
+    opacity: 0.3;
+    margin-bottom: 1rem;
+  }
+
+  .empty-state h3 {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .empty-state p {
+    color: var(--muted);
+  }
+
+  /* Footer */
+  .footer {
+    background: var(--surface);
+    border-top: 1px solid var(--line);
+    padding: 3rem max(16px, env(safe-area-inset-left, 0px)) 2rem max(16px, env(safe-area-inset-right, 0px));
+    margin-top: 4rem;
+  }
+
+  .footer-content {
+    max-width: 1280px;
+    margin: 0 auto;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 3rem;
+  }
+
+  .footer-section h4 {
+    font-size: 1rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+  }
+
+  .footer-links {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .footer-links a {
+    color: var(--muted);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: color 0.2s;
+  }
+
+  .footer-links a:hover {
+    color: var(--ink);
+  }
+
+  .footer-bottom {
+    max-width: 1280px;
+    margin: 3rem auto 0;
+    padding-top: 2rem;
+    border-top: 1px solid var(--line);
+    text-align: center;
+    color: var(--muted);
+    font-size: 0.9rem;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .nav-links {
+      display: none;
+    }
+
+    .hero {
+      padding-top: 3rem;
+      padding-bottom: 3rem;
+    }
+
+    .hero h1 {
+      font-size: 2.5rem;
+    }
+
+    .hero p {
+      font-size: 1.1rem;
+    }
+
+    .courses-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .features-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .footer-content {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Hidden utility */
+  [hidden] {
+    display: none !important;
+  }
+</style>
+
+<!-- Navigation -->
+<nav class="home-nav">
+  <div class="nav-container">
+    <a href="#/" class="nav-brand">
+      <div class="nav-brand-icon">V</div>
+      <span>VertexLearn AI</span>
+    </a>
+
+    <ul class="nav-links">
+      <li><a href="#/">Home</a></li>
+      <li><a href="#courses">Courses</a></li>
+      <li><a href="#features">AI Features</a></li>
+      <li><a href="#community">Community</a></li>
+    </ul>
+
+    <div class="nav-actions">
+      <a href="#/login" class="btn btn-secondary" id="nav-login">Login</a>
+      <a href="#/register" class="btn btn-primary" id="nav-register">Get Started</a>
+      <a href="#/student/dashboard" class="btn btn-primary" id="nav-dashboard" hidden>Go to Dashboard</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section class="hero">
+  <div class="hero-content">
+    <h1>Learn Smarter. Grow Faster. Achieve More.</h1>
+    <p>
+      Transform your learning journey with AI-powered courses, personalized study plans,
+      interactive discussions, and verified certificates—all in one intelligent platform.
+    </p>
+    <div class="hero-cta">
+      <a href="#courses" class="btn btn-primary">Explore Courses</a>
+      <a href="#/register" class="btn btn-secondary">Start Learning Free</a>
+    </div>
+  </div>
+</section>
+
+<!-- Course Catalog Section -->
+<section id="courses">
+  <div class="container">
+    <div class="section-header">
+      <h2>Explore Our Courses</h2>
+      <p>Discover high-quality courses taught by expert instructors across diverse topics</p>
+    </div>
+
+    <div id="courses-container" class="courses-grid">
+      <!-- Courses will be loaded here dynamically -->
+    </div>
+
+    <div id="courses-loading" class="empty-state">
+      <div class="empty-state-icon">⏳</div>
+      <h3>Loading courses...</h3>
+    </div>
+
+    <div id="courses-empty" class="empty-state" hidden>
+      <div class="empty-state-icon">📚</div>
+      <h3>No Courses Available</h3>
+      <p>Check back soon for new courses</p>
+    </div>
+
+    <div id="courses-error" class="empty-state" hidden>
+      <div class="empty-state-icon">⚠️</div>
+      <h3>Failed to Load Courses</h3>
+      <p>Please try refreshing the page</p>
+    </div>
+  </div>
+</section>
+
+<!-- AI Features Section -->
+<section id="features">
+  <div class="container">
+    <div class="section-header">
+      <h2>AI-Powered Learning Tools</h2>
+      <p>Enhance your learning experience with cutting-edge AI technology</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">🤖</div>
+        <h3>AI Tutor</h3>
+        <p>Ask questions and get instant, context-aware explanations from your personal AI tutor trained on course content.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📅</div>
+        <h3>Study Planner</h3>
+        <p>Get personalized study schedules based on your goals, progress, and learning patterns.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">✍️</div>
+        <h3>AI Quiz Generator</h3>
+        <p>Practice with AI-generated questions tailored to lecture content and your weak areas.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎴</div>
+        <h3>Smart Flashcards</h3>
+        <p>Auto-generated flashcards from lecture transcripts for effective spaced repetition learning.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">📝</div>
+        <h3>Lecture Summaries</h3>
+        <p>Quick overviews and key points automatically extracted from video lectures.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🎯</div>
+        <h3>Personalized Recommendations</h3>
+        <p>Discover courses tailored to your interests and learning history.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Community Section -->
+<section id="community">
+  <div class="container">
+    <div class="section-header">
+      <h2>Learn Together, Grow Together</h2>
+      <p>Join a vibrant community of learners and instructors</p>
+    </div>
+
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon">💬</div>
+        <h3>Discussion Forums</h3>
+        <p>Engage in course-specific discussions, ask questions, and share insights with peers.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">👥</div>
+        <h3>Collaborative Learning</h3>
+        <p>Learn from instructors and fellow students through interactive Q&A threads.</p>
+      </div>
+
+      <div class="feature-card">
+        <div class="feature-icon">🏆</div>
+        <h3>Achievements & Certificates</h3>
+        <p>Earn verified certificates and unlock badges as you complete courses and milestones.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="footer">
+  <div class="footer-content">
+    <div class="footer-section">
+      <h4>VertexLearn AI</h4>
+      <p style="color: var(--muted); font-size: 0.9rem; line-height: 1.6;">
+        An intelligent learning management system combining structured courses with AI-powered study tools.
+      </p>
+    </div>
+
+    <div class="footer-section">
+      <h4>Explore</h4>
+      <ul class="footer-links">
+        <li><a href="#courses">Browse Courses</a></li>
+        <li><a href="#features">AI Features</a></li>
+        <li><a href="#community">Community</a></li>
+      </ul>
+    </div>
+
+    <div class="footer-section">
+      <h4>Account</h4>
+      <ul class="footer-links">
+        <li><a href="#/login">Login</a></li>
+        <li><a href="#/register">Create Account</a></li>
+        <li><a href="#/instructor/overview">Instructor Portal</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="footer-bottom">
+    <p>&copy; 2024 VertexLearn AI. All rights reserved.</p>
+  </div>
+</footer>
+
+<script type="module">
+  import { courseService } from '../../services/courseService.js';
+  import { enrollmentService } from '../../services/enrollmentService.js';
+  import { getSession, isAuthenticated } from '../../store/session.js';
+  import { showToast } from '../../components/common/toast.js';
+
+  // State
+  let userEnrollments = [];
+  let currentUser = null;
+
+  // Initialize page
+  async function init() {
+    checkAuthStatus();
+    await loadCourses();
+    setupScrollBehavior();
+  }
+
+  // Check if user is authenticated and update UI
+  function checkAuthStatus() {
+    if (isAuthenticated()) {
+      const session = getSession();
+      currentUser = session?.user;
+
+      // Update navigation
+      document.getElementById('nav-login').hidden = true;
+      document.getElementById('nav-register').hidden = true;
+      document.getElementById('nav-dashboard').hidden = false;
+
+      // Load user enrollments
+      loadEnrollments();
+    }
+  }
+
+  // Load user enrollments
+  async function loadEnrollments() {
+    try {
+      const response = await enrollmentService.getMyEnrollments();
+      userEnrollments = response?.data?.enrollments || response?.enrollments || [];
+    } catch (error) {
+      console.error('Failed to load enrollments:', error);
+    }
+  }
+
+  // Check if user is enrolled in a course
+  function isEnrolledInCourse(courseId) {
+    return userEnrollments.some(enrollment => {
+      const id = enrollment.courseId?._id || enrollment.courseId || enrollment.course?._id || enrollment.course;
+      return String(id) === String(courseId);
+    });
+  }
+
+  // Load courses from API
+  async function loadCourses() {
+    const container = document.getElementById('courses-container');
+    const loading = document.getElementById('courses-loading');
+    const empty = document.getElementById('courses-empty');
+    const error = document.getElementById('courses-error');
+
+    try {
+      loading.hidden = false;
+      empty.hidden = true;
+      error.hidden = true;
+      container.innerHTML = '';
+
+      const response = await courseService.listCourses({ limit: 12 });
+      const courses = response?.data?.courses || response?.courses || [];
+
+      loading.hidden = true;
+
+      if (courses.length === 0) {
+        empty.hidden = false;
+        return;
+      }
+
+      courses.forEach(course => {
+        const card = createCourseCard(course);
+        container.appendChild(card);
+      });
+
+    } catch (err) {
+      console.error('Failed to load courses:', err);
+      loading.hidden = true;
+      error.hidden = false;
+    }
+  }
+
+  // Create course card element
+  function createCourseCard(course) {
+    const card = document.createElement('div');
+    card.className = 'course-card';
+
+    const isEnrolled = isAuthenticated() && isEnrolledInCourse(course._id);
+    const instructorName = course.instructorId?.fullName || 'Instructor';
+
+    card.innerHTML = `
+      <div class="course-thumbnail">
+        ${course.thumbnailUrl
+          ? `<img src="${course.thumbnailUrl}" alt="${course.title}" loading="lazy">`
+          : '<div class="course-thumbnail-placeholder">📚</div>'}
+      </div>
+      <div class="course-content">
+        <div class="course-meta">
+          <span class="course-badge badge-category">${course.category || 'General'}</span>
+          <span class="course-badge badge-difficulty">${course.difficulty || 'Beginner'}</span>
+        </div>
+        <h3 class="course-title">${course.title}</h3>
+        <p class="course-instructor">By ${instructorName}</p>
+        <p class="course-description">${course.description || 'Explore this course to learn more.'}</p>
+        <button class="btn ${isEnrolled ? 'btn-secondary' : 'btn-primary'} course-action"
+                data-course-id="${course._id}">
+          ${isEnrolled ? 'Continue Learning' : 'Enroll Now'}
+        </button>
+      </div>
+    `;
+
+    // Add click handler
+    const button = card.querySelector('.course-action');
+    button.addEventListener('click', () => handleCourseAction(course._id, isEnrolled));
+
+    return card;
+  }
+
+  // Handle course enrollment or navigation
+  async function handleCourseAction(courseId, isEnrolled) {
+    if (isEnrolled) {
+      // Navigate to course player
+      window.location.hash = `#/student/player?courseId=${courseId}`;
+      return;
+    }
+
+    if (!isAuthenticated()) {
+      // Store course ID and redirect to registration
+      try {
+        sessionStorage.setItem('vertex:pendingEnrollment', courseId);
+      } catch (e) {
+        console.warn('Failed to store pending enrollment:', e);
+      }
+      window.location.hash = `#/register?redirect=enroll&courseId=${courseId}`;
+      return;
+    }
+
+    // Enroll the user
+    try {
+      const button = document.querySelector(`[data-course-id="${courseId}"]`);
+      button.disabled = true;
+      button.textContent = 'Enrolling...';
+
+      await enrollmentService.enroll(courseId);
+
+      showToast('Successfully enrolled! Redirecting to course...', 'success');
+
+      // Reload enrollments and update UI
+      await loadEnrollments();
+
+      // Redirect to course player after brief delay
+      setTimeout(() => {
+        window.location.hash = `#/student/player?courseId=${courseId}`;
+      }, 1500);
+
+    } catch (err) {
+      console.error('Enrollment failed:', err);
+      const message = err.message || 'Failed to enroll in course. Please try again.';
+      showToast(message, 'error');
+
+      // Reset button
+      const button = document.querySelector(`[data-course-id="${courseId}"]`);
+      if (button) {
+        button.disabled = false;
+        button.textContent = 'Enroll Now';
+      }
+    }
+  }
+
+  // Smooth scroll behavior for anchor links
+  function setupScrollBehavior() {
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+
+        // Skip if it's a hash route (starts with #/)
+        if (href.startsWith('#/')) {
+          return;
+        }
+
+        // Handle anchor links within the page
+        if (href !== '#' && href.includes('#')) {
+          e.preventDefault();
+          const targetId = href.substring(1);
+          const target = document.getElementById(targetId);
+
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        }
+      });
+    });
+  }
+
+  // Initialize on load
+  init();
+</script>

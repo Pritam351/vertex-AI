@@ -23,13 +23,16 @@ export function checkRouteAccess(targetHash = window.location.hash) {
   }
 
   // User is authenticated
-  if (isAuthRoute || isRootRoute) {
+  if (isAuthRoute) {
+    // Authenticated users trying to access login/register - redirect to their dashboard
     const defaultRoute = DEFAULT_ROUTES[role] || DEFAULT_ROUTES.unauthenticated;
     return {
       allowed: false,
       redirect: defaultRoute
     };
   }
+
+  // Allow authenticated users to view homepage (isRootRoute) - they can see it alongside their dashboard access
 
   // Check role-based route constraints
   if (hash.startsWith("#/instructor") && role !== "instructor" && role !== "admin") {

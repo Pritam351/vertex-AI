@@ -2,10 +2,19 @@ export const DEFAULT_ROUTES = {
   instructor: "#/instructor/overview",
   student: "#/student/dashboard",
   admin: "#/admin/dashboard",
-  unauthenticated: "#/login"
+  unauthenticated: "#/" // Changed to homepage instead of login
 };
 
 export const ROUTES = {
+  // Public Homepage
+  HOME: {
+    hash: "#/",
+    role: null,
+    title: "VertexLearn AI | Home",
+    layout: null,
+    isPublic: true
+  },
+
   // Auth
   LOGIN: {
     hash: "#/login",

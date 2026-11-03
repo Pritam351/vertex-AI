@@ -31,6 +31,7 @@ export { loadInstructorFragments as loadInstructorPages };
 
 // Template URLs for dynamic fetching
 const TEMPLATES = {
+  home: new URL("../pages/home/home.html", import.meta.url),
   login: new URL("../pages/auth/login.html", import.meta.url),
   register: new URL("../pages/auth/register.html", import.meta.url),
   studentDashboard: new URL("../pages/dashboard/student-dashboard.html", import.meta.url),
@@ -73,8 +74,19 @@ export async function navigate() {
   const session = getSession();
   const user = session?.user || null;
 
+  // 0. Homepage Routing (public - no auth required)
+  if (hash === "" || hash === "#" || hash === "#/" || hash === "#home") {
+    document.title = "VertexLearn AI | Home";
+
+    // Clear any layout - show plain homepage
+    currentRenderedLayout = null;
+    const homeHtml = await fetchHtml(TEMPLATES.home);
+    activeAppContainer.innerHTML = homeHtml;
+    return;
+  }
+
   // 1. Auth Routing
-  if (hash === "#/login" || hash === "#login" || hash === "#/register" || hash === "#register" || !user) {
+  if (hash === "#/login" || hash === "#login" || hash === "#/register" || hash === "#register") {
     const isRegister = hash.includes("register");
     document.title = isRegister ? "Create Account | VertexLearn AI" : "Sign In | VertexLearn AI";
 
