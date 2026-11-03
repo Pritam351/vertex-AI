@@ -13,19 +13,9 @@ function bootstrap() {
     return;
   }
 
-  // Restore initial hash if empty
-  if (!window.location.hash || window.location.hash === "#" || window.location.hash === "#/") {
-    const session = getSession();
-    const role = session?.user?.role?.toLowerCase();
-    if (role === "instructor") {
-      window.location.hash = "#/instructor/overview";
-    } else if (role === "admin") {
-      window.location.hash = "#/admin/dashboard";
-    } else if (role === "student") {
-      window.location.hash = "#/student/dashboard";
-    } else {
-      window.location.hash = "#/login";
-    }
+  // Restore initial hash if empty - default to homepage for visitors
+  if (!window.location.hash || window.location.hash === "#") {
+    window.location.hash = "#/";
   }
 
   initRouter(appContainer);
