@@ -26,6 +26,9 @@ import { mountStudentDiscussions } from "../pages/discussions/student-discussion
 // Admin
 import { mountAdminDashboard, mountAdminCourses, mountAdminUsers, mountAdminModeration, showAdminView } from "../pages/admin-panel/admin.js";
 
+// Home
+import { mountHomePage } from "../pages/home/home.js";
+
 // Export backward compatible loader
 export { loadInstructorFragments as loadInstructorPages };
 
@@ -82,6 +85,7 @@ export async function navigate() {
     currentRenderedLayout = null;
     const homeHtml = await fetchHtml(TEMPLATES.home);
     activeAppContainer.innerHTML = homeHtml;
+    await mountHomePage(activeAppContainer);
     return;
   }
 

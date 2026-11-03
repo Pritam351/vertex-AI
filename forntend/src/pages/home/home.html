@@ -1043,22 +1043,29 @@
   }
 
   /* ===== SCROLL ANIMATIONS ===== */
+  /* Start visible - JS adds the will-animate class BEFORE observing */
   .animate-on-scroll {
-    opacity: 0;
-    transform: translateY(30px);
+    opacity: 1;
+    transform: none;
     transition: opacity 0.7s cubic-bezier(0.4, 0, 0.2, 1), transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
-  .animate-on-scroll.in-view {
-    opacity: 1;
-    transform: translateY(0);
+  /* JS sets this class on elements that are below the fold */
+  .animate-on-scroll.will-animate {
+    opacity: 0;
+    transform: translateY(28px);
   }
 
-  .animate-delay-1 { transition-delay: 0.1s; }
-  .animate-delay-2 { transition-delay: 0.2s; }
-  .animate-delay-3 { transition-delay: 0.3s; }
-  .animate-delay-4 { transition-delay: 0.4s; }
-  .animate-delay-5 { transition-delay: 0.5s; }
+  .animate-on-scroll.in-view {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .animate-delay-1 { transition-delay: 0.08s; }
+  .animate-delay-2 { transition-delay: 0.18s; }
+  .animate-delay-3 { transition-delay: 0.28s; }
+  .animate-delay-4 { transition-delay: 0.38s; }
+  .animate-delay-5 { transition-delay: 0.48s; }
 
   @keyframes fadeInDown {
     from { opacity: 0; transform: translateY(-20px); }
@@ -1329,7 +1336,7 @@
   </div>
 
   <div class="footer-bottom">
-    <p class="footer-bottom-text">© 2024 VertexLearn AI. All rights reserved.</p>
+    <p class="footer-bottom-text">© 2027 VertexLearn AI. All rights reserved.</p>
     <div class="footer-badges">
       <span class="footer-badge">AI-Powered</span>
       <span class="footer-badge">Secure</span>
@@ -1338,274 +1345,4 @@
   </div>
 </footer>
 
-<script type="module">
-  import { courseService } from '../../services/courseService.js';
-  import { enrollmentService } from '../../services/enrollmentService.js';
-  import { getSession, isAuthenticated } from '../../store/session.js';
-  import { showToast } from '../../components/common/toast.js';
-
-  // ── State ──
-  let userEnrollments = [];
-  let allCourses = [];
-  let filteredCourses = [];
-  let activeFilter = 'all';
-
-  // ── Init ──
-  async function init() {
-    setupScrollEffects();
-    setupScrollAnimations();
-    await checkAuthStatus();
-    await loadCourses();
-  }
-
-  // ── Auth ──
-  async function checkAuthStatus() {
-    if (isAuthenticated()) {
-      document.getElementById('nav-login').hidden = true;
-      document.getElementById('nav-register').hidden = true;
-      document.getElementById('nav-dashboard').hidden = false;
-      await loadEnrollments();
-    }
-  }
-
-  async function loadEnrollments() {
-    try {
-      const response = await enrollmentService.getMyEnrollments();
-      userEnrollments = response?.data?.enrollments || response?.enrollments || [];
-    } catch (e) {
-      console.warn('Enrollments load failed:', e);
-    }
-  }
-
-  function isEnrolledInCourse(courseId) {
-    return userEnrollments.some(e => {
-      const id = e.courseId?._id || e.courseId || e.course?._id || e.course;
-      return String(id) === String(courseId);
-    });
-  }
-
-  // ── Courses ──
-  async function loadCourses() {
-    const loading = document.getElementById('courses-loading');
-    const container = document.getElementById('courses-container');
-    const empty = document.getElementById('courses-empty');
-    const error = document.getElementById('courses-error');
-
-    try {
-      // Fetch all courses (large limit)
-      const response = await courseService.listCourses({ limit: 100 });
-      allCourses = response?.data?.courses || response?.courses || [];
-
-      loading.hidden = true;
-
-      if (!allCourses.length) {
-        empty.hidden = false;
-        return;
-      }
-
-      // Update hero stat
-      const statEl = document.getElementById('stat-courses');
-      if (statEl) animateCount(statEl, allCourses.length);
-
-      // Build category filter tabs
-      buildFilterTabs(allCourses);
-
-      // Render all courses
-      filteredCourses = allCourses;
-      renderCourses(container, filteredCourses);
-      container.hidden = false;
-
-      updateCountLabel(filteredCourses.length, allCourses.length);
-
-    } catch (err) {
-      console.error('Failed to load courses:', err);
-      loading.hidden = true;
-      error.hidden = false;
-    }
-  }
-
-  function buildFilterTabs(courses) {
-    const tabs = document.getElementById('filter-tabs');
-    const categories = [...new Set(courses.map(c => c.category).filter(Boolean))].sort();
-
-    categories.forEach(cat => {
-      const btn = document.createElement('button');
-      btn.className = 'filter-tab';
-      btn.dataset.filter = cat;
-      btn.textContent = cat;
-      btn.addEventListener('click', () => applyFilter(cat));
-      tabs.appendChild(btn);
-    });
-
-    // All tab click
-    tabs.querySelector('[data-filter="all"]').addEventListener('click', () => applyFilter('all'));
-  }
-
-  function applyFilter(filter) {
-    activeFilter = filter;
-    document.querySelectorAll('.filter-tab').forEach(t => {
-      t.classList.toggle('is-active', t.dataset.filter === filter);
-    });
-    filteredCourses = filter === 'all'
-      ? allCourses
-      : allCourses.filter(c => c.category === filter);
-
-    const container = document.getElementById('courses-container');
-    renderCourses(container, filteredCourses);
-    updateCountLabel(filteredCourses.length, allCourses.length);
-  }
-
-  function updateCountLabel(shown, total) {
-    const el = document.getElementById('courses-count-label');
-    if (el) {
-      el.innerHTML = `Showing <span>${shown}</span> of <span>${total}</span> courses`;
-    }
-  }
-
-  function renderCourses(container, courses) {
-    container.innerHTML = '';
-    courses.forEach((course, i) => {
-      const card = createCourseCard(course, i);
-      container.appendChild(card);
-    });
-  }
-
-  function createCourseCard(course, index = 0) {
-    const card = document.createElement('div');
-    card.className = 'course-card';
-    card.style.animationDelay = `${Math.min(index * 0.06, 0.5)}s`;
-
-    const isEnrolled = isAuthenticated() && isEnrolledInCourse(course._id);
-    const instructorName = course.instructorId?.fullName || course.instructorId?.name || 'Instructor';
-    const initials = instructorName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
-    const diffClass = (course.difficulty || 'beginner').toLowerCase();
-    const hasThumbnail = !!course.thumbnailUrl;
-
-    card.innerHTML = `
-      <div class="course-thumbnail">
-        ${hasThumbnail
-          ? `<img src="${esc(course.thumbnailUrl)}" alt="${esc(course.title)}" loading="lazy">`
-          : `<div class="course-thumbnail-placeholder">📚</div>`}
-        <div class="course-thumbnail-overlay">
-          <div class="course-play-icon">▶</div>
-        </div>
-      </div>
-      <div class="course-content">
-        <div class="course-meta">
-          <span class="course-badge badge-category">${esc(course.category || 'General')}</span>
-          <span class="course-badge badge-difficulty ${diffClass}">${esc(course.difficulty || 'Beginner')}</span>
-        </div>
-        <h3 class="course-title">${esc(course.title)}</h3>
-        <div class="course-instructor">
-          <span class="course-instructor-avatar">${initials}</span>
-          By ${esc(instructorName)}
-        </div>
-        <p class="course-description">${esc(course.description || 'Explore this course to learn more.')}</p>
-        <div class="course-footer">
-          <div class="course-stat">📚 ${course.totalModules || 0} modules</div>
-          <div class="course-stat">🎬 ${course.totalLectures || 0} lectures</div>
-        </div>
-        <button class="btn ${isEnrolled ? 'btn-secondary' : 'btn-primary'} course-action"
-                data-course-id="${esc(course._id)}">
-          ${isEnrolled ? '▶ Continue Learning' : '🚀 Enroll Now'}
-        </button>
-      </div>
-    `;
-
-    card.querySelector('.course-action').addEventListener('click', (e) => {
-      e.stopPropagation();
-      handleCourseAction(course._id, isEnrolled);
-    });
-
-    return card;
-  }
-
-  async function handleCourseAction(courseId, isEnrolled) {
-    if (isEnrolled) {
-      window.location.hash = `#/student/player?courseId=${courseId}`;
-      return;
-    }
-
-    if (!isAuthenticated()) {
-      try { sessionStorage.setItem('vertex:pendingEnrollment', courseId); } catch (e) {}
-      window.location.hash = `#/register?redirect=enroll&courseId=${courseId}`;
-      return;
-    }
-
-    const button = document.querySelector(`[data-course-id="${courseId}"]`);
-    if (!button) return;
-    button.disabled = true;
-    button.textContent = '⏳ Enrolling...';
-
-    try {
-      await enrollmentService.enroll(courseId);
-      showToast('Successfully enrolled! Redirecting...', 'success');
-      await loadEnrollments();
-      setTimeout(() => { window.location.hash = `#/student/player?courseId=${courseId}`; }, 1400);
-    } catch (err) {
-      showToast(err.message || 'Failed to enroll. Please try again.', 'error');
-      button.disabled = false;
-      button.innerHTML = '🚀 Enroll Now';
-    }
-  }
-
-  // ── Utilities ──
-  function esc(str) {
-    if (str == null) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-  }
-
-  function animateCount(el, target) {
-    let current = 0;
-    const step = Math.ceil(target / 40);
-    const timer = setInterval(() => {
-      current = Math.min(current + step, target);
-      el.textContent = current + '+';
-      if (current >= target) clearInterval(timer);
-    }, 40);
-  }
-
-  // ── Nav Scroll Effect ──
-  function setupScrollEffects() {
-    const nav = document.getElementById('home-nav');
-    window.addEventListener('scroll', () => {
-      nav.classList.toggle('scrolled', window.scrollY > 50);
-    }, { passive: true });
-
-    // Smooth scroll for anchor links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        const href = this.getAttribute('href');
-        if (href.startsWith('#/')) return;
-        if (href.length > 1 && !href.startsWith('#/')) {
-          const id = href.slice(1);
-          const target = document.getElementById(id);
-          if (target) {
-            e.preventDefault();
-            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }
-        }
-      });
-    });
-  }
-
-  // ── Intersection Observer Animations ──
-  function setupScrollAnimations() {
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('in-view');
-          observer.unobserve(entry.target);
-        }
-      });
-    }, { threshold: 0.12, rootMargin: '0px 0px -60px 0px' });
-
-    document.querySelectorAll('.animate-on-scroll').forEach(el => observer.observe(el));
-  }
-
-  init();
-</script>
+<!-- home.js is mounted by router via mountHomePage(container) -->

@@ -1,3 +1,7 @@
+// Alias so both `toast` and `showToast` imports work across the codebase
+export const showToast = (text, kind = "success", duration = 4500) =>
+  toast(text, kind, duration);
+
 export function toast(text, kind = "success", duration = 4500) {
   let region = document.querySelector("#toast-region");
   if (!region) {
