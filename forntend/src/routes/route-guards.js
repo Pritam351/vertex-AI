@@ -14,8 +14,9 @@ export function checkRouteAccess(targetHash = window.location.hash) {
   const isRootRoute = !hash || hash === "#" || hash === "#/" || hash === "";
 
   if (!user || !session?.token) {
-    if (isAuthRoute) return { allowed: true, redirect: null };
-    // Not authenticated, redirect to login
+    // Public routes: auth pages and the homepage are always allowed
+    if (isAuthRoute || isRootRoute) return { allowed: true, redirect: null };
+    // Not authenticated and trying to access a protected route → go to homepage
     return {
       allowed: false,
       redirect: DEFAULT_ROUTES.unauthenticated

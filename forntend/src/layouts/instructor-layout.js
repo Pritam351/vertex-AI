@@ -45,4 +45,16 @@ export function renderInstructorLayout(user, activeSection = "overview") {
 
 export function bindInstructorLayoutEvents(container = document) {
   bindNavbarEvents(container);
+
+  // Intercept sidebar link clicks — prevent anchor scroll, update active state
+  // The hash change still fires and the router handles content switching via showView()
+  container.querySelectorAll("#sidebar .nav-link").forEach((link) => {
+    link.addEventListener("click", () => {
+      container.querySelectorAll("#sidebar .nav-link").forEach((l) => l.classList.remove("is-active"));
+      link.classList.add("is-active");
+      // Close mobile sidebar on nav
+      document.querySelector("#sidebar")?.classList.remove("is-open");
+      document.querySelector("#menu-toggle")?.setAttribute("aria-expanded", "false");
+    });
+  });
 }

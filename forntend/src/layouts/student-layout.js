@@ -43,4 +43,16 @@ export function renderStudentLayout(user, activeSection = "dashboard") {
 
 export function bindStudentLayoutEvents(container = document) {
   bindNavbarEvents(container);
+
+  // Intercept sidebar link clicks: update active state immediately for snappy feel
+  // and prevent the default anchor scroll behaviour on hash-only links
+  container.querySelectorAll("#sidebar .nav-link").forEach((link) => {
+    link.addEventListener("click", () => {
+      container.querySelectorAll("#sidebar .nav-link").forEach((l) => l.classList.remove("is-active"));
+      link.classList.add("is-active");
+      // Close mobile sidebar on nav
+      document.querySelector("#sidebar")?.classList.remove("is-open");
+      document.querySelector("#menu-toggle")?.setAttribute("aria-expanded", "false");
+    });
+  });
 }

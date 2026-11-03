@@ -59,10 +59,20 @@ async function fetchHtml(url) {
 
 let activeAppContainer = null;
 let currentRenderedLayout = null;
+let _navigating = false; // debounce guard — prevents re-entrant navigate() calls
 
 export async function navigate() {
   if (!activeAppContainer) return;
+  if (_navigating) return; // prevent re-entrant call from hash changes triggered inside navigate
+  _navigating = true;
+  try {
+    await _doNavigate();
+  } finally {
+    _navigating = false;
+  }
+}
 
+async function _doNavigate() {
   const rawHash = window.location.hash || "";
   const guard = checkRouteAccess(rawHash);
 
