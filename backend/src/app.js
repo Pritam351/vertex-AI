@@ -37,7 +37,7 @@ app.use(
     crossOriginResourcePolicy: { policy: "cross-origin" },
   })
 );
-app.use(cors());
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN, credentials: true }));
 
 // Prevent stale 304 responses in SPA
 app.use((req, res, next) => {
