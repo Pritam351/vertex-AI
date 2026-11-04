@@ -50,9 +50,7 @@ const TEMPLATES = {
 };
 
 async function fetchHtml(url) {
-  const u = new URL(url.toString());
-  u.searchParams.set("_v", Date.now());
-  const res = await fetch(u, { cache: "no-store" });
+  const res = await fetch(url.toString(), { cache: "default" });
   if (!res.ok) throw new Error(`Could not load template from ${url.pathname}`);
   return res.text();
 }
@@ -109,6 +107,9 @@ async function _doNavigate() {
     await mountHomePage(activeAppContainer);
     return;
   }
+
+  // Remove home-page class when navigating away from home
+  activeAppContainer.classList.remove('home-page');
 
   // 1. Auth Routing
   if (hash === "#/login" || hash === "#login" || hash === "#/register" || hash === "#register") {

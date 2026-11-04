@@ -9,8 +9,11 @@ let allCourses = [];
 let filteredCourses = [];
 
 // ── Main Mount Function ──
+// home.css is bundled into app.css via @import — no dynamic injection needed
 export async function mountHomePage(container) {
   // container is the #app element that already has the home.html injected
+  // Mark #app so home-only CSS rules (noise overlay, etc.) are scoped here
+  container.classList.add('home-page');
   setupNavScrollEffect(container);
   setupScrollAnimations(container);
   setupSmoothAnchors(container);

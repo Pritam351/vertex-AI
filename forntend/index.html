@@ -12,7 +12,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="src/styles/app.css?v=1793687924995" />
+        <style>
+      /* Critical inline styles — prevent white flash on load */
+      html, body { margin: 0; background: #080d1a; color: #f7f7ff; }
+      #app { min-height: 100vh; }
+    </style>
+    <link rel="stylesheet" href="src/styles/app.css" />
   </head>
   <body>
     <a class="skip-link" href="#main-content">Skip to workspace</a>
