@@ -3,6 +3,7 @@ const express = require("express");
 
 const authMiddleware = require("../middleware/authMiddleware");
 const requireRole = require("../middleware/roleMiddleware");
+const { aiLimiter } = require("../middleware/rateLimitMiddleware");
 
 const {
   testGemini,
@@ -49,6 +50,7 @@ router.post(
 
 router.post(
   "/courses/:courseId/retrieve",
+  aiLimiter,
   authMiddleware,
   requireRole("student"),
   retrieveCourseContext
@@ -57,6 +59,7 @@ router.post(
 // AI tutor chat: send a question and save the response.
 router.post(
   "/courses/:courseId/chat",
+  aiLimiter,
   authMiddleware,
   requireRole("student", "admin"),
   sendChatMessage
@@ -80,6 +83,7 @@ router.get(
 
 router.post(
   "/lectures/:lectureId/summarize",
+  aiLimiter,
   authMiddleware,
   requireRole("student", "admin"),
   summarizeLecture
@@ -88,6 +92,7 @@ router.post(
 
 router.post(
   "/lectures/:lectureId/generate-quiz",
+  aiLimiter,
   authMiddleware,
   requireRole("student", "instructor", "admin"),
   generateLectureQuiz
@@ -95,6 +100,7 @@ router.post(
 
 router.post(
   "/modules/:moduleId/flashcards",
+  aiLimiter,
   authMiddleware,
   requireRole("student", "instructor", "admin"),
   generateModuleFlashcards
@@ -117,6 +123,7 @@ router.get(
 // Personalized study plan, mastery, and recommendations.
 router.post(
   "/study-plan",
+  aiLimiter,
   authMiddleware,
   requireRole("student"),
   createStudyPlan
