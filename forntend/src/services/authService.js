@@ -8,7 +8,7 @@ export const authService = {
       auth: false,
       body: credentials
     });
-    if (payload?.data) {
+    if (payload?.data?.token) {
       saveSession(payload.data);
     }
     return payload;
@@ -20,6 +20,8 @@ export const authService = {
       auth: false,
       body: userData
     });
+    // Registration now returns { token, user } just like login.
+    // Save the session so the user is immediately authenticated.
     if (payload?.data?.token) {
       saveSession(payload.data);
     }

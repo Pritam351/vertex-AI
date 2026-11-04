@@ -1,9 +1,42 @@
 import { authService } from "../../services/authService.js";
+import { enrollmentService } from "../../services/enrollmentService.js";
 import { $, message } from "../../utils/dom.js";
 import { errorText } from "../../utils/validation.js";
 import { setBusy } from "../../components/common/loading.js";
 import { toast } from "../../components/common/toast.js";
 import { DEFAULT_ROUTES } from "../../routes/route-config.js";
+
+/**
+ * After a successful login or registration, check sessionStorage for a
+ * pending enrollment intent saved by home.js and fulfil it before redirecting.
+ * This completes the visitor → registration → automatic-enrollment flow.
+ */
+async function handlePendingEnrollmentAndRedirect(role) {
+  const pendingCourseId = (() => {
+    try { return sessionStorage.getItem("vertex:pendingEnrollment"); } catch { return null; }
+  })();
+
+  if (pendingCourseId) {
+    try { sessionStorage.removeItem("vertex:pendingEnrollment"); } catch { /* ignore */ }
+    try {
+      await enrollmentService.enroll(pendingCourseId);
+      toast("Enrolled successfully! Starting course…", "success");
+      // Give the toast a moment to show, then jump to the course player.
+      setTimeout(() => {
+        window.location.hash = `#/student/player?courseId=${pendingCourseId}`;
+      }, 1200);
+      return; // early exit — redirect already scheduled
+    } catch (err) {
+      // Enrollment failed (e.g. already enrolled or course removed).
+      // Fall through to the normal dashboard redirect.
+      console.warn("Pending enrollment failed:", err?.message || err);
+      toast(err?.message || "Could not auto-enroll. You can enroll from the dashboard.", "error");
+    }
+  }
+
+  // Default: send the user to their role dashboard.
+  window.location.hash = DEFAULT_ROUTES[role] || DEFAULT_ROUTES.student;
+}
 
 export function bindAuthEvents(container = document, isRegister = false) {
   if (isRegister) {
@@ -30,7 +63,8 @@ export function bindAuthEvents(container = document, isRegister = false) {
         toast("Account created successfully!");
         const user = payload?.data?.user;
         const role = user?.role?.toLowerCase() || "student";
-        window.location.hash = DEFAULT_ROUTES[role] || DEFAULT_ROUTES.student;
+        // Fulfil any pending enrollment intent, then redirect.
+        await handlePendingEnrollmentAndRedirect(role);
       } catch (error) {
         message(msgEl, errorText(error), "error");
       } finally {
@@ -58,7 +92,8 @@ export function bindAuthEvents(container = document, isRegister = false) {
         toast("Signed in successfully.");
         const user = payload?.data?.user;
         const role = user?.role?.toLowerCase() || "student";
-        window.location.hash = DEFAULT_ROUTES[role] || DEFAULT_ROUTES.student;
+        // Fulfil any pending enrollment intent, then redirect.
+        await handlePendingEnrollmentAndRedirect(role);
       } catch (error) {
         message(msgEl, errorText(error), "error");
       } finally {

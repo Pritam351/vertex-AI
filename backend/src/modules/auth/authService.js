@@ -25,11 +25,18 @@ const registerUser = async ({ fullName, email, password }) => {
     role: "student",
   });
 
+  // Generate a JWT immediately so the client can start an authenticated
+  // session right after registration (required for the pending-enrollment flow).
+  const token = generateToken(user);
+
   return {
-    id: user._id,
-    fullName: user.fullName,
-    email: user.email,
-    role: user.role,
+    token,
+    user: {
+      id: user._id,
+      fullName: user.fullName,
+      email: user.email,
+      role: user.role,
+    },
   };
 };
 
