@@ -42,24 +42,7 @@ const allowedOrigins = (process.env.ALLOWED_ORIGIN || "")
   .map((o) => o.trim().replace(/\/$/, ""))
   .filter(Boolean);
 
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      const cleanOrigin = origin.replace(/\/$/, "");
-      if (
-        allowedOrigins.length === 0 ||
-        allowedOrigins.includes("*") ||
-        allowedOrigins.includes(cleanOrigin) ||
-        process.env.NODE_ENV !== "production"
-      ) {
-        return callback(null, true);
-      }
-      return callback(new Error(`Origin ${origin} not allowed by CORS`));
-    },
-    credentials: true,
-  })
-);
+app.use(cors({ origin: process.env.ALLOWED_ORIGIN, credentials: true }));
 
 // Prevent stale 304 responses in SPA
 app.use((req, res, next) => {

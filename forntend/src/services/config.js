@@ -3,7 +3,7 @@ const meta = document.querySelector('meta[name="vertex-api-base"]');
 let base = (
   window.VERTEX_API_BASE_URL ||
   meta?.content ||
-  "http://localhost:5000/api/v1"
+  "https://vertex-ai-backend-kebi.onrender.com/api/v1"
 ).replace(/\/$/, "");
 
 // Ensure API base always points to the versioned root /api/v1
