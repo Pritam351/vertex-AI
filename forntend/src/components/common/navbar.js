@@ -1,4 +1,5 @@
 import { initials } from "../../utils/formatters.js";
+import { escapeHtml } from "../../utils/dom.js";
 import { authService } from "../../services/authService.js";
 import { notificationService } from "../../services/notificationService.js";
 import { gamificationService } from "../../services/gamificationService.js";
@@ -112,12 +113,12 @@ function renderNotifItem(notif) {
 
   return `
     <div class="notif-item${unread ? " is-unread" : ""}"
-         data-notif-id="${notif._id}"
-         data-notif-link="${notif.link || ""}">
+         data-notif-id="${escapeHtml(notif._id)}"
+         data-notif-link="${escapeHtml(notif.link || "")}">
       <span class="notif-item-icon" aria-hidden="true">${icon}</span>
       <div class="notif-item-body">
-        <p class="notif-item-title">${notif.title || "Notification"}</p>
-        <p class="notif-item-msg">${notif.message || ""}</p>
+        <p class="notif-item-title">${escapeHtml(notif.title || "Notification")}</p>
+        <p class="notif-item-msg">${escapeHtml(notif.message || "")}</p>
         <p class="notif-item-time">${ago}</p>
       </div>
       ${unread ? `<span class="notif-unread-dot" aria-hidden="true"></span>` : ""}

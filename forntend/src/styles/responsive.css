@@ -21,17 +21,20 @@ iframe {
   max-width: 100%;
 }
 
-/* Prevent horizontal scroll on all pages */
+/* Prevent horizontal scroll on all pages.
+   Use `clip`, NOT `hidden`: `hidden` silently turns the element into a scroll
+   container (overflow-y becomes auto) which breaks `position: sticky` for the
+   top bar and the course-player curriculum sidebar. */
 html,
 body {
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 .workspace,
 .workspace-body,
 .content {
   min-width: 0;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
